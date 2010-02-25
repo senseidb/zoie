@@ -1,0 +1,108 @@
+# Time needed between two snapshots to record performance number - Optional - default is 2 mins
+org.deepak.performance.timebetweensnapshots=1
+
+# Number of initial threads - Must - Any positive integer
+org.deepak.performance.initialthreadcount=10
+
+# Number of initial threads - Must - Any positive integer for increment. Any negative integer for steady state
+org.deepak.performance.threadincrementcount=-1
+
+# Number of maximum threads - Must if threadincrementcount is non-negative - Any positive integer
+org.deepak.performance.maxthreadcount=10
+
+# Time interval between thread increments in seconds - Must if threadincrementcount is non-negative - Any positive integer
+org.deepak.performance.threadincrementtimeinsec=60
+
+# Total run time in minutes - Must - Any positive integer if it is time controlled.
+# Any negative number if it is supposed to run non-stop
+org.deepak.performance.runtimeinminute=30
+
+# File to stop tests graciously if tests are supposed to run non-stop - Must if the runtimeinminute is set to negative
+org.deepak.performance.stopfilepath=stop.txt
+
+# Number of functionalities that are being simulated in the load test and need to be monitored - Must - Any positive
+# integer e.g. if two functionalities login and upload are being simulated and monitored, value should be 2
+org.deepak.performance.numberoffunctionalities=1
+
+# Description of functionalities that are being simulated in the load test and need to be monitored - Optional - Any String
+# giving brief description of the sub-transactions e.g. if two functionalities login and upload are being simulated
+# and monitored where login is the first sub-transaction and upload is the second sub-transactions, properties
+# should be somewhat like:
+org.deepak.performance.functionalitydesc1=Zoie Search
+
+# You can have as many org.deepak.performance.functionalitydesc<number> properties as you have number
+# of funtionalities. If for any nth sub transaction, this property is missing, default value "Funtionality n" will
+# be used for that nth sub transaction.
+
+
+# Common User Think time during tests for all functionalities being simulated - Optional - Number can be float such as 1.5 etc.
+# This value should not be set or set to negative if there is going to be different think times for different functionalities
+org.deepak.performance.commonthinktimeinsec=0
+
+# Individual think times for functionalities that are being simulated in the load test and need to be monitored - Optional - Any
+# positive number e.g. if two functionalities login and upload are being simulated and monitored where login is the
+# first sub-transaction and upload is the second sub-transactions, properties should be somewhat like:
+org.deepak.performance.thinktimeinsec1=1.5
+
+# You can have as many org.deepak.performance.thinktimeinsec<number> properties as you have number of funtionalities.
+# If for any nth sub transaction, this property is missing, default value 0 seconds will be used for that nth sub transaction.
+#All this is valid only if property org.deepak.performance.commonthinktimeinsec is not set or set to some negative value.
+
+
+# Name of the class where sub-transactions are being implemented (Implementing Class) - Must - If the implementing class name
+# is LoadTest and it is in package org.deepak.performance, value will be org.deepak.performance.LoadTest
+org.deepak.performance.implementingclassname=proj.zoie.perf.test.ZoiePerfTest
+
+# Number of failures allowed before the test stops - Optional - Any positive integer will stop after given number of failues.
+# Negative number means unlimited failures allowed. Default is unlimited number of failures allowed
+org.deepak.performance.failuresallowed=-1
+
+# Path to the file where all the snap shot information will be kept and will be used to plot graphs - Optional - Default will be
+# some date stamped file in the running directory
+org.deepak.performance.outputfilepath=../results/zoie/dat/zoiedata.dat
+
+# Path to the PDF file where all the data captured will be plotted automatically - Optional - Default will be some date stamped
+# file in the running directory
+org.deepak.performance.plotfilepath=../results/zoie/pdf/zoieresult.pdf
+
+# Integer to specify whether to log the output to a file or console or both - Optional - Values allowed are 1 for writing to both
+# file and console, 2 for writing to file only and 3 for writing to console only. By default it writes to both file and console.
+org.deepak.performance.loghandlerconfig=2
+
+# File path to the file where the logger will write the logs - Optional - Path to the log file for logger. If the logger is set
+# to output to a file and this property is not set, it will create a time stamped file in the running directory and write the logs
+# to this file and it will send all the log to console also
+org.deepak.performance.logfilepattern=../results/zoie/log/zoielog.log
+
+# Log level to be used by the logger - Optional - Values allowed are "ALL", "SEVERE", "WARNING", "FINE",
+# "FINER", "FINEST", "INFO", "CONFIG", "OFF". Default is "ALL"
+org.deepak.performance.loglevel=INFO
+
+# Whether to plot real time data - Optional - Values allowed are "true" or "false". Default is "true"
+org.deepak.performance.plotcurrentdata=true
+
+# Base directory where report directory will be created - Optional - Default is the running directory
+org.deepak.performance.currentresultbasedir=../results/zoie/currentresult/
+
+# Time interval for refreshing all the real time graphs - Optional - Default is 120 seconds
+org.deepak.performance.refreshtimeinsec=60
+
+# Total number of executions after which to stop all the threads - Optional - Default is no limitation. Any positive number
+# if limit has to be set. Any negative value for no limit.
+org.deepak.performance.maxnumexecutions=-1
+
+# If workload is dynamic
+org.deepak.performance.isdynamicworkload=false
+
+
+org.deepak.performance.killallthreadsatend=true
+org.deepak.performance.timebeforekillthreadatend=60
+
+org.deepak.performance.usefakemethodarguments=false
+org.deepak.performance.numoffakemethodargs=2
+
+org.deepak.performance.overridedataandlogs=false
+
+org.deepak.performance.monitorserverhealth=true
+
+org.deepak.performance.serverstobemonitoredforhealth=[host=perftest6.qa:user=tester:password=testerLI!]

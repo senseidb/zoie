@@ -1,0 +1,25 @@
+<!DOCTYPE ui:UiBinder SYSTEM "http://dl.google.com/gwt/DTD/xhtml.ent">
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder" xmlns:g='urn:import:com.google.gwt.user.client.ui'>
+	<g:HTMLPanel>
+	    <LINK href="search.css" rel="stylesheet" type="text/css"/>
+	        
+		<center>
+			<g:TextBox ui:field='queryInput' stylePrimaryName='query' maxLength='2048' visibleLength='55'/>
+			<g:Button ui:field='searchButton' stylePrimaryName='search' text='Search'/>
+		</center>
+		<br/>
+		<br/>
+		<table width="100%">
+			<tr>
+			<td id="info" align="right">
+				result hits: <span ui:field="hitcountLabel"></span>
+				(<span ui:field="searchtimeLabel"></span> ms)
+			</td>
+			</tr>
+		</table>
+		<br/>
+		<hr/>
+		<br/>
+		<table ui:field='resultTable'/>
+	</g:HTMLPanel>
+</ui:UiBinder>

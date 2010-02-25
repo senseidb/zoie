@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+<appender name="dest1" class="org.apache.log4j.ConsoleAppender">
+<layout class="org.apache.log4j.PatternLayout">
+</layout>
+</appender>
+
+<appender name="server" class="org.apache.log4j.DailyRollingFileAppender">
+<param name="encoding" value ="UTF-8" />
+<param name="file" value="logs/zoie-server.log" />
+<param name="DatePattern" value="'.'yyyy-MM-dd" />
+<layout class="org.apache.log4j.PatternLayout">
+<param name="ConversionPattern" value="d{yyyy/MM/dd HH:mm:ss.SSS} %p [%c{1}] [%x] %m%n"/>
+</layout>
+</appender>
+
+<appender name="zoie" class="org.apache.log4j.DailyRollingFileAppender">
+<param name="encoding" value ="UTF-8" />
+<param name="file" value="${log.home}/zoie.log" />
+<param name="datepattern" value="'.'yyyy-MM-dd" />
+<layout class="org.apache.log4j.PatternLayout">
+<param name="ConversionPattern" value="d{yyyy/MM/dd HH:mm:ss.SSS} %p [%c{1}] [%x] %m%n"/>
+</layout>
+</appender>
+<root>
+<priority value="info" />
+<appender-ref ref="server" />
+</root>
+<!-- log4j.logger.proj.zoie.server=info, zoie -->
+</log4j:configuration>

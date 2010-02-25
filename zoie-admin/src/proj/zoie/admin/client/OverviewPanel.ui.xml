@@ -1,0 +1,55 @@
+<!DOCTYPE ui:UiBinder SYSTEM "http://dl.google.com/gwt/DTD/xhtml.ent">
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder" xmlns:g='urn:import:com.google.gwt.user.client.ui'>
+  <g:HTMLPanel ui:field='topPanel'>
+    <table width="100%">
+      <tr>
+  	    <td align="center"><g:FlowPanel ui:field='memchartPanel'/></td>
+  	    <td align="center"><g:FlowPanel ui:field='cpuchartPanel'/></td>
+  	    <td align="right">
+  	    	<table>
+  	    	  <tr>
+  	    	    <td>
+  	    	      Server: 
+  	    	    </td>
+  	    	    <td>
+  	    	      <g:Label ui:field='serverLabel' />
+  	    	    </td>
+  	    	  </tr>
+  	    	  <tr>
+  	    	    <td>
+  	    	      Platform:
+  	    	    </td>
+  	    	    <td>
+  	    	      <g:Label ui:field='platformLabel'/>
+  	    	    </td>
+  	    	  </tr>
+  	    	  <tr>
+  	    	  	<td>
+  	    	  	  Available CPUs:
+  	    	  	</td>
+  	    	  	<td>
+  	    	  	  <g:Label ui:field='availCPULabel'/>
+  	    	  	</td>
+  	    	  </tr>
+  	    	</table>
+  	    	<table>
+  	    	  <tr>
+  	    	    <td>
+  	    	      Zoie
+  	    	    </td>
+  	    	  </tr>
+  	    	</table>
+          <g:FlexTable ui:field='infoTable' />
+          <table>
+            <tr>
+              <td>
+                Data Provider
+              </td>
+            </tr>
+          </table>
+          <g:FlexTable ui:field='dataProviderTable' />
+  	    </td>
+  	  </tr>
+  	</table>
+  </g:HTMLPanel>
+</ui:UiBinder>

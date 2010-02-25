@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<import resource="zoie.spring"/>
+	
+	<bean id="dataprovider.file" class="proj.zoie.impl.indexing.FileDataProvider" lazy-init="true">
+	    <constructor-arg value="file:${source.directory}"/>
+	    <property name="looping" value="true" />
+	    <property name="dataConsumer" ref="consumer" />
+	</bean>
+	
+	<bean id="wikiProvider" class="proj.zoie.perf.indexing.EnwikiContentSource" lazy-init="true">
+		<constructor-arg value="file:${wiki.file}" />
+	</bean>
+
+	
+	<bean id="dataprovider.wiki" class="proj.zoie.perf.indexing.ContentSourceStreamProvider" lazy-init="true">
+	    <constructor-arg ref="wikiProvider" />
+	    <property name="looping" value="true" />
+	    <property name="dataConsumer" ref="consumer" />
+	</bean>
+	
+	
+	<alias name="dataprovider.${data.type}" alias="dataprovider" />
+	
+	<bean id="dataprovider-mbean" class="proj.zoie.mbean.DataProviderAdmin">
+		<constructor-arg ref="dataprovider" />
+	</bean>
+</beans>
+

@@ -1,0 +1,38 @@
+<ivy-module version="2.0">
+    <info organisation="proj.zoie" module="zoie"/>
+    <configurations>
+       <conf name="master"  visibility="public" description="contains only the artifact published by this module itself, with no transitive dependencies"/>
+       <conf name="test"    visibility="private" description="is only available for the test compilation and execution phases."/>
+       <conf name="jetty"   visibility="public" description="server related jars" />
+       <conf name="solr"    visibility="public" description="libs for solr plugin" />
+       <conf name="admin"   visibility="public" description="admin console related jars" />
+    </configurations>
+    <publications>
+      <artifact name="zoie" type="jar" ext="jar" conf="master" />
+    </publications>
+    <dependencies>
+        <dependency org="com.google.gwt" name="gwt-servlet" rev="2.0.0" conf="admin->master"/>
+        <dependency org="com.google.gwt" name="gwt-user" rev="2.0.0" conf="admin->master"/>
+        <dependency org="com.google.gwt" name="gwt-dev" rev="2.0.0" conf="admin->master"/>
+        <dependency org="com.google.gwt.google-apis" name="gwt-visualization" rev="1.0.2" conf="admin->master"/>
+        <dependency org="commons-logging" name="commons-logging" rev="1.1" conf="master"/>
+        <dependency org="org.directwebremoting" name="dwr" rev="3.0.M1" conf="master"/>
+        <dependency org="fastutil" name="fastutil" rev="5.0.5" conf="master"/>
+        <dependency org="org.json" name="json" rev="20090211" conf="master"/>
+        <dependency org="junit" name="junit" rev="4.5" conf="test->master"/>
+        <dependency org="log4j" name="log4j" rev="1.2.15" conf="master"/>
+        <dependency org="org.apache.lucene" name="lucene-core" rev="2.9.1" conf="master"/>
+        <dependency org="org.apache.lucene" name="lucene-highlighter" rev="2.3.0" conf="master"/>
+        <dependency org="javax.servlet" name="servlet-api" rev="2.5" conf="master"/>
+        <dependency org="org.springframework" name="spring-webmvc" rev="2.5.5" conf="master"/>
+        <dependency org="org.springframework" name="spring" rev="2.5.5" conf="master"/>
+        <dependency org="org.mortbay.jetty" name="jetty" rev="6.1.19" conf="jetty->master"/>
+        <dependency org="org.mortbay.jetty" name="jetty-management" rev="6.1.19" conf="jetty->master"/>
+        <dependency org="org.mortbay.jetty" name="jetty-naming" rev="6.1.19" conf="jetty->master"/>
+        <dependency org="org.mortbay.jetty" name="jetty-util" rev="6.1.19" conf="jetty->master"/>
+        <dependency org="mx4j" name="mx4j" rev="3.0.1" conf="jetty->master"/>
+        <dependency org="mx4j" name="mx4j-tools" rev="3.0.1" conf="jetty->master"/>
+        <dependency org="org.apache.solr" name="solr-core" rev="1.4.0" conf="solr->master"/>
+        <dependency org="org.apache.solr" name="solr-solrj" rev="1.4.0" conf="solr->master"/>
+    </dependencies>
+</ivy-module>

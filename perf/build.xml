@@ -1,0 +1,72 @@
+<project name="zoie-perf" default="dist">
+  <property name="resource" value="resource"/>
+  <property name="settings" value="settings" />
+  <property name="conf" value="conf" />
+  <property name="index.dir" location="index" />
+  <property name="index.perf.dir" location="index-perf" />
+  <property name="index.data" location="index.tar.gz"/>
+  <property name="perf.src" value="src/java" />
+  
+  <property name="perf.build" location="perf-build"/>
+    
+  <path id="compile.class.path">
+      <fileset dir="${lib.dir}/master">
+        <include name="*.jar" />
+      </fileset>
+      <fileset dir="${dist}">
+        <include name="zoie-${version}.jar" />
+      </fileset>
+  </path>
+    
+  <target name="clean">
+    <delete dir="${perf.build}"/>
+  	<delete dir="${index.perf.dir}"/>
+  	<delete dir="${index}"/>
+  </target>
+    
+  <target name="init">
+    <mkdir dir="${perf.build}"/>
+  </target>
+    
+  <target name="compile" depends="init">
+    <javac debug="true" destdir="${perf.build}">
+      <src path="${perf.src}"/>
+      <classpath refid="compile.class.path"/>
+    </javac>
+  </target>
+	
+  <target name="run-perf" depends="compile">
+  	<delete dir="${index}"/>
+  	<echo message="expanding index data" />
+  	<untar src="${index.data}" dest="." compression="gzip"/>
+    <java classname="proj.zoie.perf.tools.IndexReplicator">
+    	<classpath>
+    		<pathelement location="${perf.build}"/>
+    		<fileset dir="${dist}">
+    		    <include name="*.jar"/>
+    	 	</fileset>
+    	 	<fileset dir="${lib.dir}/master">
+    	 	    <include name="*.jar"/>
+    	 	</fileset>
+    	</classpath>
+    	<arg value="${index.dir}"/>
+    	<arg value="${index.perf.dir}"/>
+        <arg value="10"/>
+    </java>
+  	<delete dir="${index.perf.dir}"/>
+  	<delete dir="${index}"/>
+  </target>
+  
+  <target name="dist" depends="compile">
+      <war destfile="${dist}/zoie-perf.war" webxml="${resource}/web.xml" >
+        <classes dir="${perf.build}"/>
+        <classes dir="${conf}"/>
+        <classes dir="${settings}"/>
+        <webinf dir="${resource}" />
+        <lib dir="${lib.dir}/master" />
+        <lib dir="${dist}">
+          <include name="zoie-${version}.jar"/>
+        </lib>
+      </war>
+  </target>
+</project>

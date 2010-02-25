@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<panel name="zoie-luke" columns="1" gap="4" halign="fill" valign="fill" weightx="1" weighty="1">
+    <panel columns="3" border="true" halign="fill" valign="fill" weightx="1" weighty="1">
+        <panel text="lucene docid" columns="1" halign="fill" valign="fill" weightx="1" weighty="1">
+    	  <textarea wrap="true" name="docids" enabled="true" editable="true"  halign="fill" valign="fill" weightx="1" weighty="1"/>
+    	</panel>
+    	<panel columns="1" halign="center" valign="center">
+    	  <button text="convert >>" action="toUID" halign="center" valign="center"/>
+    	  <button text="<< convert" action="toDocID" halign="center" valign="center"/>
+    	</panel>
+    	<panel text="zoie uid" columns="1" halign="fill" valign="fill" weightx="1" weighty="1">
+    	  <textarea wrap="true" name="uids" enabled="true" editable="true"  halign="fill" valign="fill" weightx="1" weighty="1"/>
+    	</panel>
+    </panel>
+</panel>

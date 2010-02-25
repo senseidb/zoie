@@ -1,0 +1,60 @@
+#info { 
+	background:#d5ddf3;
+	color:#000;
+	padding:5px 1px 4px;
+	border-top:1px solid #36c;
+	font-family:arial,sans-serif;
+	font-size: 12pt
+   }
+	
+.hitlink {
+	font-family:arial,sans-serif;
+	font-size: 12pt;
+	color: #36c
+}
+
+.frag {
+	font-family:arial,sans-serif;
+	font-size: 10pt;
+	}
+	
+.path {
+	font-family:arial,sans-serif;
+	color:#009900;
+	font-size: 10pt;
+	}
+
+.score {
+	font-family:arial,sans-serif;
+	color:#77c;
+	font-size: 10pt;
+}
+
+#resTable
+{
+	border: 0
+}
+
+.hl
+{
+	font-weight:bold;
+	background-color: yellow
+}
+
+#header {
+	font-family: Comic Sans MS;
+	color: #36c;
+	font-size: 40pt;
+}
+
+.query {
+	font-family: Comic Sans MS;
+	color: #36c;
+	font-size: 15pt;
+}
+
+.search {
+	font-family: Comic Sans MS;
+	color: #000000;
+	font-size: 15pt;
+}

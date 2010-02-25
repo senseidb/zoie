@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<project name="zoie-cmdline" default="dist">
+
+  <property name="zoie.root" location="../" />
+
+  <property name="lib.dir" value="${zoie.root}/lib"/>
+  <property name="lib.cmdline" value="${lib.dir}/cmdline"/>
+  
+  <property name="cmdline.src" value="src" />
+  <property name="dist" value="${zoie.root}/dist"/>
+  <property name="build" value="build"/>
+  <property name="conf.cmdline" value="conf"/>
+  <property name="settings" value="settings" />
+    
+  
+  <path id="project.class.path">
+    <pathelement location="${build}"/>
+    <fileset dir="${lib.dir}/master" includes="*.jar"/>
+    <fileset dir="${dist}">
+        <include name="zoie-${version}.jar" />
+    </fileset>
+  </path>
+  
+  <target name="init">
+    <mkdir dir="${build}" />
+  </target>
+
+  <target name="javac" depends="init" description="Compile java source">
+    <javac srcdir="${cmdline.src}" includes="**" encoding="utf-8"
+        destdir="${build}"
+        source="1.5" target="1.5" nowarn="true"
+        debug="true" debuglevel="lines,vars,source">
+      <classpath refid="project.class.path"/>
+    </javac>
+    <copy todir="${build}">
+      <fileset dir="${cmdline.src}" excludes="**/*.java"/>
+    </copy>
+  </target>
+
+
+  <target name="build" description="Build this project" />
+
+  <target name="dist" depends="build,javac" >
+    <copy file="${settings}/index.properties" todir="${build}" />
+    <replace file="${build}/index.properties" token="@zoie.root@" value="${zoie.root}" />
+    <jar destfile="${dist}/zoie-cmdline.jar" manifest="MANIFEST.MF" basedir="${build}" />
+  </target>
+  
+
+  <target name="clean" description="Cleans this project">
+    <delete dir="${build}" failonerror="true" />
+  </target>
+
+</project>

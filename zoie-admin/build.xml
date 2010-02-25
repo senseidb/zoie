@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<project name="zoie-admin" default="dist">
+
+  <property name="zoie.root" location="../" />
+
+  <property name="lib.dir" value="${zoie.root}/lib"/>
+  <property name="lib.admin" value="${lib.dir}/admin"/>
+	
+  <property name="admin.src" value="src" />
+  <property name="dist" value="${zoie.root}/dist"/>
+  <property name="build" value="build"/>
+  <property name="gwtc-out" value="gwtc-out"/>
+  <property name="conf.admin" value="conf"/>
+  <property name="webapp" value="webapp"/>
+  <property name="settings" value="settings" />
+	  
+	
+  <path id="project.class.path">
+    <pathelement location="${build}"/>
+  	<fileset dir="${lib.dir}/master" includes="*.jar"/>
+    <fileset dir="${lib.admin}" includes="*.jar"/>
+    <fileset dir="${dist}">
+        <include name="zoie-${version}.jar" />
+    </fileset>
+  </path>
+	
+  <target name="init">
+  	<mkdir dir="${build}" />
+  	<mkdir dir="${gwtc-out}" />
+  </target>
+
+  <target name="javac" depends="init" description="Compile java source">
+    <javac srcdir="${admin.src}" includes="**" encoding="utf-8"
+        destdir="${build}"
+        source="1.5" target="1.5" nowarn="true"
+        debug="true" debuglevel="lines,vars,source">
+      <classpath refid="project.class.path"/>
+    </javac>
+    <copy todir="${build}">
+      <fileset dir="${admin.src}" excludes="**/*.java"/>
+    </copy>
+  </target>
+
+  <target name="gwtc" depends="javac" description="GWT compile to JavaScript">
+    <java failonerror="true" fork="true" classname="com.google.gwt.dev.Compiler">
+      <classpath>
+        <pathelement location="${admin.src}"/>
+        <path refid="project.class.path"/>
+      </classpath>
+      <!-- add jvmarg -Xss16M or similar if you see a StackOverflowError -->
+      <jvmarg value="-Xmx256M"/>
+      <!-- Additional arguments like -style PRETTY or -logLevel DEBUG -->
+
+      <arg line="-war ${gwtc-out}" />
+      <arg value="proj.zoie.admin.ZoieAdmin"/>
+    </java>
+  </target>
+
+  <target name="devmode" depends="javac" description="Run development mode">
+    <java failonerror="true" fork="true" classname="com.google.gwt.dev.DevMode">
+      <classpath>
+        <pathelement location="${admin.src}"/>
+        <path refid="project.class.path"/>
+      </classpath>
+      <jvmarg value="-Xmx256M"/>
+      <arg value="-startupUrl"/>
+      <arg value="ZoieAdmin.html"/>
+      <!-- Additional arguments like -style PRETTY or -logLevel DEBUG -->
+      <arg value="proj.zoie.admin.ZoieAdmin"/>
+    </java>
+  </target>
+
+<!--
+Test targets suppressed because -junit argument was not specified when running webAppCreator.
+
+  <target name="javac.tests" depends="javac" description="Compiles test code">
+    <javac srcdir="test" includes="**" encoding="utf-8"
+      source="1.5" target="1.5" nowarn="true"
+      debug="true" debuglevel="lines,vars,source">
+      <classpath location="path_to_the_junit_jar"/>
+      <classpath refid="project.class.path"/>
+    </javac>
+  </target>
+  
+  <target name="test.dev" depends="javac.tests" description="Run development mode tests">
+    <mkdir dir="reports/htmlunit.dev" />
+    <junit fork="yes" printsummary="yes" haltonfailure="yes">
+      <jvmarg line="-Xmx256m" />
+      <sysproperty key="gwt.args" value="-logLevel WARN" />
+      <sysproperty key="java.awt.headless" value="true" />
+      <classpath>
+        <pathelement location="src" />
+        <pathelement location="test" />
+        <path refid="project.class.path" />
+        <pathelement location="path_to_the_junit_jar" />
+      </classpath>
+      <batchtest todir="reports/htmlunit.dev" >
+        <fileset dir="test" >
+          <include name="**/*Test.java" />
+        </fileset>
+      </batchtest>
+      <formatter type="plain" />
+      <formatter type="xml" />
+    </junit>
+  </target>
+
+  <target name="test.prod" depends="javac.tests" description="Run production mode tests">
+    <mkdir dir="reports/htmlunit.prod" />
+    <junit fork="yes" printsummary="yes" haltonfailure="yes">
+      <jvmarg line="-Xmx256m" />
+      <sysproperty key="gwt.args" value="-prod -logLevel WARN -out www-test" />
+      <sysproperty key="java.awt.headless" value="true" />
+      <classpath>
+        <pathelement location="src" />
+        <pathelement location="test" />
+        <path refid="project.class.path" />
+        <pathelement location="path_to_the_junit_jar" />
+      </classpath>
+      <batchtest todir="reports/htmlunit.prod" >
+        <fileset dir="test" >
+          <include name="**/*Test.java" />
+        </fileset>
+      </batchtest>
+      <formatter type="plain" />
+      <formatter type="xml" />
+    </junit>
+  </target>
+
+  <target name="test" description="Run development and production mode tests">
+    <antcall target="test.dev" />
+    <antcall target="test.prod" />
+  </target>
+-->
+
+  <target name="hosted" depends="devmode" description="Run development mode (NOTE: the 'hosted' target is deprecated)" />
+
+  <target name="build" depends="gwtc" description="Build this project" />
+
+  <target name="dist" depends="build">
+  	<copy file="${settings}/index.properties" todir="${build}" />
+    <replace file="${build}/index.properties" token="@zoie.root@" value="${zoie.root}" />
+  	<war destfile="${dist}/zoie-admin.war" webxml="${webapp}/web.xml" >
+		<fileset dir="${webapp}">
+			<exclude name="web.xml"/>
+		</fileset>
+  		<fileset dir="${gwtc-out}"/>
+		<classes dir="${build}"/>
+		<classes dir="${conf.admin}"/>
+        <lib dir="${lib.admin}" excludes="gwt-dev.jar"/>
+  		<lib dir="${lib.dir}/master"/>
+  		<lib dir="${dist}" includes="zoie-${version}.jar" />
+	</war>
+  </target>
+	
+
+  <target name="clean" description="Cleans this project">
+    <delete dir="${build}" failonerror="true" />
+    <delete dir="${gwtc-out}" failonerror="true" />
+  </target>
+
+</project>

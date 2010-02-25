@@ -1,0 +1,85 @@
+<project name="zoie-test-perf" default="dist">
+  <property name="resource" value="resource"/>
+  <property name="settings" value="settings" />
+  <property name="config" value="config" />
+  <property name="test-perf.src" value="java" />
+  <property name="test-perf.bin" value="bin" />
+  <property name="extlib" value="ext-libraries" />
+  <property name="lib" value="../lib" />
+  <property name="packbasedir" value="${dist}/performance-test" />
+  <property name="packlib" value="${packbasedir}/lib" />
+  <property name="packbin" value="${packbasedir}/bin" />
+  <property name="packconf" value="${packbasedir}/conf" />
+  <property name="packresource" value="${packbasedir}/resource" />
+  <property name="packsettings" value="${packbasedir}/settings" />
+  
+  <property name="build" value="build"/>
+    
+  <path id="compile.class.path">
+      <fileset dir="${lib}">
+        <include name="*.jar" />
+      </fileset>
+  	<fileset dir="${extlib}">
+  	    <include name="*.jar" />
+  		<include name="*.zip" />
+  	 </fileset>
+      <fileset dir="${dist}">
+        <include name="zoie-${version}.jar" />
+      </fileset>
+  	<fileset dir="${lib}">
+  	        <include name="*/**/*.jar" />
+  	      </fileset>
+  </path>
+    
+  <target name="clean">
+    <delete dir="${build}"/>
+  </target>
+    
+  <target name="init">
+    <mkdir dir="${build}"/>
+  </target>
+    
+  <target name="compile" depends="init">
+    <javac debug="true" destdir="${build}">
+      <src path="${test-perf.src}"/>
+      <classpath refid="compile.class.path"/>
+    </javac>
+  </target>
+  
+  <target name="dist" depends="compile">
+  	<jar destfile="${dist}/performance-zoie-${version}.jar"  basedir="${build}" />
+  	<copy todir="${packlib}">
+  	     <fileset dir="${extlib}"/>
+  	</copy>
+  	<copy todir="${packlib}">
+  	  	  <fileset dir="${lib}"/>
+  	</copy>
+  	<copy todir="${packlib}">
+  	  	  <fileset dir="${jetty.home}"/>
+  	</copy>
+  	<copy todir="${packlib}">
+  		<fileset dir="${dist}" includes="*.jar"/>
+  	</copy>
+  	<copy todir="${packconf}">
+  	  	  <fileset dir="${config}"/>
+  	</copy>
+  	<copy todir="${packconf}">
+  	  	  <fileset dir="${conf.dir}"/>
+  	</copy>
+  	<copy todir="${packconf}">
+  	  	  <fileset dir="${perf.dir}/conf"/>
+  	</copy>
+  	<copy todir="${packconf}">
+  	  	  <fileset dir="${perf.dir}/settings"/>
+  	</copy>
+  	<copy todir="${packresource}">
+  	  	  <fileset dir="${perf.dir}/resource"/>
+  	</copy>
+  	<copy todir="${packsettings}">
+  	  	  <fileset dir="${perf.dir}/settings"/>
+  	</copy>
+  	<copy todir="${packbin}">
+  	  	  <fileset dir="${test-perf.bin}"/>
+  	</copy>
+  </target>
+</project>

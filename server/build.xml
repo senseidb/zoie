@@ -1,0 +1,48 @@
+<project name="zoie-server" default="dist">
+
+	<property name="server.src" value="src" />
+	<property name="build" value="build"/>
+	
+	<path id="compile.class.path">
+	  <fileset dir="${lib.dir}/master">
+		<include name="*.jar" />
+	  </fileset>
+	  <fileset dir="${jetty.home}">
+		<include name="*.jar" />
+	  </fileset>
+	</path>
+	
+	<target name="clean">
+		<delete dir="${build}"/>
+	</target>
+	
+	<target name="init">
+		<mkdir dir="${build}"/>
+	</target>
+	
+	<target name="compile" depends="init">
+		<javac destdir="${build}">
+            <src path="${server.src}"/>
+            <classpath refid="compile.class.path"/>
+        </javac>
+	</target>
+	
+	<target name="dist" depends="compile">
+		<unzip dest="${build}">
+		    <fileset dir="${jetty.home}">
+		        <include name="jetty.jar"/>
+		        <include name="jetty-util*.jar"/>
+		    </fileset>
+			<fileset dir="${lib.dir}/master">
+				<include name="log4j*.jar"/>
+		        <include name="servlet*.jar"/>
+			</fileset>
+		</unzip>
+		<copy file="${conf.dir}/log4j.properties" todir="${build}"/>
+		<jar destfile="${dist}/zoie-server-${version}.jar" basedir="${build}">
+			<manifest>
+			   <attribute name="Main-Class" value="proj.zoie.server.ZoieServer"/>
+			</manifest>
+		</jar>
+    </target>
+</project>

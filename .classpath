@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="cmdline/src"/>
+	<classpathentry kind="src" path="example/java"/>
+	<classpathentry kind="src" path="java"/>
+	<classpathentry kind="src" path="perf/src/java"/>
+	<classpathentry kind="src" path="zoie-solr/src"/>
+	<classpathentry kind="src" path="server/src"/>
+	<classpathentry kind="src" path="test"/>
+	<classpathentry kind="src" path="zoie-admin/src"/>
+	<classpathentry kind="src" path="test-perf/java"/>
+	<classpathentry kind="src" path="zoie-luke/src"/>
+	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry exported="true" kind="lib" path="lib/master/commons-logging.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/master/dwr.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/master/fastutil.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/master/json.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/master/log4j.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/master/lucene-highlighter.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/master/servlet-api.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/master/spring-webmvc.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/master/spring.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/test/junit.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/jetty/mx4j-tools.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/master/lucene-core.jar" sourcepath="/Users/xgu/Desktop/lucene-2.9.1-src.zip"/>
+	<classpathentry exported="true" kind="lib" path="lib/tools/lukeall-0.9.9.jar"/>
+	<classpathentry kind="lib" path="lib/jetty/mx4j.jar"/>
+	<classpathentry kind="lib" path="lib/solr/solr-core.jar"/>
+	<classpathentry kind="lib" path="lib/solr/solr-solrj.jar"/>
+	<classpathentry kind="lib" path="lib/jetty/jetty-naming.jar"/>
+	<classpathentry kind="lib" path="lib/jetty/jetty-util.jar"/>
+	<classpathentry kind="lib" path="lib/jetty/jetty.jar"/>
+	<classpathentry kind="lib" path="lib/admin/gwt-dev.jar"/>
+	<classpathentry kind="lib" path="lib/admin/gwt-servlet.jar"/>
+	<classpathentry kind="lib" path="lib/admin/gwt-user.jar"/>
+	<classpathentry kind="lib" path="lib/admin/gwt-visualization.jar"/>
+	<classpathentry kind="lib" path="test-perf/ext-libraries/performance-1.2.0.jar"/>
+	<classpathentry kind="lib" path="test-perf/ext-libraries/jfreechart-0.9.21.jar"/>
+	<classpathentry kind="lib" path="test-perf/ext-libraries/iText.zip"/>
+	<classpathentry kind="output" path="output"/>
+</classpath>

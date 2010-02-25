@@ -1,0 +1,56 @@
+<project name="zoie-luke" default="run">
+		<property name="zoie.root" location="../" />
+        <property name="lib.master" value="${zoie.root}/lib/master"/>
+        <property name="lib.tools" value="${zoie.root}/lib/tools"/>
+    	
+		<property name="src.dir" value="src"/>
+        <property name="build" value="build"/>
+    	<property name="xml" value="xml"/>
+	    <property name="dist" value="${zoie.root}/dist"/>
+	  
+		
+        <path id="project.class.path">
+        	<fileset dir="${lib.master}">
+                <include name="*.jar"/>
+			</fileset>
+        	<fileset dir="${lib.tools}">
+                <include name="*.jar"/>
+			</fileset>
+			<fileset dir="${dist}">
+                <include name="*.jar"/>
+	        </fileset>
+        </path>
+
+        <target name="clean">
+                <delete dir="${build}"/>
+        </target>
+
+        <target name="init">
+                <mkdir dir="${build}"/>
+        </target>
+
+        <target name="compile" depends="init">                
+                <javac destdir="${build}">
+                    <src path="${src.dir}"/>
+                    <classpath refid="project.class.path"/>
+                </javac>
+        </target>
+	
+        <target name="run" depends="compile">
+        	<java fork="true" classname="org.getopt.luke.Luke" failonerror="true" maxmemory="1000m">
+        		<classpath>
+        			<fileset dir="${lib.master}">
+				      <include name="**/*.jar"/>
+				    </fileset>
+        			<fileset dir="${dist}">
+				      <include name="**/*.jar"/>
+				    </fileset>
+        			<fileset dir="${lib.tools}">
+			          <include name="**/*.jar"/>
+			        </fileset>
+        			<pathelement location="${build}"/>
+        			<pathelement location="${xml}"/>
+        		</classpath>
+        	</java>
+        </target>
+</project>

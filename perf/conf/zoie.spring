@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+						http://www.springframework.org/schema/beans/spring-beans.xsd">
+	
+	<import resource="propertyLoader.spring" />
+	
+	<bean id="interpreter.file" class="proj.zoie.impl.indexing.FileIndexableInterpreter"/>
+	
+	<bean id="interpreter.wiki" class=" proj.zoie.perf.indexing.WikiDocIndexableInterpreter"/>
+	
+	<alias name="interpreter.${data.type}" alias="srcInterpreter" />
+	
+	
+	<bean id="interpreter" class="proj.zoie.perf.indexing.LoopingIndexableInterpreter">
+	   <constructor-arg ref="srcInterpreter" />
+       <constructor-arg value="${zoie.perf.numDocs}"/>
+	</bean>
+	
+	<bean id="indexingSystem.zoie" class="proj.zoie.impl.indexing.SimpleZoieSystem" init-method="start" destroy-method="shutdown">
+		<constructor-arg value="file:${index.directory}"/>
+		<constructor-arg ref="interpreter" />
+		<constructor-arg value="1000" />
+		<constructor-arg value="300000" />
+	</bean>
+	
+	<bean id="zoie-system-mbean" class="proj.zoie.mbean.ZoieSystemAdmin">
+		<constructor-arg ref="indexingSystem.zoie" />
+	</bean>
+	
+	<bean id="zoie-index-stat-mbean" class="proj.zoie.mbean.ZoieIndexingStatusAdmin">
+		<constructor-arg ref="indexingSystem.zoie" />
+	</bean>
+	
+	<bean id="defaultOptScheduler" class="proj.zoie.api.indexing.DefaultOptimizeScheduler" factory-bean="indexingSystem.zoie" factory-method="getOptimizeScheduler" />
+	
+	<bean id="optimize-scheduler-mbean" class="proj.zoie.mbean.ZoieOptimizeSchedulerAdmin">
+		<constructor-arg ref="defaultOptScheduler" />
+	</bean>
+	
+	 <!--
+	<bean id="indexingSystem.nrt" class="proj.zoie.impl.indexing.luceneNRT.LuceneNRTDataConsumer" lazy-init="true" init-method="start" destroy-method="shutdown">
+		<constructor-arg value="file:${index.directory}"/>
+		<constructor-arg ref="srcInterpreter" />
+	</bean>
+	-->
+	<bean id="indexingSystem.nrt" class="proj.zoie.impl.indexing.luceneNRT.ThrottledLuceneNRTDataConsumer" lazy-init="true" init-method="start" destroy-method="shutdown">
+		<constructor-arg value="file:${index.directory}"/>
+		<constructor-arg ref="srcInterpreter" />
+		<constructor-arg value="${nrt.throttleFactor}" />
+	</bean>
+	
+	<alias name="indexingSystem.${zoie.indexer.type}" alias="index-reader-factory"/>
+	<alias name="indexingSystem.${zoie.indexer.type}" alias="consumer"/>
+   
+  <bean id="zoie-service-mbean" class="proj.zoie.perf.mbean.PerfZoieServiceAdmin">
+    <property name="monitoredZoieService" ref="searchService"/>
+    <property name="zoieSystem" ref="indexingSystem.zoie"/>
+    <property name="waitTimeMillis" value="${zoie.perf.waitTimeMillis}"/>
+  </bean>
+	
+	<bean id="searchService" class="proj.zoie.perf.server.MonitoredZoieService">
+		<constructor-arg ref="index-reader-factory"/>
+	</bean>
+
+  <bean id="sampleService" class="proj.zoie.example.service.impl.ExampleZoieSearchServiceImpl">
+    <constructor-arg ref="index-reader-factory" />
+  </bean>
+</beans>

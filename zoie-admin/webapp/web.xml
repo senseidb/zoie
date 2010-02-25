@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE web-app
+    PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
+    "http://java.sun.com/dtd/web-app_2_3.dtd">
+
+<web-app>
+  <context-param>
+	<param-name>contextConfigLocation</param-name>
+	<param-value>
+		classpath:applicationContext.spring
+	</param-value>
+  </context-param>
+  <listener>
+	<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+  </listener>
+
+  <!-- Servlets -->
+  <servlet>
+    <servlet-name>greetServlet</servlet-name>
+    <servlet-class>proj.zoie.admin.server.GreetingServiceImpl</servlet-class>
+  </servlet>
+  
+  <servlet>
+    <servlet-name>searchServlet</servlet-name>
+    <servlet-class>proj.zoie.admin.server.search.SearchServiceServlet</servlet-class>
+  </servlet>
+  
+  <servlet>
+    <servlet-name>jmxServlet</servlet-name>
+    <servlet-class>proj.zoie.admin.server.jmx.JMXAdminServiceImpl</servlet-class>
+  </servlet>
+  
+  <servlet-mapping>
+    <servlet-name>greetServlet</servlet-name>
+    <url-pattern>/zoieadmin/greet</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+    <servlet-name>searchServlet</servlet-name>
+    <url-pattern>/zoieadmin/search</url-pattern>
+  </servlet-mapping>
+  
+  <servlet-mapping>
+    <servlet-name>jmxServlet</servlet-name>
+    <url-pattern>/zoieadmin/jmx</url-pattern>
+  </servlet-mapping>
+  
+  <!-- Default page to serve -->
+  <welcome-file-list>
+    <welcome-file>ZoieAdmin.html</welcome-file>
+  </welcome-file-list>
+
+</web-app>

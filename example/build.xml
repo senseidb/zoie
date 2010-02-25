@@ -1,0 +1,51 @@
+<project name="zoie-example" default="dist">
+    <property name="zoie.root" location="../" />
+    <property name="lib.dir" value="${zoie.root}/lib"/>
+    <property name="dist" value="${zoie.root}/dist"/>
+	<property name="resource" value="resource"/>
+	<property name="webapp" value="webapp"/>
+	<property name="settings" value="settings" />
+	<property name="conf" value="conf" />
+	<property name="example.src" value="java" />
+	
+	<property name="build" value="build"/>
+		
+	<path id="compile.class.path">
+		  <fileset dir="${lib.dir}/master">
+			<include name="*.jar" />
+		  </fileset>
+		  <fileset dir="${dist}">
+			<include name="zoie-*.jar" />
+		  </fileset>
+	</path>
+		
+	<target name="clean">
+		<delete dir="${build}"/>
+	</target>
+		
+	<target name="init">
+		<mkdir dir="${build}"/>
+	</target>
+		
+	<target name="compile" depends="init">
+		<javac destdir="${build}">
+           <src path="${example.src}"/>
+           <classpath refid="compile.class.path"/>
+       </javac>
+    </target>
+	
+	<target name="dist" depends="compile">
+	    <copy file="${settings}/index.properties" todir="${build}" />
+	    <replace file="${build}/index.properties" token="@zoie.root@" value="${zoie.root}" />
+			<war destfile="${dist}/zoie-example.war" webxml="${resource}/web.xml" >
+				<fileset dir="webapp"/>
+				<classes dir="${build}"/>
+				<classes dir="${conf}"/>
+				<webinf dir="${resource}" />
+	            <lib dir="${lib.dir}/master" />
+				<lib dir="${dist}">
+					<include name="zoie-${version}.jar"/>
+				</lib>
+			</war>
+	</target>
+</project>

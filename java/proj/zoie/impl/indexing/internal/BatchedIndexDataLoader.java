@@ -15,7 +15,6 @@ package proj.zoie.impl.indexing.internal;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;

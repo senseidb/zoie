@@ -83,9 +83,10 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 		}  
     }
 
-	public static void fillDocumentID(Document doc,long id)
-	{
-      doc.add(new Field(ZoieSegmentReader.UID_TERM.field(), new UIDTokenStream(id))); 
+	public static void fillDocumentID(Document doc,long id){
+	  Field uidField = new Field(ZoieSegmentReader.UID_TERM.field(), new UIDTokenStream(id));
+	  uidField.setOmitNorms(true);
+      doc.add(uidField); 
 	}
 
 	public ZoieSegmentReader(IndexReader in, IndexReaderDecorator<R> decorator)

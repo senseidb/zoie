@@ -4,11 +4,8 @@ import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.Date;
-import java.util.List;
 
 import org.apache.lucene.store.Directory;
-
-import proj.zoie.impl.indexing.internal.IndexSignature;
 
 public interface DirectoryManager
 {
@@ -18,13 +15,9 @@ public interface DirectoryManager
   
   Directory getDirectory(boolean create) throws IOException;
   
-  List<Directory> getAllArchivedDirectories() throws IOException;
-  
   long getVersion() throws IOException;
   
   void setVersion(long version) throws IOException;
-
-  IndexSignature getCurrentIndexSignature();
 
   Date getLastIndexModifiedTime();
 

@@ -310,10 +310,10 @@ public abstract class StreamDataProvider<V> implements DataProvider<V>,DataProvi
 		  return _eventCount.get();
 		}
 
-		private long getEventsPerMinute()
-		{
-		  if (! ( (System.nanoTime() - _eventStart)/1000000>0) ) return 0;
-		  return _eventCount.get()*60000/((System.nanoTime() - _eventStart)/1000000);
+		private long getEventsPerMinute(){
+		  long diff = (System.nanoTime() - _eventStart)/1000000;
+		  if ( diff<=0 ) return 0;
+		  return _eventCount.get()*60000/diff;
 		}
 		
 		private long getMaxEventsPerMinute()

@@ -720,7 +720,7 @@ public class ZoieTest extends ZoieTestCase
     File idxDir=getIdxDir();
     ZoieSystem<IndexReader,String> idxSystem=createZoie(idxDir,true);
     idxSystem.start();
-    DirectoryManager dirMgr = new DefaultDirectoryManager(idxDir);
+    DefaultDirectoryManager dirMgr = new DefaultDirectoryManager(idxDir);
     try
     {
       int count=TestData.testdata.length;
@@ -851,7 +851,7 @@ public class ZoieTest extends ZoieTestCase
     try
     {
       List<DataEvent<String>> list;
-      IndexSignature sig;
+      long version;
 
       list=new ArrayList<DataEvent<String>>(TestData.testdata.length);
       for (int i=0;i<TestData.testdata.length;++i)
@@ -860,10 +860,10 @@ public class ZoieTest extends ZoieTestCase
       }
       idxSystem.consume(list);
       idxSystem.flushEvents(100000);
-      sig = dirMgr.getCurrentIndexSignature();
+      version = dirMgr.getVersion();
 
-      assertEquals("index version mismatch after first flush", TestData.testdata.length - 1, sig.getVersion());
-      long versionExported = sig.getVersion();
+      assertEquals("index version mismatch after first flush", TestData.testdata.length - 1, version);
+      long versionExported = version;
 
       int hits = countHits(idxSystem, q);
 
@@ -884,9 +884,9 @@ public class ZoieTest extends ZoieTestCase
       }
       idxSystem.consume(list);
       idxSystem.flushEvents(100000);
-      sig = dirMgr.getCurrentIndexSignature();
+      version = dirMgr.getVersion();
 
-      assertEquals("index version mismatch after second flush", TestData.testdata.length + TestData.testdata2.length - 1, sig.getVersion());
+      assertEquals("index version mismatch after second flush", TestData.testdata.length + TestData.testdata2.length - 1, version);
 
       assertEquals("should have no hits", 0, countHits(idxSystem, q));
 
@@ -897,8 +897,8 @@ public class ZoieTest extends ZoieTestCase
 
       assertEquals("count is wrong", hits, countHits(idxSystem, q));
 
-      sig = dirMgr.getCurrentIndexSignature();
-      assertEquals("imported version is wrong", versionExported, sig.getVersion());
+      version = dirMgr.getVersion();
+      assertEquals("imported version is wrong", versionExported, version);
     }
     catch(ZoieException e)
     {

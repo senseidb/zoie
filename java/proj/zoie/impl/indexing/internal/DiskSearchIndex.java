@@ -222,9 +222,9 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
     _dirMgr.setVersion(version);
   }
 
-  public DiskIndexSnapshot getSnapshot()
+  public DiskIndexSnapshot getSnapshot() throws IOException
   {
-    IndexSignature sig = _dirMgr.getCurrentIndexSignature();
+    IndexSignature sig = new IndexSignature(_dirMgr.getVersion());
     if(sig != null)
     {
       ZoieIndexDeletionPolicy.Snapshot snapshot = _deletionPolicy.getSnapshot();

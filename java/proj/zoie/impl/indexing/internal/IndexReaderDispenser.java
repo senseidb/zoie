@@ -71,17 +71,17 @@ public class IndexReaderDispenser<R extends IndexReader>
     _dirMgr = dirMgr;
     _decorator = decorator;
     _currentSignature = null;
-    IndexSignature sig = _dirMgr.getCurrentIndexSignature();
-    if(sig != null)
+    try
     {
-      try
+      IndexSignature sig = new IndexSignature(_dirMgr.getVersion());
+      if(sig != null)
       {
         getNewReader();
       }
-      catch (IOException e)
-      {
-        log.error(e);
-      }
+    }
+    catch (IOException e)
+    {
+      log.error(e);
     }
   }
   
@@ -185,7 +185,7 @@ public class IndexReaderDispenser<R extends IndexReader>
       }
       numTries--;
       try{
-        IndexSignature sig = _dirMgr.getCurrentIndexSignature();
+        IndexSignature sig = new IndexSignature(_dirMgr.getVersion());
   
         if (sig==null)
         {

@@ -84,7 +84,7 @@ public class ZoieSolrIndexReaderFactory<V> extends IndexReaderFactory {
 		  }
 		}
 		List<ZoieIndexReader<IndexReader>> readerList = _zoieSystem.getIndexReaders();
-		return ZoieIndexReader.mergeIndexReaders(readerList);
+		return ZoieIndexReader.mergeIndexReaders(readerList,new ZoieSolrIndexReaderMerger());
 	}
 
 	@Override

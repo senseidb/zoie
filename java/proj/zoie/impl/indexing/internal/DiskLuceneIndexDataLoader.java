@@ -32,8 +32,8 @@ import org.apache.lucene.search.Similarity;
 
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.indexing.OptimizeScheduler;
-import proj.zoie.api.indexing.OptimizeScheduler.OptimizeType;
 import proj.zoie.api.indexing.ZoieIndexable;
+import proj.zoie.api.indexing.OptimizeScheduler.OptimizeType;
 import proj.zoie.impl.indexing.internal.SearchIndexManager.Status;
 
 public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneIndexDataLoader<R> {

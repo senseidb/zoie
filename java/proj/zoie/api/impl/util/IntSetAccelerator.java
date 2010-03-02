@@ -15,12 +15,12 @@ package proj.zoie.api.impl.util;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.util.Collection;
-import java.util.Iterator;
-
 import it.unimi.dsi.fastutil.ints.IntCollection;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import it.unimi.dsi.fastutil.ints.IntSet;
+
+import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * This class, a IntSet decorator, is for accelerating look-up by having a filter 

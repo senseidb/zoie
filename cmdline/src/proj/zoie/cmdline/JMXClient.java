@@ -1,8 +1,6 @@
 package proj.zoie.cmdline;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.util.Arrays;
 
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanConstructorInfo;
@@ -14,9 +12,6 @@ import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
-
-import proj.zoie.mbean.DataProviderAdmin;
-import proj.zoie.mbean.DataProviderAdminMBean;
 
 public class JMXClient
 {

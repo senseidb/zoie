@@ -1,9 +1,12 @@
 package proj.zoie.solr;
 
+import java.io.IOException;
 import java.util.List;
 
+import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
@@ -37,7 +40,13 @@ public class ZoieSolrIndexReaderMerger<T extends IndexReader> implements IndexRe
 		public long getVersion() {
 			return _diskReader.getVersion();
 		}	
-		
+		@Override
+		public IndexCommit getIndexCommit() throws IOException {
+			Directory dir = _diskReader.directory();
+			SegmentInfos segmentInfos = new SegmentInfos();
+			segmentInfos.read(dir);
+			return new ZoieSolrIndexCommit(segmentInfos, dir);
+		}
 		
 	}
 }

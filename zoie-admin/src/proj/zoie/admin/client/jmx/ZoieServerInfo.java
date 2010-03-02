@@ -1,7 +1,6 @@
 package proj.zoie.admin.client.jmx;
 
 import java.io.Serializable;
-import java.util.Date;
 
 import com.google.gwt.user.client.rpc.IsSerializable;
 

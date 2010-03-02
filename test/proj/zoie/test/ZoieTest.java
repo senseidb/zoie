@@ -42,7 +42,6 @@ import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.impl.indexing.AsyncDataConsumer;
 import proj.zoie.impl.indexing.MemoryStreamDataProvider;
 import proj.zoie.impl.indexing.ZoieSystem;
-import proj.zoie.impl.indexing.internal.IndexReaderDispenser;
 import proj.zoie.impl.indexing.internal.IndexSignature;
 import proj.zoie.test.data.TestData;
 import proj.zoie.test.data.TestDataInterpreter;

@@ -15,12 +15,12 @@ package proj.zoie.api.impl.util;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.util.Collection;
-import java.util.Iterator;
-
 import it.unimi.dsi.fastutil.longs.LongCollection;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongSet;
+
+import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * This class, a LongSet decorator, is for accelerating look-up by having a

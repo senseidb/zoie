@@ -3,6 +3,9 @@ package proj.zoie.solr;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.FilterIndexReader;
+import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.common.util.NamedList;
@@ -36,7 +39,7 @@ public class ZoieSolrIndexReaderFactory extends IndexReaderFactory {
 			return new ZoieSolrMultiReader<IndexReader>(_readerList, _zoieSystem);
 		}
 		else{
-			return IndexReader.open(dir, null, readOnly, termInfosIndexDivisor);
+			return new InitialIndexReader(IndexReader.open(dir, null, readOnly, termInfosIndexDivisor));
 		}
 		
 	}
@@ -50,6 +53,36 @@ public class ZoieSolrIndexReaderFactory extends IndexReaderFactory {
 		}
 		finally{
 			super.finalize();
+		}
+	}
+	
+	private class InitialIndexReader extends FilterIndexReader{
+		public InitialIndexReader(IndexReader in) {
+			super(in);
+		}
+
+		@Override
+		public synchronized IndexReader reopen() throws CorruptIndexException,
+				IOException {
+			return reopen(true);
+		}
+
+		@Override
+		public synchronized IndexReader reopen(boolean openReadOnly)
+				throws CorruptIndexException, IOException {
+			if (ZoieSolrIndexReaderFactory.this._zoieSystem==null){
+				return this;
+			}
+			else{
+				_readerList	= _zoieSystem.getIndexReaders();
+				return new ZoieSolrMultiReader<IndexReader>(_readerList, _zoieSystem);
+			}
+		}
+
+		@Override
+		public synchronized IndexReader reopen(IndexCommit commit)
+				throws CorruptIndexException, IOException {
+			return reopen(true);
 		}
 	}
 

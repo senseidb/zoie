@@ -15,9 +15,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.IndexReaderFactory;
 
 import proj.zoie.api.ZoieIndexReader;
-import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
-import proj.zoie.impl.indexing.DefaultIndexReaderDecorator;
 import proj.zoie.impl.indexing.ZoieSystem;
 
 public class ZoieSolrIndexReaderFactory<V> extends IndexReaderFactory {
@@ -84,7 +82,7 @@ public class ZoieSolrIndexReaderFactory<V> extends IndexReaderFactory {
 		  }
 		}
 		List<ZoieIndexReader<IndexReader>> readerList = _zoieSystem.getIndexReaders();
-		return ZoieIndexReader.mergeIndexReaders(readerList);
+		return new ZoieSolrMultiReader<IndexReader>(readerList, _zoieSystem);
 	}
 
 	@Override

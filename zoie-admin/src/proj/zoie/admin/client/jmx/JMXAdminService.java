@@ -1,8 +1,5 @@
 package proj.zoie.admin.client.jmx;
 
-import proj.zoie.mbean.ZoieSystemAdminMBean;
-
-import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.rpc.RemoteService;
 import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
 

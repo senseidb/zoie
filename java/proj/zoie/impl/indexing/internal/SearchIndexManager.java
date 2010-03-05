@@ -417,6 +417,7 @@ public class SearchIndexManager<R extends IndexReader>{
 		{
           _diskIndex.clearDeletes();
           _diskIndex.refresh();
+          _diskIndex.closeIndexWriter();
           RAMSearchIndex<R> memIndexA = new RAMSearchIndex<R>(_diskIndex.getVersion(), _indexReaderDecorator,this);
           Mem<R> mem = new Mem<R>(memIndexA, null, memIndexA, null, null);
           _mem = mem;

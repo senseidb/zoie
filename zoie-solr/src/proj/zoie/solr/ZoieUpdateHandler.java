@@ -76,7 +76,7 @@ public class ZoieUpdateHandler extends UpdateHandler {
 			return 1;
 		} catch (ZoieException e) {
 			log.error(e.getMessage(),e);
-			throw new IOException(e);
+			throw new IOException(e.toString());
 		}
 	}
 
@@ -135,7 +135,7 @@ public class ZoieUpdateHandler extends UpdateHandler {
 			zoie.consume(Arrays.asList(event));
 		} catch (ZoieException e) {
 			log.error(e.getMessage(),e);
-			throw new IOException(e);
+			throw new IOException(e.toString());
 		}
 	}
 
@@ -218,7 +218,7 @@ public class ZoieUpdateHandler extends UpdateHandler {
 				zoie.consume(eventList);
 			} catch (ZoieException e) {
 				log.error(e.getMessage(),e);
-				throw new IOException(e);
+				throw new IOException(e.toString());
 			}
 		}
 	}

@@ -21,7 +21,7 @@ public class ZoieSolrMultiReader<T extends IndexReader> extends MultiReader{
 	private final List<ZoieIndexReader<T>> _subReaders;
 	
 	public ZoieSolrMultiReader(List<ZoieIndexReader<T>> subReaders,IndexReaderFactory<ZoieIndexReader<T>> readerFactory) {
-		super(subReaders.toArray(new ZoieIndexReader[subReaders.size()]),true);
+		super(subReaders.toArray(new ZoieIndexReader[subReaders.size()]),false);
 		_subReaders = subReaders;
 		_readerFactory = readerFactory;
 		for (ZoieIndexReader<T> subReader : subReaders){

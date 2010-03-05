@@ -72,6 +72,7 @@ public class ZoieUpdateHandler extends UpdateHandler {
 		DataEvent<DocumentWithID> event = new DataEvent<DocumentWithID>(version,new DocumentWithID(zoieUid,doc));
 		try {
 			zoie.consume(Arrays.asList(event));
+			
 			return 1;
 		} catch (ZoieException e) {
 			log.error(e.getMessage(),e);
@@ -89,6 +90,17 @@ public class ZoieUpdateHandler extends UpdateHandler {
 
 	@Override
 	public void commit(CommitUpdateCommand cmd) throws IOException {
+		ZoieSystemHome zoieHome = ZoieSystemHome.getInstance(_core);
+		if (zoieHome!=null){
+			ZoieSystem<IndexReader,DocumentWithID> zoie = zoieHome.getZoieSystem();
+			if (zoie!=null){
+				try {
+					zoie.flushEvents(10000);
+				} catch (ZoieException e) {
+					log.error(e.getMessage(),e);
+				}
+			}
+		}
 		Future[] waitSearcher = null;
 	    if (cmd.waitSearcher) {
 	      waitSearcher = new Future[1];

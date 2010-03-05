@@ -29,6 +29,7 @@ public class ZoieSolrIndexReaderFactory extends IndexReaderFactory {
 	@Override
 	public IndexReader newReader(Directory dir, boolean readOnly)
 			throws IOException {
+		IndexReader reader = null;
 		if (_zoieSystem!=null){
 			
 			List<ZoieIndexReader<IndexReader>> readerList = _readerList;
@@ -36,11 +37,12 @@ public class ZoieSolrIndexReaderFactory extends IndexReaderFactory {
 			if (readerList!=null){
 				_zoieSystem.returnIndexReaders(_readerList);
 			}
-			return new ZoieSolrMultiReader<IndexReader>(_readerList, _zoieSystem);
+			reader = new ZoieSolrMultiReader<IndexReader>(_readerList, _zoieSystem);
 		}
 		else{
-			return new InitialIndexReader(IndexReader.open(dir, null, readOnly, termInfosIndexDivisor));
+			reader = new InitialIndexReader(IndexReader.open(dir, null, readOnly, termInfosIndexDivisor));
 		}
+		return reader;
 		
 	}
 

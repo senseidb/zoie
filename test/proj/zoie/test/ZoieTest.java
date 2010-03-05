@@ -234,6 +234,57 @@ public class ZoieTest extends ZoieTestCase
       }
     }	
   }
+  
+  public void testRealtime2() throws ZoieException{
+	  File idxDir=getIdxDir();
+	  ZoieSystem<IndexReader,String> idxSystem=createZoie(idxDir,true);
+	  idxSystem.start();
+	    
+	  MemoryStreamDataProvider<String> memoryProvider=new MemoryStreamDataProvider<String>();
+	  memoryProvider.setDataConsumer(idxSystem);
+	  memoryProvider.start();
+	  
+	  try{
+	    int count=TestData.testdata.length;
+	    List<DataEvent<String>> list=new ArrayList<DataEvent<String>>(count);
+	    for (int i=0;i<count;++i){
+	      list.add(new DataEvent<String>(i,TestData.testdata[i]));
+	    }
+	    memoryProvider.addEvents(list);
+	    memoryProvider.flush();
+	    
+	    /*long size = idxSystem.getCurrentBatchSize();
+	    while (size > 0){
+	      try {
+		    Thread.sleep(100);
+		  } catch (InterruptedException e) {
+			continue;
+		  }
+	      size = idxSystem.getCurrentMemBatchSize();
+	    }*/
+	    
+	    idxSystem.flushEvents(1000);
+	    
+	    List<ZoieIndexReader<IndexReader>> readers = idxSystem.getIndexReaders();
+	      
+	    int numDocs = 0;
+	    for (ZoieIndexReader<IndexReader> r : readers){
+	      numDocs += r.numDocs();
+	    }
+	    idxSystem.returnIndexReaders(readers);
+	    
+	    assertEquals(count, numDocs);
+	  }
+	  catch(IOException ioe){
+        throw new ZoieException(ioe.getMessage());
+      }
+      finally
+      {
+        memoryProvider.stop();
+        idxSystem.shutdown();
+        deleteDirectory(idxDir);
+      }	
+  }
 
   public void testRealtime() throws ZoieException
   {

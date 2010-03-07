@@ -101,6 +101,8 @@ public class ZoieUpdateHandler extends UpdateHandler {
 				}
 			}
 		}
+
+	    callPostCommitCallbacks();
 		Future[] waitSearcher = null;
 	    if (cmd.waitSearcher) {
 	      waitSearcher = new Future[1];

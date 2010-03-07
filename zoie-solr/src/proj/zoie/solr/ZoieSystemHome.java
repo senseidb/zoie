@@ -61,7 +61,14 @@ public class ZoieSystemHome {
 		
 		_zoieSystem = new ZoieSystem<IndexReader,DocumentWithID>(idxFile,new ZoieSolrIndexableInterpreter(),new DefaultIndexReaderDecorator(),analyzer,similarity,batchSize,batchDelay,realtime);
 		
+		log.info("Zoie System loaded with: ");
+		log.info("zoie.batchSize: "+batchSize);
+		log.info("zoie.batchDelay: "+batchDelay);
+		log.info("zoie.realtime: "+realtime);
+		
 		_zoieSystem.start();
+		
+		log.info("Zoie System started ... ");
 		
 		IndexReaderFactory readerFactory = core.getIndexReaderFactory();
 		if (readerFactory!=null && readerFactory instanceof ZoieSolrIndexReaderFactory){

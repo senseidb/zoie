@@ -33,11 +33,13 @@ import org.apache.lucene.util.Version;
 
 import proj.zoie.api.DefaultDirectoryManager;
 import proj.zoie.api.DirectoryManager;
+import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.UIDDocIdSet;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.api.impl.DocIDMapperImpl;
+import proj.zoie.api.impl.InRangeDocIDMapperFactory;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.impl.indexing.AsyncDataConsumer;
 import proj.zoie.impl.indexing.MemoryStreamDataProvider;
@@ -808,6 +810,43 @@ public class ZoieTest extends ZoieTestCase
       idxSystem.shutdown();
       deleteDirectory(idxDir);
     }   
+  }
+  
+  public void testDocIDMapperFactory() throws Exception{ 
+
+    File idxDir=getIdxDir();
+    ZoieSystem<IndexReader,String> idxSystem=createZoie(idxDir,true);
+    idxSystem.start();
+    idxSystem.setDocIDMapperFactory(new InRangeDocIDMapperFactory(0, 100000));
+    int numDiskIdx = 0;
+    MemoryStreamDataProvider<String> memoryProvider=new MemoryStreamDataProvider<String>();
+    memoryProvider.setDataConsumer(idxSystem);
+    memoryProvider.start();
+    idxSystem.setBatchSize(10);
+
+    long version = 0;
+    final int count = TestData.testdata.length;
+    List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(count);
+    for (int i = 0; i < count; i++){
+      version = i;
+      list.add(new DataEvent<String>(i, TestData.testdata[i]));
+    }
+    memoryProvider.addEvents(list);
+    idxSystem.syncWthVersion(10000, version);
+	
+    List<ZoieIndexReader<IndexReader>> readerList= idxSystem.getIndexReaders();	      
+    for (ZoieIndexReader<IndexReader> reader : readerList){
+    	DocIDMapper mapper = reader.getDocIDMaper();
+    	if (!(mapper instanceof DocIDMapperImpl)){
+    	  numDiskIdx++;	
+    	}
+    }
+    idxSystem.returnIndexReaders(readerList);
+    memoryProvider.stop();
+    idxSystem.shutdown();
+    deleteDirectory(idxDir);
+    
+    assertTrue(numDiskIdx>0);
   }
 
   public void testDocIDMapper()

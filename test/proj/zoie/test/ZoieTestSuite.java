@@ -11,7 +11,7 @@ public class ZoieTestSuite extends TestSuite {
   public static List<String> allTests = Arrays.asList(new String[]{"testStreamDataProvider",
       "testRealtime","testRealtime2", "testAsyncDataConsumer", "testDelSet",
       "testIndexWithAnalyzer", "testUpdates", "testIndexSignature", "testDocIDMapper",
-      "testUIDDocIdSet", "testExportImport"});
+      "testUIDDocIdSet", "testExportImport","testDocIDMapperFactory"});
 
   public static Test suite()
   {

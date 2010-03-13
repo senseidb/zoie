@@ -27,7 +27,6 @@ import org.apache.lucene.index.IndexReader;
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.ZoieIndexReader;
-import proj.zoie.api.impl.DefaultDocIDMapperFactory;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
 public class SearchIndexManager<R extends IndexReader>{
@@ -41,7 +40,7 @@ public class SearchIndexManager<R extends IndexReader>{
 	  private DirectoryManager _dirMgr;
 	  private final	IndexReaderDecorator<R>	_indexReaderDecorator;
 
-	  DocIDMapperFactory _docIDMapperFactory;
+	  final DocIDMapperFactory _docIDMapperFactory;
 	  private volatile DiskSearchIndex<R> _diskIndex;
 	  
 	  private volatile Status _diskIndexerStatus;
@@ -57,10 +56,10 @@ public class SearchIndexManager<R extends IndexReader>{
 	   * @param location 
 	   * @param indexReaderDecorator
 	   */
-	  public SearchIndexManager(DirectoryManager dirMgr,IndexReaderDecorator<R> indexReaderDecorator)
+	  public SearchIndexManager(DirectoryManager dirMgr,IndexReaderDecorator<R> indexReaderDecorator,DocIDMapperFactory docIDMapperFactory)
 	  {
 	    _dirMgr = dirMgr;
-	    _docIDMapperFactory = new DefaultDocIDMapperFactory();
+	    _docIDMapperFactory = docIDMapperFactory;
 	    
 	    if (indexReaderDecorator!=null)
 	    {
@@ -71,12 +70,6 @@ public class SearchIndexManager<R extends IndexReader>{
 	      throw new IllegalArgumentException("indexReaderDecorator cannot be null");
 	    }
 	    init();
-	  }
-	  
-	  public void setDocIDMapperFactory(DocIDMapperFactory docIDMapperFactory){
-		  if (docIDMapperFactory != null){
-		    _docIDMapperFactory = docIDMapperFactory;
-		  }
 	  }
 	  
 	  public DocIDMapperFactory getDocIDMapperFactory(){

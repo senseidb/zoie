@@ -33,11 +33,14 @@ import org.apache.lucene.util.Version;
 
 import proj.zoie.api.DefaultDirectoryManager;
 import proj.zoie.api.DirectoryManager;
+import proj.zoie.api.DocIDMapper;
+import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.UIDDocIdSet;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.api.impl.DocIDMapperImpl;
+import proj.zoie.api.impl.InRangeDocIDMapperFactory;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.impl.indexing.AsyncDataConsumer;
 import proj.zoie.impl.indexing.MemoryStreamDataProvider;
@@ -103,11 +106,17 @@ public class ZoieTest extends ZoieTestCase
   {
     return createZoie(idxDir, realtime, 20);
   }
+  
+  private static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime,DocIDMapperFactory docidMapperFactory)
+  {
+    return createZoie(idxDir, realtime, 20,null,docidMapperFactory);
+  }
 
   private static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime, long delay)
   {
-    return createZoie(idxDir,realtime,delay,null);
+    return createZoie(idxDir,realtime,delay,null,null);
   }
+  
 
   private static class TestIndexReaderDecorator implements IndexReaderDecorator<IndexReader>{
     public IndexReader decorate(ZoieIndexReader<IndexReader> indexReader) throws IOException {
@@ -119,10 +128,10 @@ public class ZoieTest extends ZoieTestCase
     }
   }
 
-  private static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime, long delay,Analyzer analyzer)
+  private static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime, long delay,Analyzer analyzer,DocIDMapperFactory docidMapperFactory)
   {
     ZoieSystem<IndexReader,String> idxSystem=new ZoieSystem<IndexReader, String>(idxDir,new TestDataInterpreter(delay,analyzer),
-        new TestIndexReaderDecorator(),null,null,50,100,realtime);
+        new TestIndexReaderDecorator(),docidMapperFactory,null,null,50,100,realtime);
     return idxSystem;
   }
 
@@ -184,7 +193,7 @@ public class ZoieTest extends ZoieTestCase
 
   public void testIndexWithAnalyzer() throws ZoieException,IOException{
     File idxDir=getIdxDir();
-    ZoieSystem<IndexReader,String> idxSystem=createZoie(idxDir,true,20,new WhitespaceAnalyzer());
+    ZoieSystem<IndexReader,String> idxSystem=createZoie(idxDir,true,20,new WhitespaceAnalyzer(),null);
     idxSystem.start();
 
     MemoryStreamDataProvider<String> memoryProvider=new MemoryStreamDataProvider<String>();
@@ -808,6 +817,42 @@ public class ZoieTest extends ZoieTestCase
       idxSystem.shutdown();
       deleteDirectory(idxDir);
     }   
+  }
+  
+  public void testDocIDMapperFactory() throws Exception{ 
+
+    File idxDir=getIdxDir();
+    ZoieSystem<IndexReader,String> idxSystem=createZoie(idxDir,true,new InRangeDocIDMapperFactory(0, 1000000));
+    idxSystem.start();
+    int numDiskIdx = 0;
+    MemoryStreamDataProvider<String> memoryProvider=new MemoryStreamDataProvider<String>();
+    memoryProvider.setDataConsumer(idxSystem);
+    memoryProvider.start();
+    idxSystem.setBatchSize(10);
+
+    long version = 0;
+    final int count = TestData.testdata.length;
+    List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(count);
+    for (int i = 0; i < count; i++){
+      version = i;
+      list.add(new DataEvent<String>(i, TestData.testdata[i]));
+    }
+    memoryProvider.addEvents(list);
+    idxSystem.syncWthVersion(10000, version);
+	
+    List<ZoieIndexReader<IndexReader>> readerList= idxSystem.getIndexReaders();	      
+    for (ZoieIndexReader<IndexReader> reader : readerList){
+    	DocIDMapper mapper = reader.getDocIDMaper();
+    	if (!(mapper instanceof DocIDMapperImpl)){
+    	  numDiskIdx++;	
+    	}
+    }
+    idxSystem.returnIndexReaders(readerList);
+    memoryProvider.stop();
+    idxSystem.shutdown();
+    deleteDirectory(idxDir);
+    
+    assertTrue(numDiskIdx>0);
   }
 
   public void testDocIDMapper()

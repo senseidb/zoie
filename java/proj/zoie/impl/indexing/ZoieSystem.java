@@ -117,6 +117,32 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
     {
     	this(dirMgr, interpreter, indexReaderDecorator,new DefaultDocIDMapperFactory(), analyzer, similarity, batchSize, batchDelay, rtIndexing);
     }
+    
+
+	/**
+	 * Creates a new ZoieSystem.
+     * @param dirMgr Directory manager, mandatory.
+     * @param interpreter data interpreter, mandatory.
+     * @param indexReaderDecorator index reader decorator,optional. If not specified, {@link proj.zoie.impl.indexing.DefaultIndexReaderDecorator} is used. 
+     * @param zoieConfig configuration object
+     */
+    public ZoieSystem(DirectoryManager dirMgr,ZoieIndexableInterpreter<V> interpreter,IndexReaderDecorator<R> indexReaderDecorator,ZoieConfig zoieConfig){
+    	this(dirMgr,interpreter,indexReaderDecorator,zoieConfig.getDocidMapperFactory(),zoieConfig.getAnalyzer(),
+    	     zoieConfig.getSimilarity(),zoieConfig.getBatchSize(),zoieConfig.getBatchDelay(),zoieConfig.isRtIndexing());
+    }
+    
+    /**
+	 * Creates a new ZoieSystem.
+     * @param idxDir index directory, mandatory.
+     * @param interpreter data interpreter, mandatory.
+     * @param indexReaderDecorator index reader decorator,optional. If not specified, {@link proj.zoie.impl.indexing.DefaultIndexReaderDecorator} is used. 
+     * @param zoieConfig configuration object
+     */
+    public ZoieSystem(File idxDir,ZoieIndexableInterpreter<V> interpreter,IndexReaderDecorator<R> indexReaderDecorator,ZoieConfig zoieConfig){
+    	this(new DefaultDirectoryManager(idxDir),interpreter,indexReaderDecorator,zoieConfig.getDocidMapperFactory(),zoieConfig.getAnalyzer(),
+    	     zoieConfig.getSimilarity(),zoieConfig.getBatchSize(),zoieConfig.getBatchDelay(),zoieConfig.isRtIndexing());
+    }
+    
 	/**
 	 * Creates a new ZoieSystem.
      * @param dirMgr Directory manager, mandatory.

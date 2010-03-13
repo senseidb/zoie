@@ -2,10 +2,10 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.snaproject.zoie</groupId>
-  <artifactId>zoie</artifactId>
+  <artifactId>zoie-solr</artifactId>
   <packaging>jar</packaging>
   <version>2.0.0-SNAPSHOT</version>
-  <name>zoie</name>
+  <name>zoie-solr</name>
   <url>http://maven.apache.org</url>
 
   <!-- Set the compiler to java6 -->
@@ -44,9 +44,14 @@
        <version>1.2.15</version>
     </dependency>
     <dependency>
-      <groupId>fastutil</groupId>
-      <artifactId>fastutil</artifactId>
-      <version>5.0.5</version>
+      <groupId>org.apache.solr</groupId>
+      <artifactId>solr-core</artifactId>
+      <version>1.4.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.solr</groupId>
+      <artifactId>solr-solrj</artifactId>
+      <version>1.4.0</version>
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>

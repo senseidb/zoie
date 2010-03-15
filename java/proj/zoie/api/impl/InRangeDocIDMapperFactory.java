@@ -54,7 +54,14 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory {
 				subreader.setDocIDMapper(new DocIDMapper(){
 					public int getDocID(long uid) {
 						uid = uid - _start;
-						int mapped = uidArray[(int)uid];
+						int mapped = DocIDMapper.NOT_FOUND;
+						if (uid<0 || uid>=uidArray.length)
+						{
+						  log.warn("attempting to getDocID for out of range UID: " + (uid + _start));
+						} else
+						{
+						  mapped = uidArray[(int)uid];
+						}
 						if (mapped != DocIDMapper.NOT_FOUND){
 							mapped -= start;
 							if (mapped >= subreader.maxDoc()){

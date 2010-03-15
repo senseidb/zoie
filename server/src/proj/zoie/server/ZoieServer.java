@@ -107,11 +107,10 @@ public class ZoieServer {
 		final Server server = new Server();
 		server.setThreadPool(threadPool);
 		
+		log.info("loading properties: "+props);
+		System.getProperties().putAll(props);
+		
 		String indexDir = props.getProperty("index.directory");
-		if (indexDir!=null)
-		{
-			System.getProperties().put("index.directory", indexDir);
-		}
 		
 	    SelectChannelConnector connector = new SelectChannelConnector();
 	    int serverPort;

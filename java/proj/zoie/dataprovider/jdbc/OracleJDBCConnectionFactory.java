@@ -12,6 +12,9 @@ public class OracleJDBCConnectionFactory implements JDBCConnectionFactory
   private final String _username;
   private final String _password;
   private final String _url;
+  
+
+  private Connection _conn = null;
 
   public OracleJDBCConnectionFactory(String hostname, int port, String SID, String username, String password)
   {
@@ -20,16 +23,25 @@ public class OracleJDBCConnectionFactory implements JDBCConnectionFactory
     _password = password;
   }
 
-  public Connection getConnection() throws SQLException
+  public synchronized Connection getConnection() throws SQLException
   {
-    try
-    {
-      //Class.forName("sun.jdbc.odbc.JdbcOdbcDriver");
-      Class.forName(ORACLE_DRIVER_NAME);
-    } catch (Exception e)
-    {
-      throw new SQLException("unable to load driver: "+e.getMessage());
-    }
-    return DriverManager.getConnection (_url, _username, _password);
+	if (_conn!=null){
+	    try
+	    {
+	      //Class.forName("sun.jdbc.odbc.JdbcOdbcDriver");
+	      Class.forName(ORACLE_DRIVER_NAME);
+	    } catch (Exception e)
+	    {
+	      throw new SQLException("unable to load driver: "+e.getMessage());
+	    }
+        _conn = DriverManager.getConnection (_url, _username, _password);
+	}
+	return _conn;
   }
+  
+  public void showndown() throws SQLException{
+		if (_conn!=null){
+			_conn.close();
+		}
+	}
 }

@@ -12,17 +12,29 @@ public class MysqlJDBCConnectionFactory implements JDBCConnectionFactory {
 	private final String _pw;
 	private final String _url;
 	
+	private Connection _conn = null;
+	
 	public MysqlJDBCConnectionFactory(String url,String username,String password){
 		_url = MYSQL_JDBC_URL_PREFIX+url;
 		_username = username;
 		_pw = password;
 	}
-	public Connection getConnection() throws SQLException {
-		try {
+	
+	public synchronized Connection getConnection() throws SQLException {
+		if (_conn == null){
+	 	  try {
 			Class.forName (MYSQL_DRIVER_NAME).newInstance ();
-		} catch (Exception e) {
+		  } catch (Exception e) {
 			throw new SQLException("unable to load driver: "+e.getMessage());
+		  }
+          _conn = DriverManager.getConnection (_url, _username, _pw);
 		}
-        return DriverManager.getConnection (_url, _username, _pw);
+		return _conn;
+	}
+	
+	public void showndown() throws SQLException{
+		if (_conn!=null){
+			_conn.close();
+		}
 	}
 }

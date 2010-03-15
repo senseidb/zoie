@@ -132,15 +132,6 @@ public class JDBCStreamDataProvider<T> extends StreamDataProvider<T> {
         catch(SQLException sqle){
           log.error(sqle.getMessage(),sqle);
         }
-        finally{
-          if (_conn != null){
-            try {
-              _conn.close();
-            } catch (SQLException e) {
-              log.error(e.getMessage(),e);
-            }
-          }
-        }
       }
     }
   }

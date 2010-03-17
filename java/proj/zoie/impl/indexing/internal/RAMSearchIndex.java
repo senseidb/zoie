@@ -177,8 +177,11 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
 	      else
 	      {
 	        reader = (ZoieIndexReader<R>)_currentReader.reopen(true);
-	        DocIDMapper mapper = _idxMgr._docIDMapperFactory.getDocIDMapper((ZoieMultiReader<R>)reader);
-	        reader.setDocIDMapper(mapper);
+	        if (reader != _currentReader)
+	        {
+	          DocIDMapper mapper = _idxMgr._docIDMapperFactory.getDocIDMapper((ZoieMultiReader<R>)reader);
+	          reader.setDocIDMapper(mapper);
+	        }
 	      }
 	      
 	      _currentReader = reader;

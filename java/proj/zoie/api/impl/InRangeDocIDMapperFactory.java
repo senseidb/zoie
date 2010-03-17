@@ -52,21 +52,23 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory {
 					}
 				}
 				subreader.setDocIDMapper(new DocIDMapper(){
+				  int maxDoc = subreader.maxDoc();
+				  int max = maxDoc + start;
+				  
 					public int getDocID(long uid) {
+					  int mapped;
 						uid = uid - _start;
-						int mapped = DocIDMapper.NOT_FOUND;
 						if (uid<0 || uid>=uidArray.length)
 						{
-						  log.warn("attempting to getDocID for out of range UID: " + (uid + _start));
+						  return DocIDMapper.NOT_FOUND;
 						} else
 						{
 						  mapped = uidArray[(int)uid];
 						}
 						if (mapped != DocIDMapper.NOT_FOUND){
-							mapped -= start;
-							if (mapped >= subreader.maxDoc()){
-								mapped = DocIDMapper.NOT_FOUND;
-							}
+						  if (mapped >= max)
+						    return DocIDMapper.NOT_FOUND;
+						  return mapped - start;
 						}
 						return mapped;
 					}
@@ -76,7 +78,6 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory {
 				public int getDocID(long uid) {
 				  if (((int)uid) < _start)
 				  {
-				    log.warn("attempting to getDocID for out of range UID: " + uid);
 				    return DocIDMapper.NOT_FOUND;
 				  }
 					int idx = (int)(uid-_start);

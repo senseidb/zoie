@@ -216,14 +216,13 @@ public class IndexReaderDispenser<R extends IndexReader>
       }
     }
 
-    if (reader!=null){
-      DocIDMapper mapper = _idx._idxMgr._docIDMapperFactory.getDocIDMapper((ZoieMultiReader<R>)reader);
-      reader.setDocIDMapper(mapper);
-    }
-
     // swap the internal readers
     if (_currentReader != reader)
     {
+      if (reader!=null){
+        DocIDMapper mapper = _idx._idxMgr._docIDMapperFactory.getDocIDMapper((ZoieMultiReader<R>)reader);
+        reader.setDocIDMapper(mapper);
+      }
       // assume that this is the only place that _currentReader gets refreshed 
       IndexReader oldReader = _currentReader;
       _currentReader = reader;

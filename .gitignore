@@ -6,4 +6,5 @@ index
 logs
 output
 lib
+MANIFEST.MF
 !lib/tools

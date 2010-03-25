@@ -47,7 +47,7 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
 
   public static final Logger log = Logger.getLogger(DiskSearchIndex.class);
 
-  DiskSearchIndex(DirectoryManager dirMgr, IndexReaderDecorator<R> decorator,SearchIndexManager<R> idxMgr){
+  public DiskSearchIndex(DirectoryManager dirMgr, IndexReaderDecorator<R> decorator,SearchIndexManager<R> idxMgr){
     super(idxMgr);  
     _dirMgr = dirMgr;
     _mergePolicyParams = new MergePolicyParams();

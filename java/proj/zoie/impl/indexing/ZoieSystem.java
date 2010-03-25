@@ -143,65 +143,77 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
     	     zoieConfig.getSimilarity(),zoieConfig.getBatchSize(),zoieConfig.getBatchDelay(),zoieConfig.isRtIndexing());
     }
     
-	/**
-	 * Creates a new ZoieSystem.
+    /**
+     * Creates a new ZoieSystem.
      * @param dirMgr Directory manager, mandatory.
      * @param interpreter data interpreter, mandatory.
      * @param indexReaderDecorator index reader decorator,optional. If not specified, {@link proj.zoie.impl.indexing.DefaultIndexReaderDecorator} is used. 
      * @param docIdMapperFactory custom docid mapper factory
      * @param analyzer Default analyzer, optional. If not specified, {@link org.apache.lucene.analysis.StandardAnalyzer} is used.
      * @param similarity Default similarity, optional. If not specified, {@link org.apache.lucene.search.DefaultSimilarity} is used.
-     * @param batchSize Number of indexing events to hold before flushing to disk.
+     * @param batchSize desired number of indexing events to hold in buffer before indexing. If we already have this many, we hold back the data provider.
      * @param batchDelay How long to wait before flushing to disk.
      * @param rtIndexing Ensure real-time.
      */
     public ZoieSystem(DirectoryManager dirMgr,ZoieIndexableInterpreter<V> interpreter,IndexReaderDecorator<R> indexReaderDecorator,DocIDMapperFactory docidMapperFactory,Analyzer analyzer,Similarity similarity,int batchSize,long batchDelay,boolean rtIndexing)
     {
-		if (dirMgr==null) throw new IllegalArgumentException("null directory manager.");
-		_dirMgr = dirMgr;
-		
-		if (interpreter==null) throw new IllegalArgumentException("null interpreter.");
+      if (dirMgr==null) throw new IllegalArgumentException("null directory manager.");
+      _dirMgr = dirMgr;
 
-		_searchIdxMgr=new SearchIndexManager<R>(_dirMgr,indexReaderDecorator,docidMapperFactory==null ? new DefaultDocIDMapperFactory() : docidMapperFactory);
-		_realtimeIndexing=rtIndexing;
-		_interpreter=interpreter;
-		
-		_analyzer = analyzer== null ? new StandardAnalyzer(Version.LUCENE_CURRENT) : analyzer;
-		_similarity = similarity==null ? new DefaultSimilarity() : similarity;
-		
-		
-		_lsnrList = new ConcurrentLinkedQueue<IndexingEventListener>();
-		
-		super.setBatchSize(Math.max(1,batchSize)); // realtime memory batch size
-		_diskLoader = new DiskLuceneIndexDataLoader<R>(_analyzer, _similarity, _searchIdxMgr);
-		_diskLoader.setOptimizeScheduler(new DefaultOptimizeScheduler(getAdminMBean())); // note that the ZoieSystemAdminMBean zoieAdmin parameter for DefaultOptimizeScheduler is not used.
-		if (_realtimeIndexing)
-		{
-		  _rtdc = new RealtimeIndexDataLoader<R, V>(_diskLoader, Math.max(1,batchSize), DEFAULT_MAX_BATCH_SIZE, batchDelay, _analyzer, _similarity, _searchIdxMgr, _interpreter, _lsnrList);
-		} else
-		{
-		  _rtdc = new BatchedIndexDataLoader<R, V>(_diskLoader, Math.max(1,batchSize), DEFAULT_MAX_BATCH_SIZE, batchDelay, _searchIdxMgr, _interpreter, _lsnrList);
-		}
-		super.setDataConsumer(_rtdc);
-		super.setBatchSize(100); // realtime batch size
-	}
-	
-	public static <V> ZoieSystem<IndexReader,V> buildDefaultInstance(File idxDir,ZoieIndexableInterpreter<V> interpreter,int batchSize,long batchDelay,boolean realtime){
-		return buildDefaultInstance(idxDir, interpreter, new StandardAnalyzer(Version.LUCENE_CURRENT), new DefaultSimilarity(), batchSize, batchDelay, realtime);
-	}
-		
-	public static <V> ZoieSystem<IndexReader,V> buildDefaultInstance(File idxDir,ZoieIndexableInterpreter<V> interpreter,Analyzer analyzer,Similarity similarity,int batchSize,long batchDelay,boolean realtime){
-		return new ZoieSystem<IndexReader,V>(idxDir,interpreter,new DefaultIndexReaderDecorator(),analyzer,similarity,batchSize,batchDelay,realtime);
-	}
-	
-	public void addIndexingEventListener(IndexingEventListener lsnr){
-		_lsnrList.add(lsnr);
-	}
-	
-	public OptimizeScheduler getOptimizeScheduler(){
-		return _diskLoader.getOptimizeScheduler();
-	}
-	
+      if (interpreter==null) throw new IllegalArgumentException("null interpreter.");
+
+      docidMapperFactory = docidMapperFactory==null ? new DefaultDocIDMapperFactory() : docidMapperFactory;
+      _searchIdxMgr=new SearchIndexManager<R>(_dirMgr,indexReaderDecorator,docidMapperFactory);
+      _realtimeIndexing=rtIndexing;
+      _interpreter=interpreter;
+
+      _analyzer = analyzer== null ? new StandardAnalyzer(Version.LUCENE_CURRENT) : analyzer;
+      _similarity = similarity==null ? new DefaultSimilarity() : similarity;
+      if (indexReaderDecorator==null) indexReaderDecorator = (IndexReaderDecorator<R>) new DefaultIndexReaderDecorator();
+      log.info("creating Zoie instance --> "
+          + _dirMgr.toString()
+          + "\t" + _interpreter.toString()
+          + "\t" + indexReaderDecorator.toString()
+          + "\t" + docidMapperFactory.toString()
+          + "\tAnalyzer: " + _analyzer.toString()
+          + "\tSimilarity: " + _similarity.toString()
+          + "\tbatchSize (desired max batch size for indexing to RAM): " + batchSize
+          + "\tbatchDelay (max time to wait before flushing to disk): " + batchDelay
+          + "\trealtime mode: " + rtIndexing);
+
+
+      _lsnrList = new ConcurrentLinkedQueue<IndexingEventListener>();
+
+      super.setBatchSize(Math.max(1,batchSize)); // realtime memory batch size
+      _diskLoader = new DiskLuceneIndexDataLoader<R>(_analyzer, _similarity, _searchIdxMgr);
+      _diskLoader.setOptimizeScheduler(new DefaultOptimizeScheduler(getAdminMBean())); // note that the ZoieSystemAdminMBean zoieAdmin parameter for DefaultOptimizeScheduler is not used.
+      if (_realtimeIndexing)
+      {
+        _rtdc = new RealtimeIndexDataLoader<R, V>(_diskLoader, Math.max(1,batchSize), DEFAULT_MAX_BATCH_SIZE, batchDelay, _analyzer, _similarity, _searchIdxMgr, _interpreter, _lsnrList);
+      } else
+      {
+        _rtdc = new BatchedIndexDataLoader<R, V>(_diskLoader, Math.max(1,batchSize), DEFAULT_MAX_BATCH_SIZE, batchDelay, _searchIdxMgr, _interpreter, _lsnrList);
+      }
+      super.setDataConsumer(_rtdc);
+      super.setBatchSize(100); // realtime batch size
+    }
+
+    public static <V> ZoieSystem<IndexReader,V> buildDefaultInstance(File idxDir,ZoieIndexableInterpreter<V> interpreter,int batchSize,long batchDelay,boolean realtime){
+      return buildDefaultInstance(idxDir, interpreter, new StandardAnalyzer(Version.LUCENE_CURRENT), new DefaultSimilarity(), batchSize, batchDelay, realtime);
+    }
+
+    public static <V> ZoieSystem<IndexReader,V> buildDefaultInstance(File idxDir,ZoieIndexableInterpreter<V> interpreter,Analyzer analyzer,Similarity similarity,int batchSize,long batchDelay,boolean realtime){
+      return new ZoieSystem<IndexReader,V>(idxDir,interpreter,new DefaultIndexReaderDecorator(),analyzer,similarity,batchSize,batchDelay,realtime);
+    }
+
+    public void addIndexingEventListener(IndexingEventListener lsnr){
+      _lsnrList.add(lsnr);
+    }
+
+    public OptimizeScheduler getOptimizeScheduler(){
+      return _diskLoader.getOptimizeScheduler();
+    }
+
 	public void setOptimizeScheduler(OptimizeScheduler scheduler){
 		if (scheduler!=null){
 		  _diskLoader.setOptimizeScheduler(scheduler);

@@ -34,5 +34,6 @@
         <dependency org="mx4j" name="mx4j-tools" rev="3.0.1" conf="jetty->master"/>
         <dependency org="org.apache.solr" name="solr-core" rev="1.4.0" conf="solr->master"/>
         <dependency org="org.apache.solr" name="solr-solrj" rev="1.4.0" conf="solr->master"/>
+        <dependency org="org.apache.geronimo.specs" name="geronimo-jms_1.1_spec" rev="1.1.1" conf="master"/>
     </dependencies>
 </ivy-module>

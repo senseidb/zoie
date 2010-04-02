@@ -19,12 +19,13 @@ import java.util.Arrays;
 
 import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.DocIDMapper.DocIDArray;
 
 /**
  * @author ymatsuda
  *
  */
-public class DocIDMapperImpl implements DocIDMapper
+public class DocIDMapperImpl implements DocIDMapper<DocIDArray>
 {
 	private final int[] _docArray;
 	  private final long[] _uidArray;
@@ -161,4 +162,20 @@ public class DocIDMapperImpl implements DocIDMapper
 	      else end = mid;
 	    }
 	  }
+
+    public DocIDArray getDocIDArray(long[] uids)
+    {
+      DocIDArray ret = DocIDArray.newInstance(uids.length);
+      int [] docids = ret.docids;
+      for(int i=0;i<uids.length;i++)
+      {
+        docids[i] = this.getDocID(uids[i]);
+      }
+      return ret;
+    }
+
+    public int quickGetDocID(long uid)
+    {
+      return this.getDocID(uid);
+    }
 }

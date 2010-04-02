@@ -169,11 +169,10 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 
       _analyzer = analyzer== null ? new StandardAnalyzer(Version.LUCENE_CURRENT) : analyzer;
       _similarity = similarity==null ? new DefaultSimilarity() : similarity;
-      if (indexReaderDecorator==null) indexReaderDecorator = (IndexReaderDecorator<R>) new DefaultIndexReaderDecorator();
       log.info("creating Zoie instance --> "
           + _dirMgr.toString()
           + "\t" + _interpreter.toString()
-          + "\t" + indexReaderDecorator.toString()
+          + "\t" + indexReaderDecorator!=null?indexReaderDecorator.toString():"null"
           + "\t" + docidMapperFactory.toString()
           + "\tAnalyzer: " + _analyzer.toString()
           + "\tSimilarity: " + _similarity.toString()

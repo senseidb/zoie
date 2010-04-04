@@ -137,6 +137,22 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory {
       return ret;
     }
 
+    public DocIDArray getDocIDArray(final int[] uids)
+    {
+      DocIDArray ret = DocIDArray.newInstance(uids.length);
+      int [] docids = ret.docids;
+      for(int j=0;j<uids.length;j++)
+      {
+        int mapped = uidArray[(int)(uids[j] - _start)];
+        if (mapped != DocIDMapper.NOT_FOUND){
+          if (mapped >= max)
+            continue;
+          docids[j] = mapped - start;
+        }
+      }
+      return ret;
+    }
+
     public int quickGetDocID(long uid)
     {
       int mapped = uidArray[(int)(uid - _start)];
@@ -172,6 +188,19 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory {
 	    }
 	  }
     public DocIDArray getDocIDArray(final long[] uids)
+    {
+      DocIDArray ret = DocIDArray.newInstance(uids.length);
+      int [] docids = ret.docids;
+      for(int j=0;j<uids.length;j++)
+      {
+        int idx = (int)(uids[j]-_start);
+        if (idx<uidArray.length){
+          docids[j] = uidArray[idx];
+        }
+      }
+      return ret;
+    }
+    public DocIDArray getDocIDArray(final int[] uids)
     {
       DocIDArray ret = DocIDArray.newInstance(uids.length);
       int [] docids = ret.docids;
@@ -226,6 +255,24 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory {
     }
 
     public DocIDArray getDocIDArray(long[] uids)
+    {
+      DocIDArray ret = DocIDArray.newInstance(uids.length);
+      int [] docids = ret.docids;
+      for(int j=0;j<uids.length;j++)
+      {
+        for (int i = bound; i >= 0; --i)
+        {
+          int docid = mappers[i].quickGetDocID(uids[j]);
+          if (docid!=DocIDMapper.NOT_FOUND) {
+            docids[j] = docid+starts[i];
+            break;
+          }
+        }
+      }
+      return ret;
+    }
+
+    public DocIDArray getDocIDArray(int[] uids)
     {
       DocIDArray ret = DocIDArray.newInstance(uids.length);
       int [] docids = ret.docids;

@@ -174,6 +174,17 @@ public class DocIDMapperImpl implements DocIDMapper<DocIDArray>
       return ret;
     }
 
+    public DocIDArray getDocIDArray(int[] uids)
+    {
+      DocIDArray ret = DocIDArray.newInstance(uids.length);
+      int [] docids = ret.docids;
+      for(int i=0;i<uids.length;i++)
+      {
+        docids[i] = this.getDocID(uids[i]);
+      }
+      return ret;
+    }
+
     public int quickGetDocID(long uid)
     {// exact same impl as the regular getDocID()
       final int h = (int)((uid >>> 32) ^ uid) * MIXER;

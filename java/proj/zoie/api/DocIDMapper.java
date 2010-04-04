@@ -41,6 +41,7 @@ public interface DocIDMapper<T>
   int quickGetDocID(long uid);
 
   public T getDocIDArray(long[] uids);
+  public T getDocIDArray(int [] uids);
   
   public static final class DocIDArray
   {

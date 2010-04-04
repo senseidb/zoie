@@ -51,22 +51,39 @@ public class DefaultDocIDMapperFactory implements DocIDMapperFactory {
 	    return DocIDMapper.NOT_FOUND;
 	  }
 
-	  public DocIDArray getDocIDArray(long[] uids)
-	  {
-	    DocIDArray ret = DocIDArray.newInstance(uids.length);
-	    int [] docids = ret.docids;
-	    for(int j=0; j< uids.length; j++)
-	    {
-	      for (int i = bound; i >= 0; --i){
-	        int docid = mappers[i].quickGetDocID(uids[j]);
-	        if (docid!=DocIDMapper.NOT_FOUND) {
-	          docids[j] = docid+starts[i];
-	          break;
-	        }
-	      }
-	    }
-	    return ret;
-	  }
+    public DocIDArray getDocIDArray(long[] uids)
+    {
+      DocIDArray ret = DocIDArray.newInstance(uids.length);
+      int [] docids = ret.docids;
+      for(int j=0; j< uids.length; j++)
+      {
+        for (int i = bound; i >= 0; --i){
+          int docid = mappers[i].quickGetDocID(uids[j]);
+          if (docid!=DocIDMapper.NOT_FOUND) {
+            docids[j] = docid+starts[i];
+            break;
+          }
+        }
+      }
+      return ret;
+    }
+
+    public DocIDArray getDocIDArray(int[] uids)
+    {
+      DocIDArray ret = DocIDArray.newInstance(uids.length);
+      int [] docids = ret.docids;
+      for(int j=0; j< uids.length; j++)
+      {
+        for (int i = bound; i >= 0; --i){
+          int docid = mappers[i].quickGetDocID(uids[j]);
+          if (docid!=DocIDMapper.NOT_FOUND) {
+            docids[j] = docid+starts[i];
+            break;
+          }
+        }
+      }
+      return ret;
+    }
 
 	  public int quickGetDocID(long uid)
     {

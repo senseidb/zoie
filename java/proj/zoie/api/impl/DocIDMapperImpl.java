@@ -175,7 +175,28 @@ public class DocIDMapperImpl implements DocIDMapper<DocIDArray>
     }
 
     public int quickGetDocID(long uid)
-    {
-      return this.getDocID(uid);
+    {// exact same impl as the regular getDocID()
+      final int h = (int)((uid >>> 32) ^ uid) * MIXER;
+      final int p = h & _mask;
+
+      // check the filter
+      final long bits = _filter[p];
+      if((bits & (1L << (h >>> 26))) == 0 || (bits & (1L << ((h >> 20) & 0x3F))) == 0) return -1; 
+
+      // do binary search in the partition
+      int begin = _start[p];
+      int end = _start[p + 1] - 1;
+      // we have some uids in this partition, so we assume (begin <= end)
+      while(true)
+      {
+        int mid = (begin+end) >>> 1;
+        long midval = _uidArray[mid];
+        
+        if(midval == uid) return _docArray[mid];
+        if(mid == end) return -1;
+        
+        if(midval < uid) begin = mid + 1;
+        else end = mid;
+      }
     }
 }

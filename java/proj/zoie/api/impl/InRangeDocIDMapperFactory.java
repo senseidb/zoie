@@ -127,14 +127,7 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory {
       int [] docids = ret.docids;
       for(int j=0;j<uids.length;j++)
       {
-        int mapped;
-//        if (uids[j]<_start || uids[j]>=maxbdd)
-//        {
-//          continue;
-//        } else
-//        {
-          mapped = uidArray[(int)(uids[j] - _start)];
-//        }
+        int mapped = uidArray[(int)(uids[j] - _start)];
         if (mapped != DocIDMapper.NOT_FOUND){
           if (mapped >= max)
             continue;
@@ -184,10 +177,6 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory {
       int [] docids = ret.docids;
       for(int j=0;j<uids.length;j++)
       {
-//        if (((int)uids[j]) < _start)
-//        {
-//          continue;
-//        }
         int idx = (int)(uids[j]-_start);
         if (idx<uidArray.length){
           docids[j] = uidArray[idx];
@@ -244,7 +233,7 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory {
       {
         for (int i = bound; i >= 0; --i)
         {
-          int docid = mappers[i].getDocID(uids[j]);
+          int docid = mappers[i].quickGetDocID(uids[j]);
           if (docid!=DocIDMapper.NOT_FOUND) {
             docids[j] = docid+starts[i];
             break;

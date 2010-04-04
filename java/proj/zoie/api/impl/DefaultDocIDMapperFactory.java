@@ -58,7 +58,7 @@ public class DefaultDocIDMapperFactory implements DocIDMapperFactory {
 	    for(int j=0; j< uids.length; j++)
 	    {
 	      for (int i = bound; i >= 0; --i){
-	        int docid = mappers[i].getDocID(uids[j]);
+	        int docid = mappers[i].quickGetDocID(uids[j]);
 	        if (docid!=DocIDMapper.NOT_FOUND) {
 	          docids[j] = docid+starts[i];
 	          break;

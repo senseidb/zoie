@@ -35,25 +35,23 @@ public class MemoryManager<T>
         T buf = null;
         while(true)
         {
-          while((buf = _releaseQueue.poll()) == null)
+          synchronized(MemoryManager.this)
           {
-            log.info("check cleaning " );
-            synchronized(MemoryManager.this)
+            try
             {
-              try
-              {
-                MemoryManager.this.wait(200);
-              } catch (InterruptedException e)
-              {
-                log.error(e);
-              }
+              MemoryManager.this.wait(200);
+            } catch (InterruptedException e)
+            {
+              log.error(e);
             }
           }
-          log.info("cleaning " + _initializer.size(buf));
-          ConcurrentLinkedQueue<WeakReference<T>> queue = _sizeMap.get(_initializer.size(buf));
-          // buf is wrapped in WeakReference. this allows GC to reclaim the buffer memory
-          _initializer.init(buf);// pre-initializing the buffer in parallel so we save time when it is requested later.
-          queue.offer(new WeakReference<T>(buf));
+          while((buf = _releaseQueue.poll()) != null)
+          {
+            ConcurrentLinkedQueue<WeakReference<T>> queue = _sizeMap.get(_initializer.size(buf));
+            // buf is wrapped in WeakReference. this allows GC to reclaim the buffer memory
+            _initializer.init(buf);// pre-initializing the buffer in parallel so we save time when it is requested later.
+            queue.offer(new WeakReference<T>(buf));
+          }
         }
       }});
     _cleanThread.setDaemon(true);
@@ -81,13 +79,11 @@ public class MemoryManager<T>
         T buf = ref.get();
         if(buf != null)
         {
-//          log.info("array hit " + size);
           return buf;
         }
       }
       else
       {
-//        log.info("array miss " + size);
         return _initializer.newInstance(size);
       }
     }

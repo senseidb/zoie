@@ -55,7 +55,9 @@ public interface DocIDMapper<T>
 
       public int[] newInstance(int size)
       {
-        return new int[size];
+        int[] ret = new int[size];
+        init(ret);
+        return ret;
       }
 
       public int size(int[] buf)

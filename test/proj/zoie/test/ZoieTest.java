@@ -39,6 +39,7 @@ import proj.zoie.api.UIDDocIdSet;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.DataConsumer.DataEvent;
+import proj.zoie.api.DocIDMapper.DocIDArray;
 import proj.zoie.api.impl.DocIDMapperImpl;
 import proj.zoie.api.impl.InRangeDocIDMapperFactory;
 import proj.zoie.api.indexing.IndexReaderDecorator;
@@ -910,6 +911,13 @@ public class ZoieTest extends ZoieTestCase
       }
 
       assertTrue("wrong result", Arrays.equals(ansList1, ansList2));
+      DocIDArray result = mapper.getDocIDArray(qryList);
+      int[] resarr = result.docids;
+      for(int i = 0; i < qryList.length; i++)
+      {
+        assertEquals("wrong result", ansList2[i], resarr[i]);
+      }
+      result.close();
     }
 
 

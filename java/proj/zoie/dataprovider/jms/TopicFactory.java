@@ -4,5 +4,5 @@ import javax.jms.Topic;
 
 public interface TopicFactory {
 
-	public Topic createTopic();
+	public Topic createTopic(String name);
 }

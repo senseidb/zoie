@@ -27,6 +27,8 @@ public class JMSStreamDataProvider<T> extends StreamDataProvider<T> {
 	private TopicSubscriber subscriber;
 	private TopicConnection connection;
 	
+	private volatile boolean stopped = true;
+	
 
 	public JMSStreamDataProvider(String topicName, String clientID,
 			TopicConnectionFactory connectionFactory, TopicFactory topicFactory,
@@ -41,6 +43,10 @@ public class JMSStreamDataProvider<T> extends StreamDataProvider<T> {
 
 	@Override
 	public void start() {
+		log.info("starting " + toString());
+		
+		stopped = false;
+
 		try {
 			
 			reconnect();
@@ -77,9 +83,15 @@ public class JMSStreamDataProvider<T> extends StreamDataProvider<T> {
 	@Override
 	public DataEvent<T> next() {
 		for (;;) {
+			if (stopped) {
+				return null;
+			}
+			
 			try {
 				Message m = subscriber.receive();
-				return dataEventBuilder.buildDataEvent(m); 
+				if (m != null) {
+					return dataEventBuilder.buildDataEvent(m); 
+				}
 			} catch (JMSException e) {
 				log.error("error receiving message", e);
 				//step back for a while
@@ -100,10 +112,15 @@ public class JMSStreamDataProvider<T> extends StreamDataProvider<T> {
 
 	@Override
 	public void reset() {
+		
 	}
 	
 	@Override
 	public void stop() {
+		log.info("stopping " + toString());
+		
+		stopped = true;
+		
 		try {
 			connection.stop();
 		} catch (JMSException e) {
@@ -118,5 +135,13 @@ public class JMSStreamDataProvider<T> extends StreamDataProvider<T> {
 		
 		super.stop();
 	}
+
+	@Override
+	public String toString() {
+		return "JMSStreamDataProvider [clientID=" + clientID + ", topicName="
+				+ topicName + "]";
+	}
+	
+	
 
 }

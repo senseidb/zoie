@@ -70,7 +70,9 @@ public class JMSStreamDataProvider<T> extends StreamDataProvider<T> {
 		
 		connection = connectionFactory.createTopicConnection();
 		
-		connection.setClientID(clientID);
+		if (clientID != null) {
+			connection.setClientID(clientID);
+		}
 		
 		TopicSession session = connection.createTopicSession(false, 
 				Session.AUTO_ACKNOWLEDGE);

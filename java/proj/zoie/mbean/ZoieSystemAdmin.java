@@ -110,6 +110,11 @@ public class ZoieSystemAdmin implements ZoieSystemAdminMBean {
 		_internalMBean.flushToDiskIndex();
 	}
 	
+    public void flushToMemoryIndex() throws ZoieException
+    {
+      _internalMBean.flushToMemoryIndex();
+      
+    }
 
 	public void purgeIndex() throws IOException
 	{
@@ -157,4 +162,24 @@ public class ZoieSystemAdmin implements ZoieSystemAdminMBean {
     public int getDiskIndexSegmentCount() throws IOException{
 		return _internalMBean.getDiskIndexSegmentCount();
 	}
+
+    public int getMaxSmallSegments()
+    {
+      return _internalMBean.getMaxSmallSegments();
+    }
+    
+    public void setMaxSmallSegments(int maxSmallSegments)
+    {
+      _internalMBean.setMaxSmallSegments(maxSmallSegments);
+    }
+    
+    public int getNumLargeSegments()
+    {
+      return _internalMBean.getNumLargeSegments();
+    }
+    
+    public void setNumLargeSegments(int numLargeSegments)
+    {
+      _internalMBean.setNumLargeSegments(numLargeSegments);
+    }
 }

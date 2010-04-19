@@ -217,6 +217,7 @@
 	        	<batchtest fork="yes" todir="${test.report.dir}">
               			<fileset dir="${test}">
                			<include name="**/ZoieTestSuite.java" />
+               			<include name="**/TestJMSStreamDataProvider.java" />
               			</fileset>
             		</batchtest>
         	</junit>

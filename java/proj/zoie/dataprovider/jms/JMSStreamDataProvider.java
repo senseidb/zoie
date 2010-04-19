@@ -16,7 +16,7 @@ import proj.zoie.impl.indexing.StreamDataProvider;
 
 public class JMSStreamDataProvider<T> extends StreamDataProvider<T> {
 	
-	private static final Logger log = Logger.getLogger(JMSStreamDataProvider.class);
+	private static final Logger logger = Logger.getLogger(JMSStreamDataProvider.class);
 
 	private static final String name = "JMSStreamDataProvider";
 	private final String topicName;
@@ -26,6 +26,8 @@ public class JMSStreamDataProvider<T> extends StreamDataProvider<T> {
 	private final DataEventBuilder<T> dataEventBuilder;
 	private TopicSubscriber subscriber;
 	private TopicConnection connection;
+	
+	private volatile int JMSErrorBackOffTime = 3000;  
 	
 	private volatile boolean stopped = true;
 	
@@ -43,73 +45,93 @@ public class JMSStreamDataProvider<T> extends StreamDataProvider<T> {
 
 	@Override
 	public void start() {
-		log.info("starting " + toString());
+		logger.info("starting " + toString());
 		
 		stopped = false;
 
-		try {
-			
-			reconnect();
-			
-			connection.start();
-			super.start();
-		} catch (JMSException e) {
-			throw new RuntimeException("Could nnot start JMS data provider", e);
-		}
+		super.start();
 	}
 
-	private void reconnect() throws JMSException {
-		//close subscriber if not previously closed
-		if (subscriber != null) {
-			subscriber.close();
+	/**
+	 * Tries to reconnect to the durable topic. This method blocks
+	 * until the try is successful or this provider is stopped. 
+	 */
+	private void reconnect() {
+		for (;;) {
+			
+			if (stopped) {
+				return;
+			}
+			try {
+				//close subscriber if not previously closed
+				if (subscriber != null) {
+					subscriber.close();
+				}
+				if (connection != null) {
+					connection.close();
+				}
+				connection = connectionFactory.createTopicConnection();
+				if (clientID != null) {
+					connection.setClientID(clientID);
+				}
+				TopicSession session = connection.createTopicSession(false, 
+						Session.AUTO_ACKNOWLEDGE);
+				Topic topic = topicFactory.createTopic(topicName);
+				subscriber = session.createDurableSubscriber(topic, name);
+				connection.start();
+				return;
+			} catch (JMSException e) {
+				logger.error("could not connect to durable topic, topic: " + topicName, e);
+				//step back for a while
+				backOffAfterJMSException(e);
+			}
 		}
 		
-		if (connection != null) {
-			connection.close();
-		}
-		
-		connection = connectionFactory.createTopicConnection();
-		
-		if (clientID != null) {
-			connection.setClientID(clientID);
-		}
-		
-		TopicSession session = connection.createTopicSession(false, 
-				Session.AUTO_ACKNOWLEDGE);
-		
-		Topic topic = topicFactory.createTopic(topicName);
-		
-		subscriber = session.createDurableSubscriber(topic, name);
 	}
 
 	@Override
 	public DataEvent<T> next() {
 		for (;;) {
+			if (subscriber == null) {
+				reconnect();
+			}
 			if (stopped) {
 				return null;
 			}
-			
 			try {
 				Message m = subscriber.receive();
 				if (m != null) {
 					return dataEventBuilder.buildDataEvent(m); 
 				}
 			} catch (JMSException e) {
-				log.error("error receiving message", e);
+				logger.error("error receiving message", e);
 				//step back for a while
-				try {
-					Thread.sleep(3000);
-				} catch (InterruptedException e1) {
-					log.error(e1);
-				}
-				//try to reconnect
-				try {
-					reconnect();
-				} catch (JMSException e1) {
-					log.error("error trying to connect to JMS topic", e);
-				}
+				backOffAfterJMSException(e);
+				//after any JMS exception try to reconnect
+				reconnect();
 			}
 		}
+	}
+	
+	/**
+	 * Backs off certain amount of time before next interaction
+	 * with JMS.  
+	 * @param e
+	 */
+	void backOffAfterJMSException(JMSException e) {
+		try {
+			Thread.sleep(JMSErrorBackOffTime);
+		} catch (InterruptedException e1) {
+			logger.error(e1);
+		}
+	}
+
+	public int getJMSErrorBackOffTime() {
+		return JMSErrorBackOffTime;
+	}
+
+	public void setJMSErrorBackOffTime(int jMSErrorBackOffTime) {
+		JMSErrorBackOffTime = jMSErrorBackOffTime;
 	}
 
 	@Override
@@ -119,22 +141,18 @@ public class JMSStreamDataProvider<T> extends StreamDataProvider<T> {
 	
 	@Override
 	public void stop() {
-		log.info("stopping " + toString());
-		
+		logger.info("stopping " + toString());
 		stopped = true;
-		
 		try {
 			connection.stop();
 		} catch (JMSException e) {
-			log.error("could not stop connection", e);
+			logger.error("could not stop connection", e);
 		}
-		
 		try {
 			connection.close();
 		} catch (JMSException e) {
-			log.error("could not close connection", e);
+			logger.error("could not close connection", e);
 		}
-		
 		super.stop();
 	}
 

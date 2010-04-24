@@ -25,7 +25,7 @@
 	<classpathentry exported="true" kind="lib" path="lib/master/lucene-core.jar" sourcepath="/Users/xgu/Desktop/lucene-2.9.1-src.zip"/>
 	<classpathentry exported="true" kind="lib" path="lib/tools/lukeall-0.9.9.jar"/>
 	<classpathentry kind="lib" path="lib/jetty/mx4j.jar"/>
-	<classpathentry kind="lib" path="lib/solr/solr-core.jar"/>
+	<classpathentry kind="lib" path="lib/solr/solr-core.jar" sourcepath="/Users/john/.m2/repository/org/apache/solr/solr-core/1.4.0/solr-core-1.4.0-sources.jar"/>
 	<classpathentry kind="lib" path="lib/solr/solr-solrj.jar"/>
 	<classpathentry kind="lib" path="lib/jetty/jetty-naming.jar"/>
 	<classpathentry kind="lib" path="lib/jetty/jetty-util.jar"/>
@@ -37,8 +37,7 @@
 	<classpathentry kind="lib" path="test-perf/ext-libraries/performance-1.2.0.jar"/>
 	<classpathentry kind="lib" path="test-perf/ext-libraries/jfreechart-0.9.21.jar"/>
 	<classpathentry kind="lib" path="test-perf/ext-libraries/iText.zip"/>
-	<classpathentry kind="lib" path="lib/master/geronimo-jms_1.1_spec.jar">
-	</classpathentry>
+	<classpathentry kind="lib" path="lib/master/geronimo-jms_1.1_spec.jar"/>
 	<classpathentry kind="lib" path="lib/test/mockito-all.jar" sourcepath="/home/yahro/.m2/repository/org/mockito/mockito-all/1.8.1/mockito-all-1.8.1-sources.jar"/>
 	<classpathentry kind="output" path="output"/>
 </classpath>

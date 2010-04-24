@@ -40,9 +40,13 @@ public class ZoieUpdateHandler extends UpdateHandler {
 	private static Logger log = Logger.getLogger(ZoieUpdateHandler.class);
 	
 	private SolrCore _core;
+	private boolean _autocommit;
+	
 	public ZoieUpdateHandler(SolrCore core) {
 		super(core);
 		_core = core;
+
+		_autocommit = core.getSolrConfig().getBool("zoie.autocommit", true);
 	}
 
 	@Override
@@ -72,7 +76,15 @@ public class ZoieUpdateHandler extends UpdateHandler {
 		DataEvent<DocumentWithID> event = new DataEvent<DocumentWithID>(version,new DocumentWithID(zoieUid,doc));
 		try {
 			zoie.consume(Arrays.asList(event));
-			
+			if (_autocommit){
+				try{
+				  zoie.flushEventsToMemoryIndex(1000);
+				  updateReader(true);
+				}
+				catch(ZoieException e){
+				  log.error(e.getMessage(),e);
+				}
+			}
 			return 1;
 		} catch (ZoieException e) {
 			log.error(e.getMessage(),e);
@@ -86,6 +98,15 @@ public class ZoieUpdateHandler extends UpdateHandler {
 		if (zoieHome!=null){
 			zoieHome.shutdown();
 		}
+	}
+	
+	private void updateReader(boolean waitForSearcher) throws IOException{
+		callPostCommitCallbacks();
+		Future[] waitSearcher = null;
+	    if (waitForSearcher) {
+	      waitSearcher = new Future[1];
+	    }
+	    core.getSearcher(true,false,waitSearcher);
 	}
 
 	@Override
@@ -102,12 +123,7 @@ public class ZoieUpdateHandler extends UpdateHandler {
 			}
 		}
 
-	    callPostCommitCallbacks();
-		Future[] waitSearcher = null;
-	    if (cmd.waitSearcher) {
-	      waitSearcher = new Future[1];
-	    }
-	    core.getSearcher(true,false,waitSearcher);
+		updateReader(cmd.waitSearcher);
 	}
 
 	@Override
@@ -135,6 +151,15 @@ public class ZoieUpdateHandler extends UpdateHandler {
 		DataEvent<DocumentWithID> event = new DataEvent<DocumentWithID>(version,new DocumentWithID(zoieUid,true));
 		try {
 			zoie.consume(Arrays.asList(event));
+			if (_autocommit){
+				try{
+				  zoie.flushEventsToMemoryIndex(1000);
+				  updateReader(true);
+				}
+				catch(ZoieException e){
+				  log.error(e.getMessage(),e);
+				}
+			}
 		} catch (ZoieException e) {
 			log.error(e.getMessage(),e);
 			throw new IOException(e.toString());
@@ -218,6 +243,15 @@ public class ZoieUpdateHandler extends UpdateHandler {
 			}
 			try {
 				zoie.consume(eventList);
+				if (_autocommit){
+					try{
+					  zoie.flushEventsToMemoryIndex(1000);
+					  updateReader(true);
+					}
+					catch(ZoieException e){
+					  log.error(e.getMessage(),e);
+					}
+				}
 			} catch (ZoieException e) {
 				log.error(e.getMessage(),e);
 				throw new IOException(e.toString());

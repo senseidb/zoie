@@ -21,6 +21,7 @@ import org.apache.solr.core.IndexReaderFactory;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 
+import proj.zoie.api.ZoieException;
 import proj.zoie.impl.indexing.DefaultIndexReaderDecorator;
 import proj.zoie.impl.indexing.ZoieSystem;
 import proj.zoie.mbean.ZoieSystemAdmin;
@@ -88,7 +89,15 @@ public class ZoieSystemHome {
 	}
 	
 	public void shutdown(){
-		_zoieSystem.shutdown();
+		try{
+		  _zoieSystem.flushEvents(10000);
+		}
+		catch(ZoieException e){
+		  log.error(e.getMessage(),e);
+		}
+		finally{
+		  _zoieSystem.shutdown();
+		}
 	}
 	
 	protected void finalize(){

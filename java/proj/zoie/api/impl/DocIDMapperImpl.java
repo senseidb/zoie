@@ -19,12 +19,13 @@ import java.util.Arrays;
 
 import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.DocIDMapper.DocIDArray;
 
 /**
  * @author ymatsuda
  *
  */
-public class DocIDMapperImpl implements DocIDMapper
+public class DocIDMapperImpl implements DocIDMapper<DocIDArray>
 {
 	private final int[] _docArray;
 	  private final long[] _uidArray;
@@ -161,4 +162,52 @@ public class DocIDMapperImpl implements DocIDMapper
 	      else end = mid;
 	    }
 	  }
+
+    public DocIDArray getDocIDArray(long[] uids)
+    {
+      DocIDArray ret = DocIDArray.newInstance(uids.length);
+      int [] docids = ret.docids;
+      for(int i=0;i<uids.length;i++)
+      {
+        docids[i] = this.getDocID(uids[i]);
+      }
+      return ret;
+    }
+
+    public DocIDArray getDocIDArray(int[] uids)
+    {
+      DocIDArray ret = DocIDArray.newInstance(uids.length);
+      int [] docids = ret.docids;
+      for(int i=0;i<uids.length;i++)
+      {
+        docids[i] = this.getDocID(uids[i]);
+      }
+      return ret;
+    }
+
+    public int quickGetDocID(long uid)
+    {// exact same impl as the regular getDocID()
+      final int h = (int)((uid >>> 32) ^ uid) * MIXER;
+      final int p = h & _mask;
+
+      // check the filter
+      final long bits = _filter[p];
+      if((bits & (1L << (h >>> 26))) == 0 || (bits & (1L << ((h >> 20) & 0x3F))) == 0) return -1; 
+
+      // do binary search in the partition
+      int begin = _start[p];
+      int end = _start[p + 1] - 1;
+      // we have some uids in this partition, so we assume (begin <= end)
+      while(true)
+      {
+        int mid = (begin+end) >>> 1;
+        long midval = _uidArray[mid];
+        
+        if(midval == uid) return _docArray[mid];
+        if(mid == end) return -1;
+        
+        if(midval < uid) begin = mid + 1;
+        else end = mid;
+      }
+    }
 }

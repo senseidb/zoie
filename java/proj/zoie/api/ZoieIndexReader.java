@@ -36,7 +36,12 @@ import proj.zoie.api.indexing.IndexReaderDecorator;
 public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndexReader {
 	public static final long DELETED_UID = Long.MIN_VALUE;
 	
-	protected ThreadLocal<int[]> _delDocIds;
+	/**
+	 * The delete set is per reader, which is why it is tied to an instance of zoieindexreader
+	 * and it is not static as in the general case for thread local.
+	 * It is threadlocal because we share the underlying reader among different thread.
+	 */
+	protected InheritableThreadLocal<int[]> _delDocIds;
 	protected long _minUID;
 	protected long _maxUID;
 	protected boolean _noDedup = false;
@@ -171,7 +176,7 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndex
 	{
 		super(in);
 		_decorator = decorator;
-		_delDocIds=new ThreadLocal<int[]>();
+		_delDocIds=new InheritableThreadLocal<int[]>();
 		_minUID=Long.MAX_VALUE;
 		_maxUID=0;
 	}

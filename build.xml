@@ -1,169 +1,185 @@
 <project xmlns:ivy="antlib:org.apache.ivy.ant" name="zoie" default="dist">
-	<property name="zoie.root" location="."/>
-	<property name="src" value="java"/>
+	<property name="zoie.root" location="." />
+	<property name="src" value="java" />
 	<property name="conf.dir" location="conf" />
-        <property name="perf.dir" location="perf"/>
-		
-	<property name="test" value="test"/>
-        <property name="lib.dir" location="lib"/>
-    
+	<property name="perf.dir" location="perf" />
+
+	<property name="test" value="test" />
+	<property name="lib.dir" location="lib" />
+
 	<property name="jetty.home" location="${lib.dir}/jetty" />
-	<property name="lib.tools" location="${lib.dir}/tools"/>
-	<property name="build" value="build"/>
-	
-	<property name="logs" value="logs"/>
-	
+	<property name="lib.tools" location="${lib.dir}/tools" />
+	<property name="build" value="build" />
+
+	<property name="logs" value="logs" />
+
 	<property name="dist" location="dist" />
 	<property file="${zoie.root}/version.properties" />
-	<property name="doc" value="doc"/>
-	<property name="build.test" value="build-test"/>
+	<property name="doc" value="doc" />
+	<property name="build.test" value="build-test" />
 	<property name="test.report.dir" location="${dist}/junit-reports" />
-        <property name="test.html.dir" location="${test.report.dir}/html" />
-	
-	<property name="project.name" value="zoie"/>
+	<property name="test.html.dir" location="${test.report.dir}/html" />
 
-        <property name="ivy.install.version" value="2.0.0-beta1"/>
-        <property name="ivy.jar.dir" value="${basedir}/ivy"/>
-        <property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar"/>
-        <property name="build.dir" value="build"/>
-        <property name="src.dir" value="src"/>
-	
+	<property name="project.name" value="zoie" />
+
+	<property name="ivy.install.version" value="2.0.0-beta1" />
+	<property name="ivy.jar.dir" value="${basedir}/ivy" />
+	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
+	<property name="build.dir" value="build" />
+	<property name="src.dir" value="src" />
+
 	<condition property="test.vmarch" value="-d64" else="-d32">
-		<os name="Linux"/>
+		<os name="Linux" />
 	</condition>
-	
+
 	<path id="compile.class.path">
 		<fileset dir="${lib.dir}/master">
 			<include name="*.jar" />
 		</fileset>
 	</path>
-	
+
 	<path id="java.class.path">
 		<dirset dir="${build}">
-		        <include name="**"/>
+			<include name="**" />
 		</dirset>
 	</path>
-	
-<!--	<path id="test.class.path">
+
+	<!--	<path id="test.class.path">
 			<dirset dir="${build.test}">
 			        <include name="**"/>
 			</dirset>
 	</path>
 -->
 	<path id="test.class.path">
-                        <path location="${build.test}"/>
-			<fileset dir="${lib.dir}/test"/>
+		<path location="${build.test}" />
+		<fileset dir="${lib.dir}/test" />
 	</path>
 
 	<path id="server.compile.class.path">
-			<fileset dir="${lib.dir}/master">
-				<include name="*.jar" />
-			</fileset>
-			<fileset dir="${lib.dir}/test">
-				<include name="*.jar" />
-			</fileset>
-			<fileset dir="${jetty.home}">
-				<include name="*.jar" />
-			</fileset>
-			<fileset dir="${dist}">
-				<include name="*.jar" />
-			</fileset>
+		<fileset dir="${lib.dir}/master">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${lib.dir}/test">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${jetty.home}">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${dist}">
+			<include name="*.jar" />
+		</fileset>
 	</path>
-    <target name="resolve" description="--> retrieve dependencies with ivy" depends="install-ivy">
-        <ivy:retrieve pattern="${ivy.lib.dir}/[conf]/[artifact].[ext]"/>
-    </target>
+	<target name="resolve" description="--> retrieve dependencies with ivy" depends="install-ivy">
+		<ivy:retrieve pattern="${ivy.lib.dir}/[conf]/[artifact].[ext]" />
+	</target>
 
-    <target name="download-ivy" unless="skip.download">
-	<mkdir dir="${ivy.jar.dir}"/>
-        <echo message="installing ivy..."/>
-        <get src="http://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" dest="${ivy.jar.file}" usetimestamp="true"/>
-    </target>
+	<target name="download-ivy" unless="skip.download">
+		<mkdir dir="${ivy.jar.dir}" />
+		<echo message="installing ivy..." />
+		<get src="http://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" dest="${ivy.jar.file}" usetimestamp="true" />
+	</target>
 
-    <target name="install-ivy" depends="download-ivy" description="--> install ivy">
-        <path id="ivy.lib.path">
-            <fileset dir="${ivy.jar.dir}" includes="*.jar"/>
-        </path>
-        <taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
-    </target>
+	<target name="install-ivy" depends="download-ivy" description="--> install ivy">
+		<path id="ivy.lib.path">
+			<fileset dir="${ivy.jar.dir}" includes="*.jar" />
+		</path>
+		<taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path" />
+	</target>
 
-    <target name="clean" description="--> clean build, dist, and logs">
-        <delete dir="${build}"/>
-        <delete dir="${dist}"/>
-	<delete dir="${logs}"/>
-	<delete dir="${build.test}"/>
-	<ant antfile="build.xml" dir="example" target="clean"/>
-    <ant antfile="build.xml" dir="zoie-admin" target="clean"/>
-	<ant antfile="build.xml" dir="server" target="clean"/>
-	<ant antfile="build.xml" dir="perf" target="clean"/>
-    <ant antfile="build.xml" dir="zoie-solr" target="clean"/>
-    </target>
+	<target name="clean" description="--> clean build, dist, and logs">
+		<delete dir="${build}" />
+		<delete dir="${dist}" />
+		<delete dir="${logs}" />
+		<delete dir="${build.test}" />
+		<ant antfile="build.xml" dir="example" target="clean" />
+		<ant antfile="build.xml" dir="zoie-admin" target="clean" />
+		<ant antfile="build.xml" dir="server" target="clean" />
+		<ant antfile="build.xml" dir="perf" target="clean" />
+		<ant antfile="build.xml" dir="zoie-solr" target="clean" />
+	</target>
 
-    <target name="init" depends="resolve">
-        <mkdir dir="${build}"/>
-        <mkdir dir="${dist}"/>
-    	<mkdir dir="${build.test}"/>
-    	<mkdir dir="${logs}"/>
-    </target>
-	
-    <target name="compile" depends="init" description="--> compile all source to build directory">
-	<javac debug="true" destdir="${build}">
-            <src path="${src}"/>
-            <classpath refid="compile.class.path"/>
-        </javac>
-    </target>
-	
-    <target name="dist" depends="compile" description="--> build .jar into dist">
-			<jar destfile="${dist}/${project.name}-${version}.jar"  basedir="${build}" />
-    </target>
-	
+	<target name="init" depends="resolve">
+		<mkdir dir="${build}" />
+		<mkdir dir="${dist}" />
+		<mkdir dir="${build.test}" />
+		<mkdir dir="${logs}" />
+	</target>
+
+	<target name="compile" depends="init" description="--> compile all source to build directory">
+		<javac debug="true" destdir="${build}">
+			<src path="${src}" />
+			<classpath refid="compile.class.path" />
+		</javac>
+	</target>
+
+	<target name="gitversion" description="--> create git version information">
+		<exec executable="git" outputproperty="gitversion">
+			<arg value="log" />
+			<arg value="-1" />
+			<arg value="--pretty=oneline" />
+		</exec>
+	</target>
+
+	<target name="dist" depends="compile,gitversion" description="--> build .jar into dist">
+		<tstamp>
+			<format property="TODAY" pattern="yyyy-MM-dd HH:mm:ss" />
+		</tstamp>
+		<manifest file="MANIFEST.MF">
+			<attribute name="Built-By" value="${user.name}" />
+			<attribute name="Git-Version" value="${gitversion}" />
+			<attribute name="Built-Date" value="${TODAY}" />
+		</manifest>
+		<jar destfile="${dist}/${project.name}-${version}.jar" manifest="MANIFEST.MF" basedir="${build}" />
+	</target>
+
 	<target name="zoie-solr" depends="dist">
-		<ant antfile="build.xml" dir="zoie-solr" target="dist"/>
-	</target>
-		
-	<target name="example-war" depends="dist">
-		<ant antfile="build.xml" dir="example" target="dist"/>
+		<ant antfile="build.xml" dir="zoie-solr" target="dist" />
 	</target>
 
-  	<target name="perf-war" depends="dist">
-    	        <ant antfile="build.xml" dir="perf" target="dist"/>
-  	</target>
-	
-	<target name="zoie-server" depends="init" description="--> build server">
-		<ant antfile="build.xml" dir="server" target="dist"/>
+	<target name="example-war" depends="dist">
+		<ant antfile="build.xml" dir="example" target="dist" />
 	</target>
-	
+
+	<target name="perf-war" depends="dist">
+		<ant antfile="build.xml" dir="perf" target="dist" />
+	</target>
+
+	<target name="zoie-server" depends="init" description="--> build server">
+		<ant antfile="build.xml" dir="server" target="dist" />
+	</target>
+
 	<target name="run-server" depends="zoie-server" description="--> run server">
 		<java fork="true" jar="${dist}/zoie-server-${version}.jar" failonerror="true" maxmemory="2g">
-					<sysproperty key="log.home" value="${logs}" />
-					<sysproperty key="conf.dir" value="${conf.dir}" />
-					<jvmarg value="-d64" />
-					<jvmarg value="-server" />
-					<jvmarg value="-Xms2g" />
-					<jvmarg value="-Xmx2g" />
-					<jvmarg value="-Xloggc:${logs}/gc.log" />
-					<jvmarg value="-XX:+PrintGCTimeStamps" />
-					<jvmarg value="-XX:+PrintGCDetails" />
-					<jvmarg value="-XX:+AggressiveHeap" />
-					<jvmarg value="-XX:+UseAdaptiveSizePolicy" />
-					<!--jvmarg value="-XX:+UseConcMarkSweepGC" /-->
-					<!--jvmarg value="-XX:MaxTenuringThreshold=10" /-->
-					<!--jvmarg value="-XX:+UseParallelGC" /-->
-					<jvmarg value="-XX:NewRatio=1" />
-					<jvmarg value="-XX:SurvivorRatio=2" />
-					<jvmarg value="-Dcom.sun.management.jmxremote" />
-					<jvmarg value="-Dcom.sun.management.jmxremote.port=9999" />
-					<jvmarg value="-Dcom.sun.management.jmxremote.authenticate=false" />
-					<jvmarg value="-Dcom.sun.management.jmxremote.ssl=false" />
-					<!-- uncomment to turn on debugging
+			<sysproperty key="log.home" value="${logs}" />
+			<sysproperty key="conf.dir" value="${conf.dir}" />
+			<jvmarg value="-d64" />
+			<jvmarg value="-server" />
+			<jvmarg value="-Xms2g" />
+			<jvmarg value="-Xmx2g" />
+			<jvmarg value="-Xloggc:${logs}/gc.log" />
+			<jvmarg value="-XX:+PrintGCTimeStamps" />
+			<jvmarg value="-XX:+PrintGCDetails" />
+			<jvmarg value="-XX:+AggressiveHeap" />
+			<jvmarg value="-XX:+UseAdaptiveSizePolicy" />
+			<!--jvmarg value="-XX:+UseConcMarkSweepGC" /-->
+			<!--jvmarg value="-XX:MaxTenuringThreshold=10" /-->
+			<!--jvmarg value="-XX:+UseParallelGC" /-->
+			<jvmarg value="-XX:NewRatio=1" />
+			<jvmarg value="-XX:SurvivorRatio=2" />
+			<jvmarg value="-Dcom.sun.management.jmxremote" />
+			<jvmarg value="-Dcom.sun.management.jmxremote.port=9999" />
+			<jvmarg value="-Dcom.sun.management.jmxremote.authenticate=false" />
+			<jvmarg value="-Dcom.sun.management.jmxremote.ssl=false" />
+			<!-- uncomment to turn on debugging
 				        <jvmarg value="-Xrunjdwp:transport=dt_socket,address=8886,server=y,suspend=y" />
 					-->
-					<!--jvmarg value="-agentpath:/Users/xgu/Downloads/YourKit_Java_Profiler_8.0.18.app/bin/mac/libyjpagent.jnilib" /-->
-					<!-- uncomment to turn on yourkit profiling
+			<!--jvmarg value="-agentpath:/Users/xgu/Downloads/YourKit_Java_Profiler_8.0.18.app/bin/mac/libyjpagent.jnilib" /-->
+			<!-- uncomment to turn on yourkit profiling
 					<jvmarg value="-agentlib:yjpagent" />
 					-->
 		</java>
-	</target>	
-	
+	</target>
+
 	<target name="javadoc" depends="init" description="--> build javadoc">
 		<javadoc packagenames="proj.zoie.api,
 							   proj.zoie.api.indexing,
@@ -217,7 +233,9 @@
 	        	<batchtest fork="yes" todir="${test.report.dir}">
               			<fileset dir="${test}">
                			<include name="**/ZoieTestSuite.java" />
+               			<!--
                			<include name="**/TestJMSStreamDataProvider.java" />
+               			-->
               			</fileset>
             		</batchtest>
         	</junit>
@@ -229,38 +247,36 @@
         	</junitreport>
 	</target>
 
-
-	
-	<target name="run-perf" depends="dist">
-		<ant antfile="build.xml" dir="perf" target="run-perf"/>
-	</target>
-	
-	<target name="perf-test" depends="dist">
-	       <ant antfile="build.xml" dir="test-perf" target="dist"/>
-	</target>
-	
-	<target name="luke" depends="dist">
-		<ant antfile="build.xml" dir="zoie-luke" target="run"/>
-	</target>
-	
-	<target name="admin" depends="dist">
-		<ant antfile="build.xml" dir="zoie-admin" target="dist"/>
-	</target>
-    <target name="cmdline" depends="dist" description="--> compile the cmdline console jar into dist" >
-        <ant antfile="build.xml" dir="cmdline" target="dist" />
+    <target name="run-perf" depends="dist">
+	  <ant antfile="build.xml" dir="perf" target="run-perf" />
     </target>
 
-  <target name="run-cmdline" depends="cmdline" description="--> run the cmdline console">
-    <java fork="true" jar="${dist}/zoie-cmdline.jar" failonerror="true" maxmemory="2g">
-      <sysproperty key="log.home" value="${logs}" />
-      <sysproperty key="conf.dir" value="${conf.dir}" />
-      <jvmarg value="-d64" />
-      <jvmarg value="-server" />
-      <jvmarg value="-Xms128m" />
-      <jvmarg value="-Xmx2g" />
-      <jvmarg value="-Xloggc:${logs}/gc.log" />
-      <jvmarg value="-XX:+PrintGCTimeStamps" />
-      <jvmarg value="-XX:+PrintGCDetails" />
-    </java>
-  </target>
+    <target name="perf-test" depends="dist">
+	  <ant antfile="build.xml" dir="test-perf" target="dist" />
+    </target>
+
+<target name="luke" depends="dist">
+	<ant antfile="build.xml" dir="zoie-luke" target="run" />
+</target>
+
+<target name="admin" depends="dist">
+	<ant antfile="build.xml" dir="zoie-admin" target="dist" />
+</target>
+<target name="cmdline" depends="dist" description="--> compile the cmdline console jar into dist">
+	<ant antfile="build.xml" dir="cmdline" target="dist" />
+</target>
+
+<target name="run-cmdline" depends="cmdline" description="--> run the cmdline console">
+	<java fork="true" jar="${dist}/zoie-cmdline.jar" failonerror="true" maxmemory="2g">
+		<sysproperty key="log.home" value="${logs}" />
+		<sysproperty key="conf.dir" value="${conf.dir}" />
+		<jvmarg value="-d64" />
+		<jvmarg value="-server" />
+		<jvmarg value="-Xms128m" />
+		<jvmarg value="-Xmx2g" />
+		<jvmarg value="-Xloggc:${logs}/gc.log" />
+		<jvmarg value="-XX:+PrintGCTimeStamps" />
+		<jvmarg value="-XX:+PrintGCDetails" />
+	</java>
+</target>
 </project>

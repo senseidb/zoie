@@ -39,6 +39,7 @@ import proj.zoie.api.UIDDocIdSet;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.DataConsumer.DataEvent;
+import proj.zoie.api.DocIDMapper.DocIDArray;
 import proj.zoie.api.impl.DocIDMapperImpl;
 import proj.zoie.api.impl.InRangeDocIDMapperFactory;
 import proj.zoie.api.indexing.IndexReaderDecorator;
@@ -52,7 +53,7 @@ import proj.zoie.test.mock.MockDataLoader;
 
 public class ZoieTest extends ZoieTestCase
 {
-  static Logger logger = Logger.getLogger(ZoieTest.class);
+  static Logger log = Logger.getLogger(ZoieTest.class);
   
   public ZoieTest() {
   }
@@ -65,6 +66,7 @@ public class ZoieTest extends ZoieTestCase
   public void setUp()
   {
     System.out.println("executing test case: " + getName());
+    log.info("\n\n\nexecuting test case: " + getName());
   }
   @Override
   public void tearDown()
@@ -81,16 +83,18 @@ public class ZoieTest extends ZoieTestCase
       if (i>10)
       {
         System.out.println("cannot delete");
+        log.info("cannot delete");
         return tempFile;
       }
       System.out.println("deleting " + tempFile);
+      log.info("deleting " + tempFile);
       tempFile.delete();
       try
       {
         Thread.sleep(50);
       } catch(Exception e)
       {
-        logger.error("thread interrupted in sleep in deleting file" + e);
+        log.error("thread interrupted in sleep in deleting file" + e);
       }
       i++;
     }
@@ -473,6 +477,7 @@ public class ZoieTest extends ZoieTestCase
     for(int i=0; i<10; i++)
     {
       System.out.println("testDelSet Round: " + i);
+      log.info("\n\n\ntestDelSet Round: " + i);
       testDelSetImpl();
     }
   }
@@ -531,6 +536,7 @@ public class ZoieTest extends ZoieTestCase
                 sb.append("main\n");
                 sb.append(dump(reader, hits));
                 System.out.println(sb.toString());
+                log.info(sb.toString());
               }
             }
             catch(Exception ex)
@@ -550,7 +556,7 @@ public class ZoieTest extends ZoieTestCase
                 }
               }
               catch(IOException ioe){
-                logger.error(ioe.getMessage(),ioe);
+                log.error(ioe.getMessage(),ioe);
               }
               finally{
                 idxSystem.returnIndexReaders(readers);
@@ -669,6 +675,7 @@ public class ZoieTest extends ZoieTestCase
       deleteDirectory(idxDir);
     }
     System.out.println(" done round");
+    log.info(" done round");
     for(QueryThread queryThread : queryThreads)
     {
       if(queryThread.exception != null) throw new ZoieException(queryThread.exception);
@@ -904,6 +911,13 @@ public class ZoieTest extends ZoieTestCase
       }
 
       assertTrue("wrong result", Arrays.equals(ansList1, ansList2));
+      DocIDArray result = mapper.getDocIDArray(qryList);
+      int[] resarr = result.docids;
+      for(int i = 0; i < qryList.length; i++)
+      {
+        assertEquals("wrong result", ansList2[i], resarr[i]);
+      }
+      result.close();
     }
 
 

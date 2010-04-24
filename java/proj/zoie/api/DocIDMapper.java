@@ -1,6 +1,10 @@
 
 package proj.zoie.api;
 
+import java.util.Arrays;
+
+import proj.zoie.api.impl.util.MemoryManager;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,7 +25,7 @@ package proj.zoie.api;
 /**
  * Maps a UID to the internal docid.
  */
-public interface DocIDMapper
+public interface DocIDMapper<T>
 {
   /**
    * doc id not found indicator
@@ -33,4 +37,53 @@ public interface DocIDMapper
    * @return {@link #NOT_FOUND} if uid is not found
    */
   int getDocID(long uid);
+  
+  int quickGetDocID(long uid);
+
+  public T getDocIDArray(long[] uids);
+  public T getDocIDArray(int [] uids);
+  
+  public static final class DocIDArray
+  {
+    public static final MemoryManager<int[]> memMgr = new MemoryManager<int[]>(new MemoryManager.Initializer<int[]>()
+        {
+
+      public void init(int[] buf)
+      {
+        Arrays.fill(buf, DocIDMapper.NOT_FOUND);
+      }
+
+      public int[] newInstance(int size)
+      {
+        int[] ret = new int[size];
+        init(ret);
+        return ret;
+      }
+
+      public int size(int[] buf)
+      {
+        assert buf!=null;
+        return buf.length;
+      }
+        });
+
+    public int[] docids;
+    public int size;
+
+    public DocIDArray(int size)
+    {
+      this.size = size;
+      docids = memMgr.get(size);
+    }
+    
+    public static DocIDArray newInstance(int size)
+    {
+      return new DocIDArray(size);
+    }
+    public void close()
+    {
+      memMgr.release(docids);
+      docids = null;
+    }
+  }
 }

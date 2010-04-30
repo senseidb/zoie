@@ -21,6 +21,7 @@
         <dependency org="org.json" name="json" rev="20090211" conf="master"/>
         <dependency org="junit" name="junit" rev="4.5" conf="test->master"/>
         <dependency org="log4j" name="log4j" rev="1.2.15" conf="master"/>
+        <dependency org="org.mockito" name="mockito-all" rev="1.8.1" conf="test->master"/>
         <dependency org="org.apache.lucene" name="lucene-core" rev="2.9.1" conf="master"/>
         <dependency org="org.apache.lucene" name="lucene-highlighter" rev="2.3.0" conf="master"/>
         <dependency org="javax.servlet" name="servlet-api" rev="2.5" conf="master"/>
@@ -34,5 +35,6 @@
         <dependency org="mx4j" name="mx4j-tools" rev="3.0.1" conf="jetty->master"/>
         <dependency org="org.apache.solr" name="solr-core" rev="1.4.0" conf="solr->master"/>
         <dependency org="org.apache.solr" name="solr-solrj" rev="1.4.0" conf="solr->master"/>
+        <dependency org="org.apache.geronimo.specs" name="geronimo-jms_1.1_spec" rev="1.1.1" conf="master"/>
     </dependencies>
 </ivy-module>

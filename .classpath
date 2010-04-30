@@ -37,5 +37,8 @@
 	<classpathentry kind="lib" path="test-perf/ext-libraries/performance-1.2.0.jar"/>
 	<classpathentry kind="lib" path="test-perf/ext-libraries/jfreechart-0.9.21.jar"/>
 	<classpathentry kind="lib" path="test-perf/ext-libraries/iText.zip"/>
+	<classpathentry kind="lib" path="lib/master/geronimo-jms_1.1_spec.jar">
+	</classpathentry>
+	<classpathentry kind="lib" path="lib/test/mockito-all.jar" sourcepath="/home/yahro/.m2/repository/org/mockito/mockito-all/1.8.1/mockito-all-1.8.1-sources.jar"/>
 	<classpathentry kind="output" path="output"/>
 </classpath>

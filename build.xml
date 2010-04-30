@@ -182,71 +182,68 @@
 
 	<target name="javadoc" depends="init" description="--> build javadoc">
 		<javadoc packagenames="proj.zoie.api,
-				      proj.zoie.api.indexing,
-	        		proj.zoie.api.impl.util,
-							proj.zoie.impl.indexing,
-		          proj.zoie.impl.indexing.internal,
-							proj.zoie.mbean,
-							proj.zoie.service.api"
-			sourcepath="${src}"
-      classpathref="compile.class.path"
-			defaultexcludes="yes"
-			destdir="${doc}"
-			author="false"
-			public="true"
-			version="true"
-			use="true"
-			windowtitle="zoie">
-			<doctitle>
-				<![CDATA[<h1>Zoie</h1>]]></doctitle>
-		<link href="http://java.sun.com/j2se/1.5.0/docs/api/" />
-		<link href="http://fastutil.dsi.unimi.it/docs/" />
-		<link href="http://lucene.apache.org/java/2_3_2/api/core/" />
-	</javadoc>
-</target>
+							   proj.zoie.api.indexing,
+							   proj.zoie.api.impl.util,
+							   proj.zoie.impl.indexing,
+							   proj.zoie.mbean,
+							   proj.zoie.service.api"
+				           sourcepath="${src}"
+						   classpathref="compile.class.path"
+				           defaultexcludes="yes"
+				           destdir="${doc}"
+				           author="false"
+						   public="true"
+				           version="true"
+				           use="true"
+				           windowtitle="zoie">
+				    <doctitle><![CDATA[<h1>Zoie</h1>]]></doctitle>
+				    <link href="http://java.sun.com/j2se/1.5.0/docs/api/"/>
+				    <link href="http://fastutil.dsi.unimi.it/docs/" />
+					<link href="http://lucene.apache.org/java/2_3_2/api/core/" />
+				  </javadoc>
+	</target>
+	
+	<target name="test-build" depends="dist">
+		<javac destdir="${build.test}">
+	            <src path="${test}"/>
+       	            <classpath refid="server.compile.class.path"/>
+                </javac>
+		<jar destfile="${dist}/${project.name}-${version}-test.jar"  basedir="${build.test}" />
+	</target>
+	
+	<target name="test" description="Runs JUnit Tests -- use -Dtests.to.run=testA,testB,... to run tests selectively" depends="test-build">
+		<echo>=== Running JUnit Tests ===</echo>
+		<mkdir dir="${test.report.dir}" />
+        	<mkdir dir="${test.html.dir}" />
 
-<target name="test-build" depends="dist">
-	<javac destdir="${build.test}">
-		<src path="${test}" />
-		<classpath refid="server.compile.class.path" />
-	</javac>
-	<jar destfile="${dist}/${project.name}-${version}-test.jar" basedir="${build.test}" />
-</target>
+		<junit printsummary="yes" showoutput="yes">
+                	<sysproperty key="log.home" value="${logs}" />
+                        <sysproperty key="conf.dir" value="${conf.dir}" />
+			<sysproperty key="log4j.configuration" value="${log4j.configuration}" />
+			<sysproperty key="tests.to.run" value="${tests.to.run}" />
+                        <jvmarg value="-server" />
+                        <jvmarg value="-Xms256m" />
+                        <jvmarg value="-Xmx1g" />
+		    <!-- classpath must include all jar dependencies and classes -->
+			<classpath refid="server.compile.class.path" />
+			
+	      		<!-- formatter to use for output -->
+        		<formatter type="xml"/>
 
-<target name="test" description="Runs JUnit Tests -- use -Dtests.to.run=testA,testB,... to run tests selectively" depends="test-build">
-	<echo>=== Running JUnit Tests ===</echo>
-	<mkdir dir="${test.report.dir}" />
-	<mkdir dir="${test.html.dir}" />
-
-	<junit printsummary="yes" showoutput="yes">
-		<sysproperty key="log.home" value="${logs}" />
-		<sysproperty key="conf.dir" value="${conf.dir}" />
-		<sysproperty key="log4j.configuration" value="${log4j.configuration}" />
-		<sysproperty key="tests.to.run" value="${tests.to.run}" />
-		<jvmarg value="-server" />
-		<jvmarg value="-Xms256m" />
-		<jvmarg value="-Xmx1g" />
-		<!-- classpath must include all jar dependencies and classes -->
-		<classpath refid="server.compile.class.path" />
-
-		<!-- formatter to use for output -->
-		<formatter type="xml" />
-
-		<batchtest fork="yes" todir="${test.report.dir}">
-			<fileset dir="${test}">
-				<include name="**/ZoieTestSuite.java" />
-			</fileset>
-		</batchtest>
-	</junit>
-	<junitreport todir="${test.html.dir}">
-		<fileset dir="${test.report.dir}">
-			<include name="TEST-*.xml" />
-		</fileset>
-		<report todir="${test.html.dir}" format="frames" />
-	</junitreport>
-</target>
-
-
+	        	<batchtest fork="yes" todir="${test.report.dir}">
+              			<fileset dir="${test}">
+               			<include name="**/ZoieTestSuite.java" />
+               			<include name="**/TestJMSStreamDataProvider.java" />
+              			</fileset>
+            		</batchtest>
+        	</junit>
+		<junitreport todir="${test.html.dir}">
+          		<fileset dir="${test.report.dir}">
+            			<include name="TEST-*.xml" />
+          		</fileset>
+          		<report todir="${test.html.dir}" format="frames" />
+        	</junitreport>
+	</target>
 
 <target name="run-perf" depends="dist">
 	<ant antfile="build.xml" dir="perf" target="run-perf" />

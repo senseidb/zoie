@@ -24,4 +24,5 @@ public interface ZoieIndexingStatusAdminMBean {
 	Date getLastIndexingEndTime();
 	int getLastIndexingBatchSize();
 	int getLastIndexingBatchLeftOver();
+	long getCurrentDiskVersion();
 }

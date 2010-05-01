@@ -15,7 +15,7 @@ package proj.zoie.impl.indexing;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import proj.zoie.impl.indexing.IndexingEventListener.IndexingEvent;
+import proj.zoie.api.indexing.IndexingEventListener.IndexingEvent;
 
 public final class IndexUpdatedEvent extends IndexingEvent {
 

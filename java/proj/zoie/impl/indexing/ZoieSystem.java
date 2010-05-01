@@ -42,6 +42,7 @@ import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.impl.DefaultDocIDMapperFactory;
 import proj.zoie.api.indexing.DefaultOptimizeScheduler;
 import proj.zoie.api.indexing.IndexReaderDecorator;
+import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.api.indexing.OptimizeScheduler;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 import proj.zoie.impl.indexing.internal.BatchedIndexDataLoader;

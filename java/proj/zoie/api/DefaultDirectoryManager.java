@@ -13,7 +13,7 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.SimpleFSDirectory;
 
 import proj.zoie.api.impl.util.ChannelUtil;
 import proj.zoie.api.impl.util.FileUtil;
@@ -78,7 +78,7 @@ public class DefaultDirectoryManager implements DirectoryManager
       }
     }
     
-    return FSDirectory.open(_location);
+    return new SimpleFSDirectory(_location);
   }
   
   public static IndexSignature readSignature(File file)

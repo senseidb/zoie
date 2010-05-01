@@ -1,8 +1,10 @@
-package proj.zoie.dataprovider.jdbc;
+package proj.zoie.dataprovider.jdbc.oracle;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+
+import proj.zoie.dataprovider.jdbc.JDBCConnectionFactory;
 
 public class OracleJDBCConnectionFactory implements JDBCConnectionFactory
 {

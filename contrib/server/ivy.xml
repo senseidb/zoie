@@ -1,0 +1,17 @@
+<ivy-module version="2.0">
+    <info organisation="proj.zoie" module="zoie-server"/>
+    <configurations>
+       <conf name="master"  visibility="public" description="contains only the artifact published by this module itself, with no transitive dependencies"/>
+    </configurations>
+    <publications>
+      <artifact name="zoie-server" type="jar" ext="jar" conf="master" />
+    </publications>
+    <dependencies>
+        <dependency org="org.mortbay.jetty" name="jetty" rev="6.1.19" conf="master"/>
+        <dependency org="org.mortbay.jetty" name="jetty-management" rev="6.1.19" conf="master"/>
+        <dependency org="org.mortbay.jetty" name="jetty-naming" rev="6.1.19" conf="master"/>
+        <dependency org="org.mortbay.jetty" name="jetty-util" rev="6.1.19" conf="master"/>
+        <dependency org="mx4j" name="mx4j" rev="3.0.1" conf="master"/>
+        <dependency org="mx4j" name="mx4j-tools" rev="3.0.1" conf="master"/>
+    </dependencies>
+</ivy-module>

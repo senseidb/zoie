@@ -1,0 +1,11 @@
+<ivy-module version="2.0">
+    <info organisation="proj.zoie" module="zoie-dataprovider-oracle"/>
+    <configurations>
+       <conf name="master"  visibility="public" description="contains only the artifact published by this module itself, with no transitive dependencies"/>
+    </configurations>
+    <publications>
+      <artifact name="zoie-dataprovider-oracle" type="jar" ext="jar" conf="master" />
+    </publications>
+    <dependencies>
+    </dependencies>
+</ivy-module>

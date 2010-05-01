@@ -264,7 +264,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
 					if (zoieSegmentReader.numDocs() != numDocs || zoieSegmentReader.maxDoc() != maxDocs){
 						hasDeletes = true;
 					}
-					zoieSegmentReader = new ZoieSegmentReader<R>(zoieSegmentReader,sr);
+					zoieSegmentReader = new ZoieSegmentReader<R>(zoieSegmentReader,sr,hasDeletes);
 				}
 				else{
 					zoieSegmentReader = new ZoieSegmentReader<R>(sr,_decorator);

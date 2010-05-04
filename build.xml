@@ -8,7 +8,7 @@
 	<property name="lib.dir" location="lib" />
 
 	<property name="jetty.home" location="${lib.dir}/jetty" />
-	<property name="lib.tools" location="${lib.dir}/tools" />
+	
 	<property name="build" value="build" />
 
 	<property name="logs" value="logs" />
@@ -62,13 +62,16 @@
 		<fileset dir="${lib.dir}/test">
 			<include name="*.jar" />
 		</fileset>
+		<!--
 		<fileset dir="${jetty.home}">
 			<include name="*.jar" />
 		</fileset>
+		-->
 		<fileset dir="${dist}">
 			<include name="*.jar" />
 		</fileset>
 	</path>
+	
 	<target name="resolve" description="--> retrieve dependencies with ivy" depends="install-ivy">
 		<ivy:retrieve pattern="${ivy.lib.dir}/[conf]/[artifact].[ext]" />
 	</target>
@@ -93,9 +96,7 @@
 		<delete dir="${build.test}" />
 		<ant antfile="build.xml" dir="example" target="clean" />
 		<ant antfile="build.xml" dir="zoie-admin" target="clean" />
-		<ant antfile="build.xml" dir="server" target="clean" />
 		<ant antfile="build.xml" dir="perf" target="clean" />
-		<ant antfile="build.xml" dir="zoie-solr" target="clean" />
 	</target>
 
 	<target name="init" depends="resolve">
@@ -132,9 +133,6 @@
 		<jar destfile="${dist}/${project.name}-${version}.jar" manifest="MANIFEST.MF" basedir="${build}" />
 	</target>
 
-	<target name="zoie-solr" depends="dist">
-		<ant antfile="build.xml" dir="zoie-solr" target="dist" />
-	</target>
 
 	<target name="example-war" depends="dist">
 		<ant antfile="build.xml" dir="example" target="dist" />
@@ -144,18 +142,18 @@
 		<ant antfile="build.xml" dir="perf" target="dist" />
 	</target>
 
-	<target name="zoie-server" depends="init" description="--> build server">
-		<ant antfile="build.xml" dir="server" target="dist" />
+	<target name="zoie-server" description="--> build server">
+		<ant antfile="build.xml" dir="contrib/server" target="dist" />
 	</target>
 
 	<target name="run-server" depends="zoie-server" description="--> run server">
-		<java fork="true" jar="${dist}/zoie-server-${version}.jar" failonerror="true" maxmemory="2g">
+		<java fork="true" jar="${dist}/zoie-server-${version}.jar" failonerror="true" maxmemory="1g">
 			<sysproperty key="log.home" value="${logs}" />
 			<sysproperty key="conf.dir" value="${conf.dir}" />
-			<jvmarg value="-d64" />
+			<!-- <jvmarg value="-d64" /> -->
 			<jvmarg value="-server" />
-			<jvmarg value="-Xms2g" />
-			<jvmarg value="-Xmx2g" />
+			<jvmarg value="-Xms512m" />
+			<jvmarg value="-Xmx1g" />
 			<jvmarg value="-Xloggc:${logs}/gc.log" />
 			<jvmarg value="-XX:+PrintGCTimeStamps" />
 			<jvmarg value="-XX:+PrintGCDetails" />
@@ -182,71 +180,67 @@
 
 	<target name="javadoc" depends="init" description="--> build javadoc">
 		<javadoc packagenames="proj.zoie.api,
-				      proj.zoie.api.indexing,
-	        		proj.zoie.api.impl.util,
-							proj.zoie.impl.indexing,
-		          proj.zoie.impl.indexing.internal,
-							proj.zoie.mbean,
-							proj.zoie.service.api"
-			sourcepath="${src}"
-      classpathref="compile.class.path"
-			defaultexcludes="yes"
-			destdir="${doc}"
-			author="false"
-			public="true"
-			version="true"
-			use="true"
-			windowtitle="zoie">
-			<doctitle>
-				<![CDATA[<h1>Zoie</h1>]]></doctitle>
-		<link href="http://java.sun.com/j2se/1.5.0/docs/api/" />
-		<link href="http://fastutil.dsi.unimi.it/docs/" />
-		<link href="http://lucene.apache.org/java/2_3_2/api/core/" />
-	</javadoc>
-</target>
+							   proj.zoie.api.indexing,
+							   proj.zoie.api.impl.util,
+							   proj.zoie.impl.indexing,
+							   proj.zoie.mbean,
+							   proj.zoie.service.api"
+				           sourcepath="${src}"
+						   classpathref="compile.class.path"
+				           defaultexcludes="yes"
+				           destdir="${doc}"
+				           author="false"
+						   public="true"
+				           version="true"
+				           use="true"
+				           windowtitle="zoie">
+				    <doctitle><![CDATA[<h1>Zoie</h1>]]></doctitle>
+				    <link href="http://java.sun.com/j2se/1.5.0/docs/api/"/>
+				    <link href="http://fastutil.dsi.unimi.it/docs/" />
+					<link href="http://lucene.apache.org/java/2_3_2/api/core/" />
+				  </javadoc>
+	</target>
+	
+	<target name="test-build" depends="dist">
+		<javac destdir="${build.test}">
+	            <src path="${test}"/>
+       	            <classpath refid="server.compile.class.path"/>
+                </javac>
+		<jar destfile="${dist}/${project.name}-${version}-test.jar"  basedir="${build.test}" />
+	</target>
+	
+	<target name="test" description="Runs JUnit Tests -- use -Dtests.to.run=testA,testB,... to run tests selectively" depends="test-build">
+		<echo>=== Running JUnit Tests ===</echo>
+		<mkdir dir="${test.report.dir}" />
+        	<mkdir dir="${test.html.dir}" />
 
-<target name="test-build" depends="dist">
-	<javac destdir="${build.test}">
-		<src path="${test}" />
-		<classpath refid="server.compile.class.path" />
-	</javac>
-	<jar destfile="${dist}/${project.name}-${version}-test.jar" basedir="${build.test}" />
-</target>
+		<junit printsummary="yes" showoutput="yes">
+                	<sysproperty key="log.home" value="${logs}" />
+                        <sysproperty key="conf.dir" value="${conf.dir}" />
+			<sysproperty key="log4j.configuration" value="${log4j.configuration}" />
+			<sysproperty key="tests.to.run" value="${tests.to.run}" />
+                        <jvmarg value="-server" />
+                        <jvmarg value="-Xms256m" />
+                        <jvmarg value="-Xmx1g" />
+		    <!-- classpath must include all jar dependencies and classes -->
+			<classpath refid="server.compile.class.path" />
+			
+	      		<!-- formatter to use for output -->
+        		<formatter type="xml"/>
 
-<target name="test" description="Runs JUnit Tests -- use -Dtests.to.run=testA,testB,... to run tests selectively" depends="test-build">
-	<echo>=== Running JUnit Tests ===</echo>
-	<mkdir dir="${test.report.dir}" />
-	<mkdir dir="${test.html.dir}" />
-
-	<junit printsummary="yes" showoutput="yes">
-		<sysproperty key="log.home" value="${logs}" />
-		<sysproperty key="conf.dir" value="${conf.dir}" />
-		<sysproperty key="log4j.configuration" value="${log4j.configuration}" />
-		<sysproperty key="tests.to.run" value="${tests.to.run}" />
-		<jvmarg value="-server" />
-		<jvmarg value="-Xms256m" />
-		<jvmarg value="-Xmx1g" />
-		<!-- classpath must include all jar dependencies and classes -->
-		<classpath refid="server.compile.class.path" />
-
-		<!-- formatter to use for output -->
-		<formatter type="xml" />
-
-		<batchtest fork="yes" todir="${test.report.dir}">
-			<fileset dir="${test}">
-				<include name="**/ZoieTestSuite.java" />
-			</fileset>
-		</batchtest>
-	</junit>
-	<junitreport todir="${test.html.dir}">
-		<fileset dir="${test.report.dir}">
-			<include name="TEST-*.xml" />
-		</fileset>
-		<report todir="${test.html.dir}" format="frames" />
-	</junitreport>
-</target>
-
-
+	        	<batchtest fork="yes" todir="${test.report.dir}">
+              			<fileset dir="${test}">
+               			<include name="**/ZoieTestSuite.java" />
+              			</fileset>
+            		</batchtest>
+        	</junit>
+		<junitreport todir="${test.html.dir}">
+          		<fileset dir="${test.report.dir}">
+            			<include name="TEST-*.xml" />
+          		</fileset>
+          		<report todir="${test.html.dir}" format="frames" />
+        	</junitreport>
+	</target>
 
 <target name="run-perf" depends="dist">
 	<ant antfile="build.xml" dir="perf" target="run-perf" />
@@ -257,7 +251,7 @@
 </target>
 
 <target name="luke" depends="dist">
-	<ant antfile="build.xml" dir="zoie-luke" target="run" />
+	<ant antfile="build.xml" dir="contrib/luke" target="run" />
 </target>
 
 <target name="admin" depends="dist">

@@ -1,0 +1,13 @@
+<ivy-module version="2.0">
+    <info organisation="proj.zoie" module="zoie-solr"/>
+    <configurations>
+       <conf name="master"  visibility="public" description="contains only the artifact published by this module itself, with no transitive dependencies"/>
+    </configurations>
+    <publications>
+      <artifact name="zoie-solr" type="jar" ext="jar" conf="master" />
+    </publications>
+    <dependencies>
+        <dependency org="org.apache.solr" name="solr-core" rev="1.4.0" conf="master"/>
+        <dependency org="org.apache.solr" name="solr-solrj" rev="1.4.0" conf="master"/>
+    </dependencies>
+</ivy-module>

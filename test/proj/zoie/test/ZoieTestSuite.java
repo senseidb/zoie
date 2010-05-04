@@ -1,5 +1,7 @@
 package proj.zoie.test;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -11,7 +13,9 @@ public class ZoieTestSuite extends TestSuite {
   public static List<String> allTests = Arrays.asList(new String[]{"testStreamDataProvider",
       "testRealtime","testRealtime2", "testAsyncDataConsumer", "testDelSet",
       "testIndexWithAnalyzer", "testUpdates", "testIndexSignature", "testDocIDMapper",
-      "testUIDDocIdSet", "testExportImport","testDocIDMapperFactory"});
+      "testUIDDocIdSet", "testExportImport","testDocIDMapperFactory",
+      "testThreadDelImpl"});
+  public static List<Class> allClasses = Arrays.asList(new Class[]{ZoieTest.class, ZoieThreadTest.class});
 
   public static Test suite()
   {
@@ -24,7 +28,7 @@ public class ZoieTestSuite extends TestSuite {
       for(String test : allTests)
       {
         System.out.println("adding test: " + test);
-        suite.addTest(new ZoieTest(test));
+        createAndAddTest(suite, test);
       }
     } else
     {
@@ -38,10 +42,46 @@ public class ZoieTestSuite extends TestSuite {
           continue;
         }
         System.out.println("adding test: " + test);
-        suite.addTest(new ZoieTest(test));
+        createAndAddTest(suite, test);
       }
     }
     return suite;
+  }
+
+  private static void createAndAddTest(TestSuite suite, String test)
+  {
+    for(Class clazz: allClasses)
+    {
+      try
+      {
+        Constructor constructor = clazz.getConstructor(new Class[]{String.class});
+        clazz.getMethod(test);
+        Test testcase = (Test) constructor.newInstance(test);
+        suite.addTest(testcase);
+      } catch (SecurityException e)
+      {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (NoSuchMethodException e)
+      {
+      } catch (IllegalArgumentException e)
+      {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (InstantiationException e)
+      {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (IllegalAccessException e)
+      {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (InvocationTargetException e)
+      {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+    }
   }
 
   public static void main(String[] args) {

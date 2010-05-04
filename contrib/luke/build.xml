@@ -1,9 +1,9 @@
 <project name="zoie-luke" default="run">
-		<property name="zoie.root" location="../" />
+		<property name="zoie.root" location="../.." />
         <property name="lib.master" value="${zoie.root}/lib/master"/>
-        <property name="lib.tools" value="${zoie.root}/lib/tools"/>
+        <property name="lib.tools" value="lib"/>
     	
-		<property name="src.dir" value="src"/>
+		<property name="src.dir" value="java"/>
         <property name="build" value="build"/>
     	<property name="xml" value="xml"/>
 	    <property name="dist" value="${zoie.root}/dist"/>

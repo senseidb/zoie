@@ -1,4 +1,4 @@
-package proj.zoie.impl.indexing;
+package proj.zoie.api.indexing;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -37,4 +37,10 @@ public interface IndexingEventListener {
 	 * @param evt event to be handled.
 	 */
 	void handleIndexingEvent(IndexingEvent evt);
+	
+	/**
+	 * Handler for updated disk version
+	 * @param version new disk version
+	 */
+	void handleUpdatedDiskVersion(long version);
 }

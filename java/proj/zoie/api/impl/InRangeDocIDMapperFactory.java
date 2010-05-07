@@ -44,9 +44,9 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory {
 		
 		if (docCount > RAM_COUNT_THRESHOLD)
 		{				// large disk index
-			final int[] uidArray = new int[_count]; // this is a mapping from local UID (i.e., array index)
+			final int[] docidArray = new int[_count]; // this is a mapping from local UID (i.e., array index)
 			                                        // to global doc ID.
-			Arrays.fill(uidArray,DocIDMapper.NOT_FOUND);
+			Arrays.fill(docidArray,DocIDMapper.NOT_FOUND);
 			for (int i = 0; i < subreaders.length; ++i)
 			{
 				long[] subuidarray = subreaders[i].getUIDArray();
@@ -59,16 +59,16 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory {
 					if (subid != ZoieIndexReader.DELETED_UID)
 					{
 					  int local_uid = (int)(subid-_start); // this is local relative UID index in the partition
-					  if ((local_uid<0) || (local_uid>=uidArray.length))
+					  if ((local_uid<0) || (local_uid>=docidArray.length))
 					  {
 					    log.error("Local UID outof range for localUID: " + local_uid);
 					  }
-					  uidArray[local_uid] = k+start;//so the global DocID is this.
+					  docidArray[local_uid] = k+start;//so the global DocID is this.
 					}
 				}
-				subreader.setDocIDMapper(new DocIDMapperSub(i, subreader, _start, uidArray, start));
+				subreader.setDocIDMapper(new DocIDMapperSub(i, subreader, _start, docidArray, start));
 			}
-			return new DocIDMapperGlobal(_start, uidArray);
+			return new DocIDMapperGlobal(_start, docidArray);
 		}
 		else{				// small ram index
 			for (int i = 0; i < subreaders.length; ++i){

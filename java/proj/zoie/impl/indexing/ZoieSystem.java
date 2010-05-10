@@ -282,6 +282,15 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 	  _rtdc.flushEvents(timeout);
 	}
 	
+    /**
+     * Flush events to the memory index.
+     * @throws ZoieException 
+     */
+    public void flushEventsToMemoryIndex(long timeout) throws ZoieException
+    {
+      super.flushEvents(timeout);
+    }
+    
 	public boolean isReadltimeIndexing()
 	{
 		return _realtimeIndexing;
@@ -425,6 +434,13 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 	    ZoieSystem.this.flushEvents(Long.MAX_VALUE);
 	    log.info("all events flushed to disk");
 	  }
+	  
+      public void flushToMemoryIndex() throws ZoieException
+      {
+        log.info("flushing to memory");
+        ZoieSystem.this.flushEventsToMemoryIndex(Long.MAX_VALUE);
+        log.info("all events flushed to memory");
+      }
 
 	  public void setBatchDelay(long batchDelay) {
 	    _rtdc.setDelay(batchDelay);

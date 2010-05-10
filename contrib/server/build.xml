@@ -3,7 +3,7 @@
 		<property name="ivy.jar.dir" value="${zoie.root}/ivy"/>
         <property name="lib.master" value="${zoie.root}/lib/master"/>
         <property name="lib.server" value="lib"/>
-    	
+    	<property name="conf.dir" value="${zoie.root}/conf"/>
 		<property name="src.server" value="java"/>
         <property name="build" value="build"/>
 	    <property name="dist" value="${zoie.root}/dist"/>

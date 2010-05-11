@@ -39,6 +39,7 @@ public interface DocIDMapper<T>
   int getDocID(long uid);
   
   int quickGetDocID(long uid);
+  public ZoieIndexReader getReader(long uid);
 
   public T getDocIDArray(long[] uids);
   public T getDocIDArray(int [] uids);

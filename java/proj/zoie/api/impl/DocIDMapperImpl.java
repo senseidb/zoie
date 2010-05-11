@@ -210,4 +210,9 @@ public class DocIDMapperImpl implements DocIDMapper<DocIDArray>
         else end = mid;
       }
     }
+
+    public ZoieIndexReader<?> getReader(long uid)
+    {
+      throw new UnsupportedOperationException();
+    }
 }

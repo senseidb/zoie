@@ -2,6 +2,7 @@ package proj.zoie.api.impl;
 
 import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.DocIDMapperFactory;
+import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieMultiReader;
 import proj.zoie.api.ZoieSegmentReader;
 import proj.zoie.api.DocIDMapper.DocIDArray;
@@ -94,6 +95,10 @@ public class DefaultDocIDMapperFactory implements DocIDMapperFactory {
         }
       }
       return DocIDMapper.NOT_FOUND;
+    }
+    public ZoieIndexReader<?> getReader(long uid)
+    {
+      throw new UnsupportedOperationException();
     }
 	}
 

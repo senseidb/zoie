@@ -18,7 +18,7 @@ import proj.zoie.api.DocIDMapper.DocIDArray;
  * @author "Xiaoyang Gu<xgu@linkedin.com>"
  * 
  */
-public class InRangeDocIDMapperFactory implements DocIDMapperFactory
+public class InRangeFastDocIDMapperFactory implements DocIDMapperFactory
 {
   private static final Logger log = Logger.getLogger(InRangeFastDocIDMapperFactory.class);
   /**
@@ -32,7 +32,7 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
 
   private static final int RAM_COUNT_THRESHOLD = 100000;
 
-  public InRangeDocIDMapperFactory(long start, int count)
+  public InRangeFastDocIDMapperFactory(long start, int count)
   {
     if (start < 0 || count < 0)
     {

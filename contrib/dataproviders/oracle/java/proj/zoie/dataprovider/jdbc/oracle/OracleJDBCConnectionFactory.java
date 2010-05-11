@@ -20,7 +20,12 @@ public class OracleJDBCConnectionFactory implements JDBCConnectionFactory
 
   public OracleJDBCConnectionFactory(String hostname, int port, String SID, String username, String password)
   {
-    _url = ORACLE_JDBC_URL_PREFIX + hostname +":" +port + ":" + SID;
+    this(hostname +":" +port + ":" + SID, username, password);
+  }
+
+  public OracleJDBCConnectionFactory(String database, String username, String password)
+  {
+    _url = ORACLE_JDBC_URL_PREFIX + database;
     _username = username;
     _password = password;
   }

@@ -32,10 +32,9 @@ public class OracleJDBCConnectionFactory implements JDBCConnectionFactory
 
   public synchronized Connection getConnection() throws SQLException
   {
-	if (_conn!=null){
+	if (_conn==null){
 	    try
 	    {
-	      //Class.forName("sun.jdbc.odbc.JdbcOdbcDriver");
 	      Class.forName(ORACLE_DRIVER_NAME);
 	    } catch (Exception e)
 	    {

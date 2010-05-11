@@ -14,10 +14,6 @@ import proj.zoie.api.ZoieMultiReader;
 import proj.zoie.api.ZoieSegmentReader;
 import proj.zoie.api.DocIDMapper.DocIDArray;
 
-/**
- * @author "Xiaoyang Gu<xgu@linkedin.com>"
- * 
- */
 public class InRangeDocIDMapperFactory implements DocIDMapperFactory
 {
   private static final Logger log = Logger.getLogger(InRangeFastDocIDMapperFactory.class);
@@ -30,7 +26,7 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
    */
   private final int _count;
 
-  private static final int RAM_COUNT_THRESHOLD = 100000;
+  private static final int RAM_COUNT_THRESHOLD = 10000;
 
   public InRangeDocIDMapperFactory(long start, int count)
   {
@@ -73,13 +69,14 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
         { // k is the local DOC ID for the subreader
           // subid is the global UID
           long subid = subuidarray[k]; // could be ZoieIndexReader.DELETED_UID
+          log.error(subid);
           if (subid != ZoieIndexReader.DELETED_UID)
           {
             int local_uid = (int) (subid - _start); // this is local (local to partition and not to subreader)
                                                     // relative UID index in the partition
             if ((local_uid < 0) || (local_uid >= docidArray.length))
             {
-              log.error("Local UID outof range for localUID: " + local_uid);
+              log.error("Local UID outof range for localUID: " + local_uid + " _start: " + _start + " " + (long)subid);
             }
             docidArray[local_uid] = k;// so the local DocID is this.
             subReaderIndex[local_uid] = i; // set the sub-reader index
@@ -88,7 +85,7 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
         subreader.setDocIDMapper(new DocIDMapperSub(i, subreader, _start,
             docidArray, start));
       }
-      return new DocIDMapperGlobal(_start, docidArray, subreaders, subReaderIndex);
+      return new DocIDMapperGlobal(_start, docidArray, subreaders, starts, subReaderIndex);
     } else
     { // small ram index
       for (int i = 0; i < subreaders.length; ++i)
@@ -195,9 +192,19 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
       return mapped; // DocIDMapper.NOT_FOUND
     }
 
-    public ZoieIndexReader getReader(long uid)
+    public int getReaderIndex(long uid)
     {
-      return subReader;
+      return 0;
+    }
+
+    public int[] getStarts()
+    {
+      return new int[]{0};
+    }
+
+    public ZoieIndexReader<?>[] getSubReaders()
+    {
+      return new ZoieIndexReader<?>[]{subReader};
     }
   }
 
@@ -207,14 +214,17 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
     final long _start;
     final int[] uidArray;
     final int[] subreaderindex;
+    // starts have the start docID for each subreader in subreaders.
     final ZoieSegmentReader<?>[] subreaders;
+    final int[] starts;
 
-    public DocIDMapperGlobal(long start, int[] uidArray, ZoieSegmentReader<?>[] subreaders, int[] subreaderindex)
+    public DocIDMapperGlobal(long start, int[] uidArray, ZoieSegmentReader<?>[] subreaders, int[] starts, int[] subreaderindex)
     {
       this._start = start;
       this.uidArray = uidArray;
       this.subreaderindex = subreaderindex;
       this.subreaders = subreaders;
+      this.starts = starts;
     }
 
     public final int getDocID(long uid)
@@ -275,20 +285,30 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
       }
     }
 
-    public ZoieIndexReader getReader(long uid)
+    public int getReaderIndex(long uid)
     {
       if (((int) uid) < _start)
       {
-        return null;
+        return -1;
       }
       int idx = (int) (uid - _start);
       if (idx < uidArray.length)
       {
-        return subreaders[subreaderindex[idx]];
+        return subreaderindex[idx];
       } else
       {
-        return null;
+        return -1;
       }
+    }
+
+    public int[] getStarts()
+    {
+      return starts;
+    }
+
+    public ZoieIndexReader<?>[] getSubReaders()
+    {
+      return subreaders;
     }
   }
 
@@ -377,17 +397,27 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
       return DocIDMapper.NOT_FOUND;
     }
 
-    public ZoieIndexReader getReader(long uid)
+    public int getReaderIndex(long uid)
     {
       for (int i = bound; i >= 0; --i)
       {
         int docid = mappers[i].getDocID(uid);
         if (docid != DocIDMapper.NOT_FOUND)
         {
-          return subreaders[i];
+          return i;
         }
       }
-      return null;
+      return -1;
+    }
+
+    public int[] getStarts()
+    {
+      return starts.clone();
+    }
+
+    public ZoieIndexReader<?>[] getSubReaders()
+    {
+      return subreaders;
     }
   }
 }

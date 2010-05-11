@@ -96,7 +96,15 @@ public class DefaultDocIDMapperFactory implements DocIDMapperFactory {
       }
       return DocIDMapper.NOT_FOUND;
     }
-    public ZoieIndexReader<?> getReader(long uid)
+    public int getReaderIndex(long uid)
+    {
+      throw new UnsupportedOperationException();
+    }
+    public int[] getStarts()
+    {
+      throw new UnsupportedOperationException();
+    }
+    public ZoieIndexReader<?>[] getSubReaders()
     {
       throw new UnsupportedOperationException();
     }

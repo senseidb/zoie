@@ -20,14 +20,18 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
   /**
    * the start UID of this contiguous partition range
    */
-  private final long _start;
+  private final long _partStart;
   /**
    * the max number of UIDs in this partition range
    */
   private final int _count;
+  private static final int DEFAULT_RAM_COUNT_THRESHOLD = 100000;
+  private final int RAM_COUNT_THRESHOLD;
 
-  private static final int RAM_COUNT_THRESHOLD = 10000;
-
+  /**
+   * @param start the start UID of the partition
+   * @param count the number of UIDs in this partition
+   */
   public InRangeDocIDMapperFactory(long start, int count)
   {
     if (start < 0 || count < 0)
@@ -35,8 +39,25 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
       throw new IllegalArgumentException("invalid range: [" + start + ","
           + count + "]");
     }
-    _start = start;
+    _partStart = start;
     _count = count;
+    RAM_COUNT_THRESHOLD = DEFAULT_RAM_COUNT_THRESHOLD;
+  }
+  /**
+   * @param start the start UID of the partition
+   * @param count the number of UIDs in this partition
+   * @param ram_count_threshold the threshold for using array based DocIDMapper
+   */
+  public InRangeDocIDMapperFactory(long start, int count, int ram_count_threshold)
+  {
+    if (start < 0 || count < 0)
+    {
+      throw new IllegalArgumentException("invalid range: [" + start + ","
+          + count + "]");
+    }
+    _partStart = start;
+    _count = count;
+    RAM_COUNT_THRESHOLD = ram_count_threshold;
   }
 
   /**
@@ -56,14 +77,14 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
     { // large disk index
       final int[] docidArray = new int[_count]; // this is a mapping from local
                                                 // UID (i.e., array index)
-                                                // to local doc ID.
+                                                // to global doc ID.
       final int[] subReaderIndex = new int[_count]; 
       Arrays.fill(docidArray, DocIDMapper.NOT_FOUND);
       Arrays.fill(subReaderIndex, DocIDMapper.NOT_FOUND);// mark to UID not exist
       for (int i = 0; i < subreaders.length; ++i)
       {
         long[] subuidarray = subreaders[i].getUIDArray();
-        final int start = starts[i];
+        final int start = starts[i]; //start DOCID of this subreader
         final ZoieSegmentReader<?> subreader = subreaders[i];
         for (int k = 0; k < subuidarray.length; ++k)
         { // k is the local DOC ID for the subreader
@@ -71,20 +92,20 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
           long subid = subuidarray[k]; // could be ZoieIndexReader.DELETED_UID
           if (subid != ZoieIndexReader.DELETED_UID)
           {
-            int local_uid = (int) (subid - _start); // this is local (local to partition and not to subreader)
+            int local_uid = (int) (subid - _partStart); // this is local (local to partition and not to subreader)
                                                     // relative UID index in the partition
             if ((local_uid < 0) || (local_uid >= docidArray.length))
             {
-              log.error("Local UID outof range for localUID: " + local_uid + " _start: " + _start + " " + (long)subid);
+              log.error("Local UID outof range for localUID: " + local_uid + " _start: " + _partStart + " _count: " + _count + " " + (long)subid);
             }
-            docidArray[local_uid] = k;// so the local DocID is this.
+            docidArray[local_uid] = k + start;// global DOCID
             subReaderIndex[local_uid] = i; // set the sub-reader index
           }
         }
-        subreader.setDocIDMapper(new DocIDMapperSub(i, subreader, _start,
+        subreader.setDocIDMapper(new DocIDMapperSub(i, subreader, _partStart,
             docidArray, start));
       }
-      return new DocIDMapperGlobal(_start, docidArray, subreaders, starts, subReaderIndex);
+      return new DocIDMapperGlobal(_partStart, docidArray, subreaders, starts, subReaderIndex);
     } else
     { // small ram index
       for (int i = 0; i < subreaders.length; ++i)
@@ -108,20 +129,30 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
     final int[] uidArray;
     final int uidArrayLength;
     final long maxbdd;
+    /**
+     * the global DOCID of the first DOC in this subreader
+     */
     final int start;
-    final long _start;
+    final long _partiStart;
     final int id;
     final ZoieSegmentReader<?> subReader;
 
-    public DocIDMapperSub(int id, ZoieSegmentReader<?> subreader, long _start,
+    /**
+     * @param id
+     * @param subreader
+     * @param _partStart the first UID of the partition
+     * @param uidArray the global DOC array (indexed by UID)
+     * @param start the global DOCID of the first DOC in this subreader
+     */
+    public DocIDMapperSub(int id, ZoieSegmentReader<?> subreader, long _partStart,
         int[] uidArray, int start)
     {
       this.subReader = subreader;
       max = subreader.maxDoc() + start;
-      this._start = _start;
+      this._partiStart = _partStart;
       this.uidArray = uidArray;
       uidArrayLength = uidArray.length;
-      maxbdd = (long) uidArrayLength + _start;
+      maxbdd = (long) uidArrayLength + _partStart;
       this.start = start;
       this.id = id;
     }
@@ -129,12 +160,12 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
     public final int getDocID(long uid)
     {
       int mapped;
-      if (uid < _start || uid >= maxbdd)
+      if (uid < _partiStart || uid >= maxbdd)
       {
         return DocIDMapper.NOT_FOUND;
       } else
       {
-        mapped = uidArray[(int) (uid - _start)];
+        mapped = uidArray[(int) (uid - _partiStart)];// global DOCID
       }
       if (mapped != DocIDMapper.NOT_FOUND)
       {
@@ -151,7 +182,7 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
       int[] docids = ret.docids;
       for (int j = 0; j < uids.length; j++)
       {
-        int mapped = uidArray[(int) (uids[j] - _start)];
+        int mapped = uidArray[(int) (uids[j] - _partiStart)];
         if (mapped != DocIDMapper.NOT_FOUND)
         {
           if (mapped >= max)
@@ -168,7 +199,7 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
       int[] docids = ret.docids;
       for (int j = 0; j < uids.length; j++)
       {
-        int mapped = uidArray[(int) (uids[j] - _start)];
+        int mapped = uidArray[(int) (uids[j] - _partiStart)];
         if (mapped != DocIDMapper.NOT_FOUND)
         {
           if (mapped >= max)
@@ -181,7 +212,7 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
 
     public int quickGetDocID(long uid)
     {
-      int mapped = uidArray[(int) (uid - _start)];
+      int mapped = uidArray[(int) (uid - _partiStart)];
       if (mapped != DocIDMapper.NOT_FOUND)
       {
         if (mapped >= max)
@@ -210,16 +241,23 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
   public static final class DocIDMapperGlobal implements
       DocIDMapper<DocIDArray>
   {
-    final long _start;
+    final long _partiStart;
     final int[] uidArray;
     final int[] subreaderindex;
     // starts have the start docID for each subreader in subreaders.
     final ZoieSegmentReader<?>[] subreaders;
     final int[] starts;
 
-    public DocIDMapperGlobal(long start, int[] uidArray, ZoieSegmentReader<?>[] subreaders, int[] starts, int[] subreaderindex)
+    /**
+     * @param partiStart the first UID of this partition
+     * @param uidArray the global DOCID array
+     * @param subreaders
+     * @param starts
+     * @param subreaderindex
+     */
+    public DocIDMapperGlobal(long partiStart, int[] uidArray, ZoieSegmentReader<?>[] subreaders, int[] starts, int[] subreaderindex)
     {
-      this._start = start;
+      this._partiStart = partiStart;
       this.uidArray = uidArray;
       this.subreaderindex = subreaderindex;
       this.subreaders = subreaders;
@@ -228,11 +266,11 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
 
     public final int getDocID(long uid)
     {
-      if (((int) uid) < _start)
+      if (((int) uid) < _partiStart)
       {
         return DocIDMapper.NOT_FOUND;
       }
-      int idx = (int) (uid - _start);
+      int idx = (int) (uid - _partiStart);
       if (idx < uidArray.length)
       {
         return uidArray[idx];
@@ -248,7 +286,7 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
       int[] docids = ret.docids;
       for (int j = 0; j < uids.length; j++)
       {
-        int idx = (int) (uids[j] - _start);
+        int idx = (int) (uids[j] - _partiStart);
         if (idx < uidArray.length)
         {
           docids[j] = uidArray[idx];
@@ -263,7 +301,7 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
       int[] docids = ret.docids;
       for (int j = 0; j < uids.length; j++)
       {
-        int idx = (int) (uids[j] - _start);
+        int idx = (int) (uids[j] - _partiStart);
         if (idx < uidArray.length)
         {
           docids[j] = uidArray[idx];
@@ -274,7 +312,7 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
 
     public int quickGetDocID(long uid)
     {
-      int idx = (int) (uid - _start);
+      int idx = (int) (uid - _partiStart);
       if (idx < uidArray.length)
       {
         return uidArray[idx];
@@ -286,11 +324,11 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
 
     public int getReaderIndex(long uid)
     {
-      if (((int) uid) < _start)
+      if (((int) uid) < _partiStart)
       {
         return -1;
       }
-      int idx = (int) (uid - _start);
+      int idx = (int) (uid - _partiStart);
       if (idx < uidArray.length)
       {
         return subreaderindex[idx];

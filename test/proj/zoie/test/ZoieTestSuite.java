@@ -13,7 +13,7 @@ public class ZoieTestSuite extends TestSuite {
   public static List<String> allTests = Arrays.asList(new String[]{"testStreamDataProvider",
       "testRealtime","testRealtime2", "testAsyncDataConsumer", "testDelSet",
       "testIndexWithAnalyzer", "testUpdates", "testIndexSignature", "testDocIDMapper",
-      "testUIDDocIdSet", "testExportImport","testDocIDMapperFactory",
+      "testUIDDocIdSet", "testExportImport","testDocIDMapperFactory", "testInRangeDocIDMapperFactory",
       "testThreadDelImpl"});
   public static List<Class> allClasses = Arrays.asList(new Class[]{ZoieTest.class, ZoieThreadTest.class});
 

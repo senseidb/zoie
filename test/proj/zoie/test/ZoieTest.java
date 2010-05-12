@@ -733,13 +733,13 @@ public class ZoieTest extends ZoieTestCase
     }
     memoryProvider.addEvents(list);
     idxSystem.syncWthVersion(10000, version);
-	
-    List<ZoieIndexReader<IndexReader>> readerList= idxSystem.getIndexReaders();	      
+  
+    List<ZoieIndexReader<IndexReader>> readerList= idxSystem.getIndexReaders();       
     for (ZoieIndexReader<IndexReader> reader : readerList){
-    	DocIDMapper mapper = reader.getDocIDMaper();
-    	if (!(mapper instanceof DocIDMapperImpl)){
-    	  numDiskIdx++;	
-    	}
+      DocIDMapper mapper = reader.getDocIDMaper();
+      if (!(mapper instanceof DocIDMapperImpl)){
+        numDiskIdx++; 
+      }
     }
     idxSystem.returnIndexReaders(readerList);
     memoryProvider.stop();
@@ -747,6 +747,71 @@ public class ZoieTest extends ZoieTestCase
     deleteDirectory(idxDir);
     
     assertTrue(numDiskIdx>0);
+  }
+
+  public void testInRangeDocIDMapperFactory() throws Exception
+  {
+    File idxDir = getIdxDir();
+    ZoieSystem<IndexReader, String> idxSystem = createInRangeZoie(idxDir, true,
+        new InRangeDocIDMapperFactory(0, 1000000, 0));
+    idxSystem.start();
+    int numDiskIdx = 0;
+    MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>();
+    memoryProvider.setDataConsumer(idxSystem);
+    memoryProvider.start();
+    idxSystem.setBatchSize(5);
+
+    long version = 0;
+    for(int rep = 0 ; rep<5; rep++)
+    {
+      final int count = TestData.testdata.length;
+      List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(count);
+      for (int i = 0; i < count; i++)
+      {
+        version = i + rep*count;
+        list.add(new DataEvent<String>(version, TestData.testdata[i]));
+      }
+      memoryProvider.addEvents(list);
+      idxSystem.flushEvents(10000);
+      idxSystem.syncWthVersion(10000, version);
+    }
+    List<ZoieIndexReader<IndexReader>> readerList = idxSystem.getIndexReaders();
+    // test UIDs from TestInRangeDataInterpreter 0-9
+    for(ZoieIndexReader<IndexReader> reader : readerList)
+    {
+      int maxDoc = reader.maxDoc();
+      DocIDMapper gmapper = reader.getDocIDMaper();
+      ZoieIndexReader[] readers = gmapper.getSubReaders();
+      System.out.println(Arrays.toString(readers));
+      int[] starts = gmapper.getStarts();
+      for(long uid = 0; uid<10; uid++)
+      {
+        int readeridx = gmapper.getReaderIndex(uid);
+        if (readeridx<0)
+        {
+          continue;
+        }
+        System.out.println(
+            "uid: " + uid + " global:" +gmapper.getDocID(uid)+ " start: " + starts[readeridx] +
+            " local:" + readers[readeridx].getDocIDMaper().getDocID(uid) +
+            "?=" + (gmapper.getDocID(uid)-starts[readeridx]));
+      }
+    }
+    for(ZoieIndexReader<IndexReader> reader : readerList)
+    {
+      DocIDMapper mapper = reader.getDocIDMaper();
+      System.out.println(mapper);
+      if (!(mapper instanceof DocIDMapperImpl))
+      {
+        numDiskIdx++;
+      }
+    }
+    idxSystem.returnIndexReaders(readerList);
+    memoryProvider.stop();
+    idxSystem.shutdown();
+    deleteDirectory(idxDir);
+
+    assertTrue(numDiskIdx > 0);
   }
 
   public void testDocIDMapper()

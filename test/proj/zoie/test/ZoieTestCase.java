@@ -9,9 +9,11 @@ import org.apache.lucene.index.IndexReader;
 
 import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.impl.InRangeDocIDMapperFactory;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.impl.indexing.ZoieSystem;
 import proj.zoie.test.data.TestDataInterpreter;
+import proj.zoie.test.data.TestInRangeDataInterpreter;
 import junit.framework.TestCase;
 
 public class ZoieTestCase extends TestCase
@@ -108,6 +110,12 @@ public class ZoieTestCase extends TestCase
     return idxSystem;
   }
 
+  protected static ZoieSystem<IndexReader,String> createInRangeZoie(File idxDir,boolean realtime, InRangeDocIDMapperFactory docidMapperFactory)
+  {
+    ZoieSystem<IndexReader,String> idxSystem=new ZoieSystem<IndexReader, String>(idxDir,new TestInRangeDataInterpreter(20,null),
+        new TestIndexReaderDecorator(),docidMapperFactory,null,null,50,100,realtime);
+    return idxSystem;
+  } 
   protected static boolean deleteDirectory(File path) {
     if( path.exists() ) {
       File[] files = path.listFiles();

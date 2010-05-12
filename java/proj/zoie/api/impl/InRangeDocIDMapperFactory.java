@@ -69,7 +69,6 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
         { // k is the local DOC ID for the subreader
           // subid is the global UID
           long subid = subuidarray[k]; // could be ZoieIndexReader.DELETED_UID
-          log.error(subid);
           if (subid != ZoieIndexReader.DELETED_UID)
           {
             int local_uid = (int) (subid - _start); // this is local (local to partition and not to subreader)

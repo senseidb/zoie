@@ -81,12 +81,10 @@ public class ZoieIndexingStatusAdmin implements ZoieIndexingStatusAdminMBean,Ind
 		}	
 	}
 
-	@Override
 	public void handleUpdatedDiskVersion(long version) {
 		_diskVersion = version;
 	}
 
-	@Override
 	public long getCurrentDiskVersion() {
 		return _diskVersion;
 	}

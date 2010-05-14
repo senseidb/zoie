@@ -2,7 +2,6 @@
 		<property name="zoie.root" location="../../.." />
 		<property name="ivy.jar.dir" value="${zoie.root}/ivy"/>
         <property name="lib.master" value="${zoie.root}/lib/master"/>
-        <property name="lib.oracle" value="lib"/>
     	
 		<property name="src.dir" value="java"/>
         <property name="build" value="build"/>
@@ -12,9 +11,6 @@
 		
         <path id="project.class.path">
         	<fileset dir="${lib.master}">
-                <include name="*.jar"/>
-			</fileset>
-        	<fileset dir="${lib.oracle}">
                 <include name="*.jar"/>
 			</fileset>
 			<fileset dir="${dist}">

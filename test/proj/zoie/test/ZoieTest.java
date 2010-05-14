@@ -782,25 +782,27 @@ public class ZoieTest extends ZoieTestCase
       int maxDoc = reader.maxDoc();
       DocIDMapper gmapper = reader.getDocIDMaper();
       ZoieIndexReader[] readers = gmapper.getSubReaders();
-      System.out.println(Arrays.toString(readers));
+      log.info(Arrays.toString(readers));
       int[] starts = gmapper.getStarts();
       for(long uid = 0; uid<10; uid++)
       {
         int readeridx = gmapper.getReaderIndex(uid);
-        if (readeridx<0)
+        if (readeridx<0 || reader.isDeleted(gmapper.getDocID(uid)))
         {
           continue;
         }
-        System.out.println(
+        log.info(
             "uid: " + uid + " global:" +gmapper.getDocID(uid)+ " start: " + starts[readeridx] +
             " local:" + readers[readeridx].getDocIDMaper().getDocID(uid) +
-            "?=" + (gmapper.getDocID(uid)-starts[readeridx]));
+            "?=" + (gmapper.getDocID(uid)-starts[readeridx])+
+            (reader.isDeleted(gmapper.getDocID(uid))?"deleted":""));
+        assertTrue("", (gmapper.getDocID(uid)-starts[readeridx]) == readers[readeridx].getDocIDMaper().getDocID(uid));
       }
     }
     for(ZoieIndexReader<IndexReader> reader : readerList)
     {
       DocIDMapper mapper = reader.getDocIDMaper();
-      System.out.println(mapper);
+      log.info(mapper);
       if (!(mapper instanceof DocIDMapperImpl))
       {
         numDiskIdx++;

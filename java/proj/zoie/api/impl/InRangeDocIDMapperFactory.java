@@ -16,7 +16,7 @@ import proj.zoie.api.DocIDMapper.DocIDArray;
 
 public class InRangeDocIDMapperFactory implements DocIDMapperFactory
 {
-  private static final Logger log = Logger.getLogger(InRangeFastDocIDMapperFactory.class);
+  private static final Logger log = Logger.getLogger(InRangeDocIDMapperFactory.class);
   /**
    * the start UID of this contiguous partition range
    */

@@ -98,7 +98,7 @@ public class ZoieTestCase extends TestCase
       return indexReader;
     }
 
-    public IndexReader redecorate(IndexReader decorated,ZoieIndexReader<IndexReader> copy) throws IOException {
+    public IndexReader redecorate(IndexReader decorated,ZoieIndexReader<IndexReader> copy,boolean withDeletes) throws IOException {
       return decorated;
     }
   }

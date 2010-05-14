@@ -55,7 +55,9 @@ public interface ZoieSystemAdminMBean {
 	  
 	void optimize(int numSegs) throws IOException;
 	
-	void flushToDiskIndex() throws ZoieException;
+    void flushToDiskIndex() throws ZoieException;
+    
+    void flushToMemoryIndex() throws ZoieException;
 	
 	void purgeIndex() throws IOException;
 
@@ -67,6 +69,14 @@ public interface ZoieSystemAdminMBean {
 	
 	int getMergeFactor();
 	
+    void setNumLargeSegments(int numLargeSegments);
+    
+    int getNumLargeSegments();
+    
+    void setMaxSmallSegments(int maxSmallSegments);
+    
+    public int getMaxSmallSegments();
+    
 	void setMaxMergeDocs(int maxMergeDocs);
 	
 	int getMaxMergeDocs();

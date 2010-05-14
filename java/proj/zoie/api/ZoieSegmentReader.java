@@ -99,7 +99,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 		_decoratedReader = (decorator == null ? null : decorator.decorate(this));
 	}
 	
-	ZoieSegmentReader(ZoieSegmentReader<R> copyFrom,IndexReader innerReader) throws IOException{
+	ZoieSegmentReader(ZoieSegmentReader<R> copyFrom,IndexReader innerReader,boolean withDeletes) throws IOException{
 		super(innerReader,copyFrom._decorator);
 		_uidArray = copyFrom._uidArray;
 		_maxUID = copyFrom._maxUID;
@@ -112,7 +112,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 			_decoratedReader = null;
 		}
 		else{
-			_decoratedReader = copyFrom._decorator.redecorate(copyFrom._decoratedReader, this);
+			_decoratedReader = copyFrom._decorator.redecorate(copyFrom._decoratedReader, this,withDeletes);
 		}
 	}
 	

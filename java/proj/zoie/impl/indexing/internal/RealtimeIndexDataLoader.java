@@ -28,10 +28,10 @@ import org.apache.lucene.search.Similarity;
 
 import proj.zoie.api.DataConsumer;
 import proj.zoie.api.ZoieException;
+import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 import proj.zoie.impl.indexing.IndexUpdatedEvent;
-import proj.zoie.impl.indexing.IndexingEventListener;
 
 /**
  * Keeps track of the number of incoming data events.

@@ -28,7 +28,7 @@ public class DefaultIndexReaderDecorator implements IndexReaderDecorator<IndexRe
 		return indexReader;
 	}
 
-	public IndexReader redecorate(IndexReader decorated, ZoieIndexReader<IndexReader> copy)
+	public IndexReader redecorate(IndexReader decorated, ZoieIndexReader<IndexReader> copy,boolean withDeletes)
 			throws IOException {
 		return copy;
 	}

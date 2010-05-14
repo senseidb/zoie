@@ -40,8 +40,9 @@ public interface IndexReaderDecorator<R extends IndexReader>
 	 * reference to the source reader needs to be set.
 	 * @param decorated Previously decoreated reader
 	 * @param copy a new copy of the source reader
+	 * @param withDeletes indicator for whether this segment contained new deletes
 	 * @return Re-decorated reader
 	 * @throws IOException
 	 */
-	R redecorate(R decorated,ZoieIndexReader<R> copy) throws IOException;
+	R redecorate(R decorated,ZoieIndexReader<R> copy,boolean withDeletes) throws IOException;
 }

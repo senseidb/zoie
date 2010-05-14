@@ -15,6 +15,7 @@ package proj.zoie.impl.indexing.internal;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -28,12 +29,12 @@ import org.apache.lucene.index.IndexReader;
 import proj.zoie.api.DataConsumer;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.indexing.AbstractZoieIndexable;
+import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
+import proj.zoie.api.indexing.IndexingEventListener.IndexingEvent;
 import proj.zoie.impl.indexing.IndexUpdatedEvent;
-import proj.zoie.impl.indexing.IndexingEventListener;
 import proj.zoie.impl.indexing.IndexingThread;
-import proj.zoie.impl.indexing.IndexingEventListener.IndexingEvent;
 
 /**
  * Runs a background thread that flushes incoming data events in batch to the background DataConsumer.
@@ -109,6 +110,21 @@ public class BatchedIndexDataLoader<R extends IndexReader,V> implements DataCons
 		  }
 	  }
 	  
+	  protected final void fireNewVersionEvent(long newVersion){
+		  if (_lsnrList!=null && _lsnrList.size() > 0){
+  		    synchronized(_lsnrList) {
+  			  for (IndexingEventListener lsnr : _lsnrList){
+  				  try{
+  				    lsnr.handleUpdatedDiskVersion(newVersion);
+  				  }
+  				  catch(Exception e){
+  					  log.error(e.getMessage(),e);
+  				  }
+  			  }
+  		    }
+		  }
+	  }
+	  
 	  public synchronized int getMaxBatchSize()
 	  {
 	    return _maxBatchSize;
@@ -153,8 +169,6 @@ public class BatchedIndexDataLoader<R extends IndexReader,V> implements DataCons
 	  {
 	    if (events != null)
 	    {
-	      // PriorityQueue<DataEvent<ZoieIndexable>> indexableList = new
-	      // PriorityQueue<DataEvent<ZoieIndexable>>(data.size(), DataEvent.getComparator());
 	      ArrayList<DataEvent<ZoieIndexable>> indexableList =
 	          new ArrayList<DataEvent<ZoieIndexable>>(events.size());
 	      Iterator<DataEvent<V>> iter = events.iterator();
@@ -268,6 +282,15 @@ public class BatchedIndexDataLoader<R extends IndexReader,V> implements DataCons
         long now=System.currentTimeMillis();
         long duration=now-_lastFlushTime;
 
+        long currentVersion;
+	      
+	    try{
+	      currentVersion = _idxMgr.getCurrentDiskVersion();
+	    }
+	    catch(IOException ioe){
+	      currentVersion = -1L;
+	    }
+	    
         synchronized(this)
         {
           while(_batchList.size()<_batchSize && !_stop && !_flush && duration<_delay)
@@ -313,10 +336,20 @@ public class BatchedIndexDataLoader<R extends IndexReader,V> implements DataCons
             synchronized(this)
             {
               _eventCount -= eventCount;
+              this.notifyAll();
               log.info(this+" flushed batch of "+eventCount+" events to disk indexer, took: "+(t2-t1)+" current event count: "+_eventCount);
+             
               IndexUpdatedEvent evt = new IndexUpdatedEvent(eventCount,t1,t2,_eventCount);
               fireIndexingEvent(evt);
-              this.notifyAll();
+              try{
+                long newVersion = _idxMgr.getCurrentDiskVersion();
+                if (currentVersion != newVersion){
+                	fireNewVersionEvent(newVersion);
+                }
+              }
+              catch(IOException ioe){
+            	 log.error(ioe.getMessage(),ioe); 
+              }
             }
           }
         }

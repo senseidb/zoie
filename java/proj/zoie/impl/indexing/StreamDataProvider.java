@@ -250,6 +250,7 @@ public abstract class StreamDataProvider<V> implements DataProvider<V>,DataProvi
               }
 		      try
 		      {
+                this.notifyAll();
 		        this.wait(due - now);
 		      }
 		      catch(InterruptedException e)
@@ -263,6 +264,7 @@ public abstract class StreamDataProvider<V> implements DataProvider<V>,DataProvi
 
 		public void run()
 		{
+          long version = _currentVersion;
 		  while (!_stop)
 		  {
 		    synchronized(this)
@@ -281,15 +283,16 @@ public abstract class StreamDataProvider<V> implements DataProvider<V>,DataProvi
 		      DataEvent<V> data = _dataProvider.next();
 		      if (data!=null)
 		      {
+		        version = Math.max(version, data.getVersion());
 		        synchronized(this)
 		        {
 		          _batch.add(data);
 		          if (_batch.size()>=_dataProvider._batchSize)
 		          {
 		            flush();
+                    _currentVersion = version;
+		            this.notifyAll();
 		          }
-		          _currentVersion=Math.max(_currentVersion, data.getVersion());
-		          this.notifyAll();
 		        }
 		      }
 		      else
@@ -297,7 +300,9 @@ public abstract class StreamDataProvider<V> implements DataProvider<V>,DataProvi
 		        synchronized(this)
 		        {
 		          flush();
-		          _stop=true;
+                  _stop=true;
+                  _currentVersion = version;
+                  this.notifyAll();
 		          return;
 		        }
 		      }

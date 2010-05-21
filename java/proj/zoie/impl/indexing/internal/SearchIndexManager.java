@@ -41,7 +41,7 @@ public class SearchIndexManager<R extends IndexReader>{
 	  private final	IndexReaderDecorator<R>	_indexReaderDecorator;
 
 	  final DocIDMapperFactory _docIDMapperFactory;
-	  private volatile DiskSearchIndex<R> _diskIndex;
+	  private final DiskSearchIndex<R> _diskIndex;
 	  
 	  private volatile Status _diskIndexerStatus;
 	  private volatile Mem<R> _mem;
@@ -69,7 +69,27 @@ public class SearchIndexManager<R extends IndexReader>{
 	    {
 	      throw new IllegalArgumentException("indexReaderDecorator cannot be null");
 	    }
-	    init();
+        _diskIndexerStatus = Status.Sleep;
+        _diskIndex = new DiskSearchIndex<R>(_dirMgr, _indexReaderDecorator,this); 
+        ZoieIndexReader<R> diskIndexReader = null;
+        
+        try
+        {
+          diskIndexReader = _diskIndex.getNewReader();
+        }
+        catch (IOException e)
+        {
+          log.error(e.getMessage(),e);
+          return;
+        }
+        long version = _diskIndex.getVersion();
+        RAMSearchIndex<R> memIndexA = new RAMSearchIndex<R>(version, _indexReaderDecorator,this);
+        Mem<R> mem = new Mem<R>(memIndexA, null, memIndexA, null, diskIndexReader);
+        if (diskIndexReader != null)
+        {
+          diskIndexReader.incRef();
+        }
+        _mem = mem;
 	  }
 	  
 	  public DocIDMapperFactory getDocIDMapperFactory(){
@@ -196,7 +216,7 @@ public class SearchIndexManager<R extends IndexReader>{
 	          }
 	        }
 
-	        if (_diskIndex != null)                           // load disk index
+	        // load disk index
 	        {
 	          reader = mem.get_diskIndexReader();
 	          if (reader != null)
@@ -211,7 +231,7 @@ public class SearchIndexManager<R extends IndexReader>{
 	    return readers;
 	  }
 	  
-	  public void setDiskIndexerStatus(Status status)
+	  public synchronized void setDiskIndexerStatus(Status status)
 	  {
 	    
 	    // going from sleep to wake, disk index starts to index
@@ -258,36 +278,6 @@ public class SearchIndexManager<R extends IndexReader>{
 	    }
 	  }
 
-	  /**
-	   * Initialization
-	   */
-	  private void init()
-	  {
-		_diskIndexerStatus = Status.Sleep;
-	    _diskIndex = new DiskSearchIndex<R>(_dirMgr, _indexReaderDecorator,this); 
-        ZoieIndexReader<R> diskIndexReader = null;
-	    if(_diskIndex != null)
-	    {
-	      try
-	      {
-	        diskIndexReader = _diskIndex.getNewReader();
-	      }
-          catch (IOException e)
-          {
-            log.error(e.getMessage(),e);
-            return;
-          }
-	    }
-	    long version = _diskIndex.getVersion();
-        RAMSearchIndex<R> memIndexA = new RAMSearchIndex<R>(version, _indexReaderDecorator,this);
-	    Mem<R> mem = new Mem<R>(memIndexA, null, memIndexA, null, diskIndexReader);
-	    if (diskIndexReader != null)
-	    {
-	      diskIndexReader.incRef();
-	    }
-	    _mem = mem;
-	  }
-
 	  public DiskSearchIndex<R> getDiskIndex()
 	  {
 	    return _diskIndex;
@@ -319,28 +309,26 @@ public class SearchIndexManager<R extends IndexReader>{
 	    if (mem.get_diskIndexReader()!=null)
 	    {
 	      try
-        {
-          mem.get_diskIndexReader().decRef();
-          if (_diskIndex!=null)
-          {
+	      {
+	        mem.get_diskIndexReader().decRef();
             _diskIndex.close();
           }
-        } catch (IOException e)
-        {
-          log.error("error closing remaining diskReader pooled in mem: " + e);
-        }
+	      catch (IOException e)
+          {
+	        log.error("error closing remaining diskReader pooled in mem: " + e);
+          }
 	    }
 	  }
 
 	  
 	  public long getCurrentDiskVersion() throws IOException
 	  {
-	    return (_diskIndex==null) ? 0 : _diskIndex.getVersion();
+	    return _diskIndex.getVersion();
 	  }
 
 	  public int getDiskIndexSize()
 	  {
-	    return (_diskIndex==null) ? 0 : _diskIndex.getNumdocs();
+	    return _diskIndex.getNumdocs();
 	  }
 	  
 	  public int getRamAIndexSize()
@@ -406,16 +394,13 @@ public class SearchIndexManager<R extends IndexReader>{
 		
         _dirMgr.purge();
         
-        if(_diskIndex != null)
-		{
-          _diskIndex.clearDeletes();
-          _diskIndex.refresh();
-          _diskIndex.closeIndexWriter();
-          RAMSearchIndex<R> memIndexA = new RAMSearchIndex<R>(_diskIndex.getVersion(), _indexReaderDecorator,this);
-          Mem<R> mem = new Mem<R>(memIndexA, null, memIndexA, null, null);
-          _mem = mem;
-		}
-		
+        _diskIndex.clearDeletes();
+        _diskIndex.refresh();
+        _diskIndex.closeIndexWriter();
+        RAMSearchIndex<R> memIndexA = new RAMSearchIndex<R>(_diskIndex.getVersion(), _indexReaderDecorator,this);
+        Mem<R> mem = new Mem<R>(memIndexA, null, memIndexA, null, null);
+        _mem = mem;
+        
 		log.info("index purged");
 	  }
 	  

@@ -64,8 +64,9 @@
 	<bean id="searchService" class="proj.zoie.perf.server.MonitoredZoieService">
 		<constructor-arg ref="index-reader-factory"/>
 	</bean>
-
+<!--
   <bean id="sampleService" class="proj.zoie.example.service.impl.ExampleZoieSearchServiceImpl">
     <constructor-arg ref="index-reader-factory" />
   </bean>
+-->
 </beans>

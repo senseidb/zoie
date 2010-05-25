@@ -9,12 +9,12 @@
       <property name="service" ref="searchService"/>
       <property name="serviceInterface" value="proj.zoie.service.api.ZoieSearchService"/>
     </bean>
-    
+<!--    
   <bean name="/SampleZoieService" class="org.springframework.remoting.httpinvoker.HttpInvokerServiceExporter">
     <property name="service" ref="sampleService" />
     <property name="serviceInterface" value="proj.zoie.service.api.ZoieSearchService" />
   </bean>
-
+-->
     <!-- ================================================== == -->
     <!-- Exposing service using the Caucho Hessian protocol -->
     <!-- ================================================== == -->	

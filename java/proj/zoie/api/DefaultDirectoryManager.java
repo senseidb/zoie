@@ -118,7 +118,7 @@ public class DefaultDirectoryManager implements DirectoryManager
     }
   }
   
-  private void saveSignature(IndexSignature sig, File file) throws IOException
+  protected void saveSignature(IndexSignature sig, File file) throws IOException
   {
     if (!file.exists())
     {

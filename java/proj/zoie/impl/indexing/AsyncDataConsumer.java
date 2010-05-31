@@ -170,6 +170,7 @@ public class AsyncDataConsumer<V> implements DataConsumer<V>
     {
       while(_currentVersion < version)
       {
+        System.out.println("currentVersion: " + _currentVersion + " version:"+version);
     	long now1 = System.currentTimeMillis();
         if(timeInMillis<=0)
         {
@@ -186,6 +187,7 @@ public class AsyncDataConsumer<V> implements DataConsumer<V>
         long now2 = System.currentTimeMillis();
         timeInMillis-=(now2 - now1);
       }
+      System.out.println("currentVersion: " + _currentVersion + " version:"+version);
     }
   }
   

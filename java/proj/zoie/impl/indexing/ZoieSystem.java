@@ -32,7 +32,6 @@ import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.Version;
 
-import proj.zoie.api.DataConsumer;
 import proj.zoie.api.DefaultDirectoryManager;
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DocIDMapperFactory;
@@ -54,7 +53,7 @@ import proj.zoie.mbean.ZoieSystemAdminMBean;
 /**
  * Zoie system, main class.
  */
-public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> implements DataConsumer<V>,IndexReaderFactory<ZoieIndexReader<R>> {
+public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> implements IndexReaderFactory<ZoieIndexReader<R>> {
 
 	private static final Logger log = Logger.getLogger(ZoieSystem.class);
 	
@@ -270,7 +269,7 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 	{
 		log.info("starting zoie...");
 		_rtdc.start();
-        super.start();
+		super.start();
 		log.info("zoie started...");
 	}
 	

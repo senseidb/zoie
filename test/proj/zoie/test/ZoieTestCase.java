@@ -1,7 +1,9 @@
 package proj.zoie.test;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Properties;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -23,14 +25,28 @@ public class ZoieTestCase extends TestCase
   {
     super();
     String confdir = System.getProperty("conf.dir");
-    org.apache.log4j.PropertyConfigurator.configure(confdir+"/log4j.properties");
+    if (confdir==null) confdir="conf";
+    try
+    {
+      org.apache.log4j.PropertyConfigurator.configure(confdir+"/log4j.properties");
+    } catch(Exception e)
+    {
+      org.apache.log4j.PropertyConfigurator.configure((Properties)null);
+    }
   }
 
   ZoieTestCase(String name)
   {
     super(name);
     String confdir = System.getProperty("conf.dir");
-    org.apache.log4j.PropertyConfigurator.configure(confdir+"/log4j.properties");
+    if (confdir==null) confdir="conf";
+    try
+    {
+      org.apache.log4j.PropertyConfigurator.configure(confdir+"/log4j.properties");
+    } catch(Exception e)
+    {
+      org.apache.log4j.PropertyConfigurator.configure((Properties)null);
+    }
   }
 
   @Override

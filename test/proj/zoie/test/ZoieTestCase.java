@@ -1,7 +1,6 @@
 package proj.zoie.test;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Properties;
 
@@ -75,6 +74,7 @@ public class ZoieTestCase extends TestCase
       }
       System.out.println("deleting " + tempFile);
       log.info("deleting " + tempFile);
+//      deleteDirectory(tempFile);
       tempFile.delete();
       try
       {

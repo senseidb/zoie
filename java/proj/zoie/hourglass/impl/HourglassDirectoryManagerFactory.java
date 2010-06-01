@@ -15,6 +15,7 @@ import java.util.TimeZone;
 import org.apache.log4j.Logger;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.SimpleFSDirectory;
 
 import proj.zoie.api.DefaultDirectoryManager;
 import proj.zoie.api.DirectoryManager;
@@ -37,6 +38,7 @@ public class HourglassDirectoryManagerFactory
 //  private DecimalFormat formatter = new DecimalFormat("00000000000000000000");
   private SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd-HHmmssSSS"); 
   private volatile long _nextUpdateTime=0L;
+  private boolean init = true;
   public HourglassDirectoryManagerFactory(File root, long duration)
   {
     _root = root;
@@ -64,10 +66,19 @@ public class HourglassDirectoryManagerFactory
     if (System.currentTimeMillis()< _nextUpdateTime) return false;
     Calendar now = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
     now.setTimeInMillis(System.currentTimeMillis());
-    _location = new File(_root, getFolderName(now)+"/"+DirectoryManager.INDEX_DIRECTORY);
+    String folderName;
+    if (init)
+    {
+      folderName = getFolderName(now);
+      init = false;
+    } else
+    {
+      folderName = getPeriodFolderName(now);
+    }
+    _location = new File(_root, folderName);
     try
     {
-      System.out.println(_location.getCanonicalPath());
+      System.out.println("updateDirectoryManager" + _location.getCanonicalPath());
     } catch (IOException e)
     {
       log.error(e);
@@ -93,11 +104,16 @@ public class HourglassDirectoryManagerFactory
   
   public boolean exists(Calendar cal)
   {
-    File folder = new File(_root, getFolderName(cal)+"/"+DirectoryManager.INDEX_DIRECTORY);
+    File folder = new File(_root, getPeriodFolderName(cal)+"/"+DirectoryManager.INDEX_DIRECTORY);
     return folder.exists();
   }
-  
   private String getFolderName(Calendar cal)
+  {
+    Calendar mycal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+    mycal.setTimeInMillis(cal.getTimeInMillis());
+    return dateFormatter.format(mycal.getTime());
+  }
+  private String getPeriodFolderName(Calendar cal)
   {
     Calendar mycal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
     mycal.setTimeInMillis(getPeriod(cal.getTimeInMillis()));
@@ -115,28 +131,23 @@ public class HourglassDirectoryManagerFactory
     for(File file : files)
     {
       String name = file.getName();
-      System.out.println(name);
+      System.out.println("getAllArchivedDirectories" + name + " " + (file.equals(_location)?"*":""));
+      log.info("getAllArchivedDirectories" + name);
       long time = 0;
       try
       {
         time = dateFormatter.parse(name).getTime();
       } catch (ParseException e)
       {
-        log.warn("potential index corruption", e);
+        log.warn("potential index corruption. we skip folder: " + name, e);
         System.out.println("potential index corruption"+ e);
-        continue;
-      }
-      if (time != getPeriod(time))
-      {
-        log.warn("potential index corruption. Folder name "+ dateFormatter.format(time) + " inconsistent with period: " + _indexDuration );
-        System.out.println("potential index corruption. Folder name "+ dateFormatter.format(time) + " inconsistent with period: " + _indexDuration );
         continue;
       }
       if (!file.equals(_location))
       {
         try
         {
-          list.add(FSDirectory.open(file));
+          list.add(new SimpleFSDirectory(file));
         } catch (IOException e)
         {
           log.error("potential index corruption", e);

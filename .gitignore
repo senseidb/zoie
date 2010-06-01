@@ -5,6 +5,7 @@ ivy
 index
 logs
 output
+perf/perf-build 
 lib
 perf/perf-build
 MANIFEST.MF

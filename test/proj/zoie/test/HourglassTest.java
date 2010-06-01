@@ -53,7 +53,7 @@ public class HourglassTest extends ZoieTestCase
     File idxDir = getIdxDir();
     HourglassDirectoryManagerFactory factory = new HourglassDirectoryManagerFactory(idxDir, 10000);
     ZoieConfig zConfig = new ZoieConfig();
-    zConfig.setBatchSize(1);
+    zConfig.setBatchSize(3);
     zConfig.setBatchDelay(10);
     Hourglass<IndexReader, String> hourglass = new Hourglass<IndexReader, String>(factory, new HourglassTestInterpreter(), new IndexReaderDecorator<IndexReader>(){
 
@@ -75,7 +75,7 @@ public class HourglassTest extends ZoieTestCase
     int initNumDocs = getTotalNumDocs(hourglass);
     System.out.println("initial number of DOCs: " + initNumDocs);
     
-    long numTestContent = 10025;
+    long numTestContent = 1025;
     long accumulatedTime = 0;
     for(int i=initNumDocs; i<initNumDocs + numTestContent; i++)
     {
@@ -99,9 +99,8 @@ public class HourglassTest extends ZoieTestCase
         reader = new MultiReader(readers.toArray(new IndexReader[0]),false);
         numDoc = reader.numDocs();
 //        System.out.println("numDoc " + numDoc);
-        Thread.sleep(30);
+        Thread.sleep(2);
       }
-      System.out.println("time : " + (System.currentTimeMillis() - flushtime));
       List<Directory> dirlist = factory.getAllArchivedDirectories();
 //      System.out.println(Arrays.toString(dirlist.toArray(new Directory[0])));
       accumulatedTime += (System.currentTimeMillis() - flushtime);
@@ -117,8 +116,9 @@ public class HourglassTest extends ZoieTestCase
         hourglass.returnIndexReaders(readers);
         readers = null;
       }
+      System.out.println(((i-initNumDocs)*100/numTestContent) + "%");
     }
-    System.out.println("average time: " + ((float)accumulatedTime/(float)numTestContent));
+    hourglass.shutdown();
     return;
   }
   private int getTotalNumDocs(Hourglass<IndexReader, String> hourglass)

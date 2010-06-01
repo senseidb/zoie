@@ -68,13 +68,11 @@ public class ZoieTestCase extends TestCase
     {
       if (i>10)
       {
-        System.out.println("cannot delete");
         log.info("cannot delete");
         return tempFile;
       }
-      System.out.println("deleting " + tempFile);
       log.info("deleting " + tempFile);
-//      deleteDirectory(tempFile);
+      deleteDirectory(tempFile);
       tempFile.delete();
       try
       {

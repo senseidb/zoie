@@ -312,7 +312,10 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 	}
 	
 	/**
-	 * get the list of index readers. This method should always be paired with returnIndexReaders(.).
+   * return a list of ZoieIndexReaders. These readers are reference counted and this method
+   * should be used in pair with returnIndexReaders(List<ZoieIndexReader<R>> readers) {@link #returnIndexReaders(List)}.
+   * It is typical that we create a MultiReader from these readers. When creating MultiReader, it should be created with
+   * the closeSubReaders parameter set to false in order to do reference counting correctly.
 	 * @see proj.zoie.api.IndexReaderFactory#getIndexReaders()
 	 * @see proj.zoie.impl.indexing.ZoieSystem#returnIndexReaders(List)
 	 */

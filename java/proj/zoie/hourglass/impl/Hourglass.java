@@ -82,14 +82,23 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
     return _zConfig.getAnalyzer();
   }
 
-  /* (non-Javadoc)
+  /**
+   * return a list of ZoieIndexReaders. These readers are reference counted and this method
+   * should be used in pair with returnIndexReaders(List<ZoieIndexReader<R>> readers) {@link #returnIndexReaders(List)}.
+   * It is typical that we create a MultiReader from these readers. When creating MultiReader, it should be created with
+   * the closeSubReaders parameter set to false in order to do reference counting correctly.
+   * @see proj.zoie.hourglass.impl.Hourglass#returnIndexReaders(List)
    * @see proj.zoie.api.IndexReaderFactory#getIndexReaders()
    */
   public List<ZoieIndexReader<R>> getIndexReaders() throws IOException
   {
     List<ZoieIndexReader<R>> list = new ArrayList<ZoieIndexReader<R>>();
     // add the archived index readers
-    list.addAll(archiveList);
+    for(ZoieIndexReader<R> r : archiveList)
+    {
+      r.incRef();
+      list.add(r);
+    }
     if (_oldZoie!=null)
     {
       if(_oldZoie.getCurrentBatchSize()+_oldZoie.getCurrentDiskBatchSize()+_oldZoie.getCurrentMemBatchSize()==0)
@@ -97,19 +106,21 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
         // all events on disk.
         log.info("shutting down ... " + _oldZoie.getAdminMBean().getIndexDir());
         _oldZoie.shutdown();
-        IndexReader reader = IndexReader.open(new SimpleFSDirectory(new File(_oldZoie.getAdminMBean().getIndexDir())),true);
+        String dirName = _oldZoie.getAdminMBean().getIndexDir();
+        IndexReader reader = IndexReader.open(new SimpleFSDirectory(new File(dirName)),true);
         _oldZoie = null;
         ZoieMultiReader<R> zoiereader = new ZoieMultiReader<R>(reader, _decorator);
         archiveList.add(zoiereader);
+        zoiereader.incRef();
         list.add(zoiereader);
       } else
       {
-        List<ZoieIndexReader<R>> oldlist = _oldZoie.getIndexReaders();
+        List<ZoieIndexReader<R>> oldlist = _oldZoie.getIndexReaders();// already incRef.
         list.addAll(oldlist);
       }
     }
     // add the index readers for the current realtime index
-    List<ZoieIndexReader<R>> readers = _currentZoie.getIndexReaders();
+    List<ZoieIndexReader<R>> readers = _currentZoie.getIndexReaders(); // already incRef
     list.addAll(readers);
     return list;
   }
@@ -117,9 +128,9 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
   /* (non-Javadoc)
    * @see proj.zoie.api.IndexReaderFactory#returnIndexReaders(java.util.List)
    */
-  public void returnIndexReaders(List<ZoieIndexReader<R>> r)
+  public void returnIndexReaders(List<ZoieIndexReader<R>> readers)
   {
-    _currentZoie.returnIndexReaders(r);
+    _currentZoie.returnIndexReaders(readers);
   }
 
   /* (non-Javadoc)
@@ -147,6 +158,18 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
   public void shutdown()
   {
     _currentZoie.shutdown();
+    for(ZoieIndexReader<R> r : archiveList)
+    {
+      try
+      {
+        r.decRef();
+      } catch (IOException e)
+      {
+        log.error("error decRef during shutdown", e);
+      }
+      log.info("refCount at shutdown: " + r.getRefCount());
+    }
+    log.info("shut down");
   }
 
   /* (non-Javadoc)

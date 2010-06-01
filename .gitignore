@@ -6,5 +6,6 @@ index
 logs
 output
 lib
+perf/perf-build
 MANIFEST.MF
 !lib/tools

@@ -132,11 +132,6 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
     }
   }
 
-  public void returnReaders(List<ZoieIndexReader<R>> readers) throws IOException
-  {
-    _dispenser.returnReaders(readers);
-  }
-
 	  @Override
 	  protected void finalize()
 	  {

@@ -7,6 +7,6 @@ logs
 output
 perf/perf-build
 lib
-perf/perf-build
 MANIFEST.MF
 !lib/tools
+.settings

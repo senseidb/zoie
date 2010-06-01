@@ -32,10 +32,6 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
   private final ZoieIndexableInterpreter<V> _interpreter;
   private final IndexReaderDecorator<R> _decorator;
   private final ZoieConfig _zConfig;
-//  private Analyzer _analyzer;
-//  private Similarity _similarity;
-//  private int _batchSize;
-//  private long _batchDelay;
   private volatile ZoieSystem<R, V> _currentZoie;
   private volatile ZoieSystem<R, V> _oldZoie = null;
   private final List<ZoieIndexReader<R>> archiveList = new ArrayList<ZoieIndexReader<R>>();
@@ -71,8 +67,7 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
         log.error("IOException", e);
       }
     }
-    log.info("load archive Indices in " + (System.currentTimeMillis() - t0) + "ms");
-    System.out.println("load "+dirs.size()+" archive Indices in " + (System.currentTimeMillis() - t0) + "ms");
+    log.info("load "+dirs.size()+" archive Indices in " + (System.currentTimeMillis() - t0) + "ms");
   }
   private ZoieSystem<R, V> createZoie(DirectoryManager dirmgr)
   {
@@ -100,7 +95,7 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
       if(_oldZoie.getCurrentBatchSize()+_oldZoie.getCurrentDiskBatchSize()+_oldZoie.getCurrentMemBatchSize()==0)
       {
         // all events on disk.
-        System.out.println("shutting down ... " + _oldZoie.getAdminMBean().getIndexDir());
+        log.info("shutting down ... " + _oldZoie.getAdminMBean().getIndexDir());
         _oldZoie.shutdown();
         IndexReader reader = IndexReader.open(new SimpleFSDirectory(new File(_oldZoie.getAdminMBean().getIndexDir())),true);
         _oldZoie = null;

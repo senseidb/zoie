@@ -2,7 +2,6 @@ package proj.zoie.hourglass.impl;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -14,7 +13,6 @@ import java.util.TimeZone;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.SimpleFSDirectory;
 
 import proj.zoie.api.DefaultDirectoryManager;
@@ -35,7 +33,6 @@ public class HourglassDirectoryManagerFactory
   private volatile File _location;
   private volatile DirectoryManager _currentDirMgr = null;
   private volatile boolean isRecentlyChanged = false;
-//  private DecimalFormat formatter = new DecimalFormat("00000000000000000000");
   private SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd-HHmmssSSS"); 
   private volatile long _nextUpdateTime=0L;
   private boolean init = true;
@@ -61,6 +58,11 @@ public class HourglassDirectoryManagerFactory
     long currentPeriod = getPeriod(now.getTimeInMillis());
     _nextUpdateTime = currentTimeMillis + currentPeriod + _indexDuration - now.getTimeInMillis();
   }
+  /**
+   * @return true if the current index accepting updates is changed.
+   * This method should be paired with clearRecentlyChanged() to clear the flag.
+   * @see proj.zoie.hourglass.impl.HourglassDirectoryManagerFactory#clearRecentlyChanged()
+   */
   public boolean updateDirectoryManager()
   {
     if (System.currentTimeMillis()< _nextUpdateTime) return false;
@@ -78,7 +80,7 @@ public class HourglassDirectoryManagerFactory
     _location = new File(_root, folderName);
     try
     {
-      System.out.println("updateDirectoryManager" + _location.getCanonicalPath());
+      log.info("rolling forward with new path: " + _location.getCanonicalPath());
     } catch (IOException e)
     {
       log.error(e);
@@ -102,17 +104,22 @@ public class HourglassDirectoryManagerFactory
     return time - (time % _indexDuration);
   }
   
-  public boolean exists(Calendar cal)
-  {
-    File folder = new File(_root, getPeriodFolderName(cal)+"/"+DirectoryManager.INDEX_DIRECTORY);
-    return folder.exists();
-  }
+  /**
+   * convert a Calendar time to a folder name using GMT time string
+   * @param cal
+   * @return a String for folder name
+   */
   private String getFolderName(Calendar cal)
   {
     Calendar mycal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
     mycal.setTimeInMillis(cal.getTimeInMillis());
     return dateFormatter.format(mycal.getTime());
   }
+  /**
+   * convert a Calendar time to a folder name for the containing time period using GMT time string.
+   * @param cal
+   * @return a String for folder name
+   */
   private String getPeriodFolderName(Calendar cal)
   {
     Calendar mycal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
@@ -120,6 +127,10 @@ public class HourglassDirectoryManagerFactory
     return dateFormatter.format(mycal.getTime());
   }
 
+  /**
+   * @return a list that contains all the archived index directories excluding the one
+   * currently accepting updates.
+   */
   public List<Directory> getAllArchivedDirectories()
   {
     @SuppressWarnings("unchecked")
@@ -131,8 +142,7 @@ public class HourglassDirectoryManagerFactory
     for(File file : files)
     {
       String name = file.getName();
-      System.out.println("getAllArchivedDirectories" + name + " " + (file.equals(_location)?"*":""));
-      log.info("getAllArchivedDirectories" + name);
+      log.debug("getAllArchivedDirectories" + name + " " + (file.equals(_location)?"*":""));
       long time = 0;
       try
       {
@@ -140,11 +150,10 @@ public class HourglassDirectoryManagerFactory
       } catch (ParseException e)
       {
         log.warn("potential index corruption. we skip folder: " + name, e);
-        System.out.println("potential index corruption"+ e);
         continue;
       }
       if (!file.equals(_location))
-      {
+      { // don't add the current one
         try
         {
           list.add(new SimpleFSDirectory(file));
@@ -156,15 +165,5 @@ public class HourglassDirectoryManagerFactory
     }
     if (list.size()==0) return emptyList;
     return list;
-  }
-
-  /**
-   * @param param
-   * @return
-   */
-  public List<Directory> getArchivedDirectories(
-      List<Calendar> param)
-  {
-    return null;
   }
 }

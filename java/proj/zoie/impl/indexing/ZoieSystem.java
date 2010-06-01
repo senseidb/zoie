@@ -311,6 +311,11 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 		return _realtimeIndexing;
 	}
 	
+	/**
+	 * get the list of index readers. This method should always be paired with returnIndexReaders(.).
+	 * @see proj.zoie.api.IndexReaderFactory#getIndexReaders()
+	 * @see proj.zoie.impl.indexing.ZoieSystem#returnIndexReaders(List)
+	 */
 	public List<ZoieIndexReader<R>> getIndexReaders() throws IOException
 	{
 	  return _searchIdxMgr.getIndexReaders();
@@ -320,12 +325,26 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 	  return _searchIdxMgr.getDiskSegmentCount();
 	}
 	
-	public void returnIndexReaders(List<ZoieIndexReader<R>> readers) {
-	  try{
-        _searchIdxMgr.returnReaders(readers);
-      } 
-	  catch (IOException e){
-		log.error(e.getMessage(),e);
+	/**
+   * return the index readers. Since Zoie reuse the index readers, the reference counting
+   * is centralized. Same readers should not be returned more than once.
+	 * @param readers The index readers to return. Should be the same as the one obtained from
+	 * calling getIndexReaders()
+	 * 
+   * @see proj.zoie.impl.indexing.ZoieSystem#getIndexReaders()
+	 * @see proj.zoie.api.IndexReaderFactory#returnIndexReaders(java.util.List)
+	 */
+	public void returnIndexReaders(List<ZoieIndexReader<R>> readers)
+	{
+	  for(ZoieIndexReader<R> r : readers)
+	  {
+	    try
+      {
+        r.decRef();
+      } catch (IOException e)
+      {
+        log.error("error when decRef on reader ", e);
+      }
 	  }
 	}
 	

@@ -246,24 +246,6 @@ public class IndexReaderDispenser<R extends IndexReader>
   }
     
   /**
-   * @param readers
-   * @throws IOException
-   */
-  public void returnReaders(List<ZoieIndexReader<R>> readers) throws IOException
-  {
-    IOException error = null;
-    for (ZoieIndexReader<R> r : readers){
-      try {
-        if (r instanceof InternalIndexReader) r.decRef();
-      } catch (IOException e) {
-        log.error(r + " " + e);
-        error = e;
-      }
-    }
-    if (error != null) throw error;
-  }
-  
-  /**
    * Closes the factory.
    * 
    */

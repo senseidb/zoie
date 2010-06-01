@@ -101,40 +101,41 @@ public class SearchIndexManager<R extends IndexReader>{
 //	    return _dirMgr;
 //	  }
 	  
-	  public int getDiskSegmentCount() throws IOException{
+	  public int getDiskSegmentCount() throws IOException
+	  {
 		  return _diskIndex.getSegmentCount();
 	  }
 	  
-      public void setNumLargeSegments(int numLargeSegments)
-      {
-    	_diskIndex._mergePolicyParams.setNumLargeSegments(numLargeSegments);
-      }
-      
-      public int getNumLargeSegments()
-      {
-        return _diskIndex._mergePolicyParams.getNumLargeSegments();
-      }
-      
-      public void setMaxSmallSegments(int maxSmallSegments)
-      {
-    	  _diskIndex._mergePolicyParams.setMaxSmallSegments(maxSmallSegments);
-      }
-      
-      public int getMaxSmallSegments()
-      {
-        return _diskIndex._mergePolicyParams.getMaxSmallSegments();
-      }
-      
-      public void setPartialExpunge(boolean doPartialExpunge)
-      {
-    	  _diskIndex._mergePolicyParams.setPartialExpunge(doPartialExpunge);
-      }
-      
-      public boolean getPartialExpunge()
-      {
-        return _diskIndex._mergePolicyParams.getPartialExpunge();
-      }
-      
+	  public void setNumLargeSegments(int numLargeSegments)
+	  {
+	    _diskIndex._mergePolicyParams.setNumLargeSegments(numLargeSegments);
+	  }
+
+	  public int getNumLargeSegments()
+	  {
+	    return _diskIndex._mergePolicyParams.getNumLargeSegments();
+	  }
+
+	  public void setMaxSmallSegments(int maxSmallSegments)
+	  {
+	    _diskIndex._mergePolicyParams.setMaxSmallSegments(maxSmallSegments);
+	  }
+
+	  public int getMaxSmallSegments()
+	  {
+	    return _diskIndex._mergePolicyParams.getMaxSmallSegments();
+	  }
+
+	  public void setPartialExpunge(boolean doPartialExpunge)
+	  {
+	    _diskIndex._mergePolicyParams.setPartialExpunge(doPartialExpunge);
+	  }
+
+	  public boolean getPartialExpunge()
+	  {
+	    return _diskIndex._mergePolicyParams.getPartialExpunge();
+	  }
+
 	  public void setMergeFactor(int mergeFactor)
 	  {
 		  _diskIndex._mergePolicyParams.setMergeFactor(mergeFactor);
@@ -174,11 +175,6 @@ public class SearchIndexManager<R extends IndexReader>{
 	    return _diskIndexerStatus;
 	  }
 	  
-	  
-	  public void returnReaders(List<ZoieIndexReader<R>> readers) throws IOException{
-		  _diskIndex.returnReaders(readers);
-	  }
-	  
 	  public List<ZoieIndexReader<R>> getIndexReaders()
 	  throws IOException
 	  {
@@ -201,6 +197,7 @@ public class SearchIndexManager<R extends IndexReader>{
 	          reader = memIndexB.openIndexReader();            
 	          if (reader != null)
 	          {
+	            reader.incRef();
 	            reader.setDelDocIds();
 	            readers.add(reader);
 	          }
@@ -211,6 +208,7 @@ public class SearchIndexManager<R extends IndexReader>{
 	          reader = memIndexA.openIndexReader();
 	          if (reader != null)
 	          {
+	            reader.incRef();
 	            reader.setDelDocIds();
 	            readers.add(reader);
 	          }

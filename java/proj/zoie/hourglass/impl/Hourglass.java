@@ -15,6 +15,8 @@ import org.apache.lucene.store.SimpleFSDirectory;
 
 import proj.zoie.api.DataConsumer;
 import proj.zoie.api.DirectoryManager;
+import proj.zoie.api.DocIDMapper;
+import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
@@ -38,6 +40,12 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
   public Hourglass(HourglassDirectoryManagerFactory dirMgrFactory, ZoieIndexableInterpreter<V> interpreter, IndexReaderDecorator<R> readerDecorator,ZoieConfig zoieConfig)
   {
     _zConfig = zoieConfig;
+    _zConfig.setDocidMapperFactory(new DocIDMapperFactory(){
+
+      public DocIDMapper getDocIDMapper(ZoieMultiReader<?> reader)
+      {
+        return new NullDocIDMapper();
+      }});
     _dirMgrFactory = dirMgrFactory;
     _dirMgr = _dirMgrFactory.getDirectoryManager();
     _dirMgrFactory.clearRecentlyChanged();
@@ -178,5 +186,43 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
   public long getVersion()
   {
     return _currentZoie.getVersion();
+  }
+  public final class NullDocIDMapper implements DocIDMapper
+  {
+    public int getDocID(long uid)
+    {
+      throw new UnsupportedOperationException();
+    }
+
+    public Object getDocIDArray(long[] uids)
+    {
+      throw new UnsupportedOperationException();
+    }
+
+    public Object getDocIDArray(int[] uids)
+    {
+      throw new UnsupportedOperationException();
+    }
+
+    public int getReaderIndex(long uid)
+    {
+      throw new UnsupportedOperationException();
+    }
+
+    public int[] getStarts()
+    {
+      throw new UnsupportedOperationException();
+    }
+
+    public ZoieIndexReader[] getSubReaders()
+    {
+      throw new UnsupportedOperationException();
+    }
+
+    public int quickGetDocID(long uid)
+    {
+      throw new UnsupportedOperationException();
+    }
+    
   }
 }

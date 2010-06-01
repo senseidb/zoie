@@ -28,6 +28,11 @@ public class ZoieConfig
    * Default batch delay setting: 300000ms or 5 min
    */
   public static final int DEFAULT_SETTING_BATCHDELAY = 300000;
+  
+  /**
+   * Default max batch size setting: 10000
+   */
+  public static final int DEFAULT_MAX_BATCH_SIZE = 10000;
 
   DocIDMapperFactory docidMapperFactory = null;
   Analyzer analyzer = null;
@@ -35,6 +40,7 @@ public class ZoieConfig
   int batchSize;
   long batchDelay;
   boolean rtIndexing = true;
+  int maxBatchSize;
 
   /**
    * Default constructor. Set the size of batch and batch delay to default value
@@ -45,6 +51,7 @@ public class ZoieConfig
     this.batchSize = DEFAULT_SETTING_BATCHSIZE;
     this.batchDelay = DEFAULT_SETTING_BATCHDELAY;
     this.rtIndexing = true;
+    this.maxBatchSize = DEFAULT_MAX_BATCH_SIZE;
   }
 
   public DocIDMapperFactory getDocidMapperFactory()
@@ -107,5 +114,13 @@ public class ZoieConfig
   public void setRtIndexing(boolean rtIndexing)
   {
     this.rtIndexing = rtIndexing;
+  }
+
+  public int getMaxBatchSize() {
+	return maxBatchSize;
+  }
+
+  public void setMaxBatchSize(int maxBatchSize) {
+	this.maxBatchSize = maxBatchSize;
   }
 }

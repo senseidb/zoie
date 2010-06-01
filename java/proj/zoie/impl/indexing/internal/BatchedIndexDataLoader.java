@@ -79,7 +79,7 @@ public class BatchedIndexDataLoader<R extends IndexReader,V> implements DataCons
                                     ZoieIndexableInterpreter<V> interpreter,
                                     Queue<IndexingEventListener> lsnrList)
 	  {
-	    _maxBatchSize=Math.max(maxBatchSize, 1);
+	    _maxBatchSize=Math.max(maxBatchSize, batchSize);
 	    _batchSize=Math.min(batchSize, _maxBatchSize);
 	    _delay=delay;
 	    _dataLoader=dataLoader;
@@ -132,7 +132,7 @@ public class BatchedIndexDataLoader<R extends IndexReader,V> implements DataCons
 	  
 	  public synchronized void setMaxBatchSize(int maxBatchSize)
 	  {
-	    _maxBatchSize = Math.max(maxBatchSize, 1);
+	    _maxBatchSize = Math.max(maxBatchSize, _batchSize);
 	    _batchSize = Math.min(_batchSize, _maxBatchSize);
 	  }
 	  

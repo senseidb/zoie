@@ -58,8 +58,6 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 
 	private static final Logger log = Logger.getLogger(ZoieSystem.class);
 	
-	private static final int DEFAULT_MAX_BATCH_SIZE = 10000;
-	
 	private final DirectoryManager _dirMgr;
 	private final boolean _realtimeIndexing;
 	private final SearchIndexManager<R> _searchIdxMgr;
@@ -129,7 +127,7 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
      */
     public ZoieSystem(DirectoryManager dirMgr,ZoieIndexableInterpreter<V> interpreter,IndexReaderDecorator<R> indexReaderDecorator,ZoieConfig zoieConfig){
     	this(dirMgr,interpreter,indexReaderDecorator,zoieConfig.getDocidMapperFactory(),zoieConfig.getAnalyzer(),
-    	     zoieConfig.getSimilarity(),zoieConfig.getBatchSize(),zoieConfig.getBatchDelay(),zoieConfig.isRtIndexing());
+    	     zoieConfig.getSimilarity(),zoieConfig.getBatchSize(),zoieConfig.getBatchDelay(),zoieConfig.isRtIndexing(),zoieConfig.getMaxBatchSize());
     }
     
     /**
@@ -141,7 +139,7 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
      */
     public ZoieSystem(File idxDir,ZoieIndexableInterpreter<V> interpreter,IndexReaderDecorator<R> indexReaderDecorator,ZoieConfig zoieConfig){
     	this(new DefaultDirectoryManager(idxDir),interpreter,indexReaderDecorator,zoieConfig.getDocidMapperFactory(),zoieConfig.getAnalyzer(),
-    	     zoieConfig.getSimilarity(),zoieConfig.getBatchSize(),zoieConfig.getBatchDelay(),zoieConfig.isRtIndexing());
+    	     zoieConfig.getSimilarity(),zoieConfig.getBatchSize(),zoieConfig.getBatchDelay(),zoieConfig.isRtIndexing(),zoieConfig.getMaxBatchSize());
     }
     
     /**
@@ -156,7 +154,24 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
      * @param batchDelay How long to wait before flushing to disk.
      * @param rtIndexing Ensure real-time.
      */
-    public ZoieSystem(DirectoryManager dirMgr,ZoieIndexableInterpreter<V> interpreter,IndexReaderDecorator<R> indexReaderDecorator,DocIDMapperFactory docidMapperFactory,Analyzer analyzer,Similarity similarity,int batchSize,long batchDelay,boolean rtIndexing)
+    public ZoieSystem(DirectoryManager dirMgr,ZoieIndexableInterpreter<V> interpreter,IndexReaderDecorator<R> indexReaderDecorator,DocIDMapperFactory docidMapperFactory,Analyzer analyzer,Similarity similarity,int batchSize,long batchDelay,boolean rtIndexing){
+    	this(dirMgr,interpreter,indexReaderDecorator,docidMapperFactory,analyzer,similarity,batchSize,batchDelay,rtIndexing,ZoieConfig.DEFAULT_MAX_BATCH_SIZE);
+    }
+    
+    /**
+     * Creates a new ZoieSystem.
+     * @param dirMgr Directory manager, mandatory.
+     * @param interpreter data interpreter, mandatory.
+     * @param indexReaderDecorator index reader decorator,optional. If not specified, {@link proj.zoie.impl.indexing.DefaultIndexReaderDecorator} is used. 
+     * @param docIdMapperFactory custom docid mapper factory
+     * @param analyzer Default analyzer, optional. If not specified, {@link org.apache.lucene.analysis.StandardAnalyzer} is used.
+     * @param similarity Default similarity, optional. If not specified, {@link org.apache.lucene.search.DefaultSimilarity} is used.
+     * @param batchSize desired number of indexing events to hold in buffer before indexing. If we already have this many, we hold back the data provider.
+     * @param batchDelay How long to wait before flushing to disk.
+     * @param rtIndexing Ensure real-time.
+     * @param maxBatchSize maximum batch size
+     */
+    public ZoieSystem(DirectoryManager dirMgr,ZoieIndexableInterpreter<V> interpreter,IndexReaderDecorator<R> indexReaderDecorator,DocIDMapperFactory docidMapperFactory,Analyzer analyzer,Similarity similarity,int batchSize,long batchDelay,boolean rtIndexing,int maxBatchSize)
     {
       if (dirMgr==null) throw new IllegalArgumentException("null directory manager.");
       _dirMgr = dirMgr;
@@ -187,12 +202,13 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
       super.setBatchSize(Math.max(1,batchSize)); // realtime memory batch size
       _diskLoader = new DiskLuceneIndexDataLoader<R>(_analyzer, _similarity, _searchIdxMgr);
       _diskLoader.setOptimizeScheduler(new DefaultOptimizeScheduler(getAdminMBean())); // note that the ZoieSystemAdminMBean zoieAdmin parameter for DefaultOptimizeScheduler is not used.
+      batchSize = Math.max(1, batchSize);
       if (_realtimeIndexing)
       {
-        _rtdc = new RealtimeIndexDataLoader<R, V>(_diskLoader, Math.max(1,batchSize), DEFAULT_MAX_BATCH_SIZE, batchDelay, _analyzer, _similarity, _searchIdxMgr, _interpreter, _lsnrList);
+        _rtdc = new RealtimeIndexDataLoader<R, V>(_diskLoader, batchSize, Math.max(batchSize, maxBatchSize), batchDelay, _analyzer, _similarity, _searchIdxMgr, _interpreter, _lsnrList);
       } else
       {
-        _rtdc = new BatchedIndexDataLoader<R, V>(_diskLoader, Math.max(1,batchSize), DEFAULT_MAX_BATCH_SIZE, batchDelay, _searchIdxMgr, _interpreter, _lsnrList);
+        _rtdc = new BatchedIndexDataLoader<R, V>(_diskLoader, batchSize, Math.max(batchSize, maxBatchSize), batchDelay, _searchIdxMgr, _interpreter, _lsnrList);
       }
       super.setDataConsumer(_rtdc);
       super.setBatchSize(100); // realtime batch size

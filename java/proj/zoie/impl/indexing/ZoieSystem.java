@@ -187,7 +187,7 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
       log.info("creating Zoie instance --> "
           + _dirMgr.toString()
           + "\t" + _interpreter.toString()
-          + "\t" + indexReaderDecorator!=null?indexReaderDecorator.toString():"null"
+          + "\t" + (indexReaderDecorator!=null?indexReaderDecorator.toString():"null")
           + "\t" + docidMapperFactory.toString()
           + "\tAnalyzer: " + _analyzer.toString()
           + "\tSimilarity: " + _similarity.toString()

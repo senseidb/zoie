@@ -17,6 +17,7 @@ import org.apache.lucene.store.SimpleFSDirectory;
 
 import proj.zoie.api.DefaultDirectoryManager;
 import proj.zoie.api.DirectoryManager;
+import proj.zoie.impl.indexing.internal.IndexSignature;
 
 /**
  * @author "Xiaoyang Gu<xgu@linkedin.com>"
@@ -165,5 +166,42 @@ public class HourglassDirectoryManagerFactory
     }
     if (list.size()==0) return emptyList;
     return list;
+  }
+  /**
+   * @return the max version from all the archived index
+   */
+  public long getArchivedVersion()
+  {
+    if (!_root.exists()) return 0L;
+    long version = 0L;
+    File[] files = _root.listFiles();
+    Arrays.sort(files);
+    for(File file : files)
+    {
+      String name = file.getName();
+      log.debug("getAllArchivedDirectories" + name + " " + (file.equals(_location)?"*":""));
+      long time = 0;
+      try
+      {
+        time = dateFormatter.parse(name).getTime();
+      } catch (ParseException e)
+      {
+        log.warn("potential index corruption. we skip folder: " + name, e);
+        continue;
+      }
+      if (!file.equals(_location))
+      { // don't count the current one
+        File directoryFile = new File(file, DirectoryManager.INDEX_DIRECTORY);
+        IndexSignature sig = DefaultDirectoryManager.readSignature(directoryFile);
+        if (sig!=null)
+        {
+          if (sig.getVersion() > version) version = sig.getVersion();
+        } else
+        {
+          log.error("potential index corruption: indexSignature not in " + _location);
+        }
+      }
+    }
+    return version;
   }
 }

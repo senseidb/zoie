@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -37,25 +38,30 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
   private volatile ZoieSystem<R, V> _currentZoie;
   private volatile ZoieSystem<R, V> _oldZoie = null;
   private final List<ZoieIndexReader<R>> archiveList = new ArrayList<ZoieIndexReader<R>>();
+  private volatile boolean _isShutdown = false;
+  private final ReentrantReadWriteLock _shutdownLock = new ReentrantReadWriteLock();
+  private volatile long _currentVersion = 0L;
   public Hourglass(HourglassDirectoryManagerFactory dirMgrFactory, ZoieIndexableInterpreter<V> interpreter, IndexReaderDecorator<R> readerDecorator,ZoieConfig zoieConfig)
   {
     _zConfig = zoieConfig;
-    _zConfig.setDocidMapperFactory(new DocIDMapperFactory(){
+    // The following line is a HACK to get it to work with Zoie and save memory
+    // used for DocIDMapper.
+    // Zoie uses DocIDMapper to convert from UID to doc ID in delete handling.
+    // Hourglass assumes that the index is append only (no deletes, no updates)
+    // and never needs to handle deletion.
+    _zConfig.setDocidMapperFactory(NullDocIDMapperFactory.INSTANCE);
 
-      public DocIDMapper getDocIDMapper(ZoieMultiReader<?> reader)
-      {
-        return new NullDocIDMapper();
-      }});
     _dirMgrFactory = dirMgrFactory;
     _dirMgr = _dirMgrFactory.getDirectoryManager();
     _dirMgrFactory.clearRecentlyChanged();
     _interpreter = interpreter;
     _decorator = readerDecorator;
-    loadArchives();
+    _currentVersion = loadArchives();
     _currentZoie = createZoie(_dirMgr);
     _currentZoie.start();
+    log.info("start at version: " + _currentVersion);
   }
-  private void loadArchives()
+  private long loadArchives()
   {
     long t0 = System.currentTimeMillis();
     List<Directory> dirs = _dirMgrFactory.getAllArchivedDirectories();
@@ -76,6 +82,7 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
       }
     }
     log.info("load "+dirs.size()+" archive Indices in " + (System.currentTimeMillis() - t0) + "ms");
+    return _dirMgrFactory.getArchivedVersion();
   }
   private ZoieSystem<R, V> createZoie(DirectoryManager dirmgr)
   {
@@ -95,12 +102,19 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
    * should be used in pair with returnIndexReaders(List<ZoieIndexReader<R>> readers) {@link #returnIndexReaders(List)}.
    * It is typical that we create a MultiReader from these readers. When creating MultiReader, it should be created with
    * the closeSubReaders parameter set to false in order to do reference counting correctly.
+   * <br> If this indexing system is already shut down, then we return an empty list.
    * @see proj.zoie.hourglass.impl.Hourglass#returnIndexReaders(List)
    * @see proj.zoie.api.IndexReaderFactory#getIndexReaders()
    */
   public List<ZoieIndexReader<R>> getIndexReaders() throws IOException
   {
     List<ZoieIndexReader<R>> list = new ArrayList<ZoieIndexReader<R>>();
+    _shutdownLock.readLock().lock();
+    if (_isShutdown)
+    {
+      _shutdownLock.readLock().unlock();
+      return list;// if already shutdown, return an empty list
+    }
     // add the archived index readers
     for(ZoieIndexReader<R> r : archiveList)
     {
@@ -130,6 +144,7 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
     // add the index readers for the current realtime index
     List<ZoieIndexReader<R>> readers = _currentZoie.getIndexReaders(); // already incRef
     list.addAll(readers);
+    _shutdownLock.readLock().unlock();
     return list;
   }
 
@@ -147,25 +162,44 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
   public void consume(Collection<DataEvent<V>> data)
       throws ZoieException
   {
+    _shutdownLock.readLock().lock();
+    if (_isShutdown)
+    {
+      _shutdownLock.readLock().unlock();
+      return; // if the system is already shut down, we don't do anything.
+    }
     // TODO  need to check time boundary. When we hit boundary, we need to trigger DM to 
     // use new dir for zoie and the old one will be archive.
     if (!_dirMgrFactory.updateDirectoryManager())
     {
       _currentZoie.consume(data);
-      return;
+    } else
+    {
+      // new time period
+      _oldZoie = _currentZoie;
+      _dirMgr = _dirMgrFactory.getDirectoryManager();
+      _dirMgrFactory.clearRecentlyChanged();
+      _currentZoie = createZoie(_dirMgr);
+      _currentZoie.start();
+      _currentZoie.consume(data);
     }
-    // new time period
-    _oldZoie = _currentZoie;
-    _dirMgr = _dirMgrFactory.getDirectoryManager();
-    _dirMgrFactory.clearRecentlyChanged();
-    _currentZoie = createZoie(_dirMgr);
-    _currentZoie.start();
-    _currentZoie.consume(data);
+    _shutdownLock.readLock().unlock();
   }
   
   public void shutdown()
   {
-    _currentZoie.shutdown();
+    _shutdownLock.writeLock().lock();
+    if (_isShutdown)
+    {
+      _shutdownLock.writeLock().unlock();
+      log.info("system already shut down");
+      return;
+    }
+    _isShutdown = true;
+    if (_oldZoie!=null)
+      _oldZoie.shutdown();
+    if (_currentZoie != null)
+      _currentZoie.shutdown();
     for(ZoieIndexReader<R> r : archiveList)
     {
       try
@@ -178,6 +212,7 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
       log.info("refCount at shutdown: " + r.getRefCount());
     }
     log.info("shut down");
+    _shutdownLock.writeLock().unlock();
   }
 
   /* (non-Javadoc)
@@ -185,13 +220,26 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
    */
   public long getVersion()
   {
-    return _currentZoie.getVersion();
+    _currentVersion = Math.max(_currentVersion, _currentZoie.getCurrentVersion());
+    return _currentVersion;
   }
-  public final class NullDocIDMapper implements DocIDMapper
+  public static class NullDocIDMapperFactory implements DocIDMapperFactory
   {
+    public static final NullDocIDMapperFactory INSTANCE = new NullDocIDMapperFactory();
+    public DocIDMapper getDocIDMapper(ZoieMultiReader<?> reader)
+    {
+      for(ZoieIndexReader<?>r : reader.getSequentialSubReaders())
+      {
+        r.setDocIDMapper(NullDocIDMapper.INSTANCE);
+      }
+      return NullDocIDMapper.INSTANCE;
+    }  }
+  public static class NullDocIDMapper implements DocIDMapper
+  {
+    public static final NullDocIDMapper INSTANCE = new NullDocIDMapper();
     public int getDocID(long uid)
     {
-      throw new UnsupportedOperationException();
+      return DocIDMapper.NOT_FOUND;
     }
 
     public Object getDocIDArray(long[] uids)
@@ -222,7 +270,6 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
     public int quickGetDocID(long uid)
     {
       throw new UnsupportedOperationException();
-    }
-    
+    }  
   }
 }

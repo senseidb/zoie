@@ -73,7 +73,7 @@ public class ZoieTestCase extends TestCase
       }
       log.info("deleting " + tempFile);
       deleteDirectory(tempFile);
-      tempFile.delete();
+//      tempFile.delete();
       try
       {
         Thread.sleep(50);

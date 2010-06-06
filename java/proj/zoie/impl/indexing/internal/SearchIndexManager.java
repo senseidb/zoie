@@ -383,24 +383,22 @@ public class SearchIndexManager<R extends IndexReader>{
 	    }
 	  }
 
-	  /**
-	   * Purges an index
-	   */
-	  public void purgeIndex()
-	  {
-		log.info("purging index ...");
-		
-        _dirMgr.purge();
-        
-        _diskIndex.clearDeletes();
-        _diskIndex.refresh();
-        _diskIndex.closeIndexWriter();
-        RAMSearchIndex<R> memIndexA = new RAMSearchIndex<R>(_diskIndex.getVersion(), _indexReaderDecorator,this);
-        Mem<R> mem = new Mem<R>(memIndexA, null, memIndexA, null, null);
-        _mem = mem;
-        
-		log.info("index purged");
-	  }
+  /**
+   * Purges an index
+   */
+  public void purgeIndex()
+  {
+    log.info("purging index ...");
+    _diskIndex.clearDeletes();
+    _diskIndex.refresh();
+    _diskIndex.closeIndexWriter();
+    _dirMgr.purge();
+    RAMSearchIndex<R> memIndexA = new RAMSearchIndex<R>(_diskIndex.getVersion(), _indexReaderDecorator, this);
+    Mem<R> mem = new Mem<R>(memIndexA, null, memIndexA, null, null);
+    _mem = mem;
+
+    log.info("index purged");
+  }
 	  
 	  public void refreshDiskReader() throws IOException
 	  {

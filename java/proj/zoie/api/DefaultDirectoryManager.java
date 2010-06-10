@@ -153,15 +153,23 @@ public class DefaultDirectoryManager implements DirectoryManager
    */
   public IndexSignature getCurrentIndexSignature()
   {
-    File directoryFile = new File(_location, INDEX_DIRECTORY);
-    IndexSignature sig = readSignature(directoryFile);
-    return sig;
+    return getCurrentIndexSignature(_location);
+  }
+  
+  public static IndexSignature getCurrentIndexSignature(File idxDir){
+	File directoryFile = new File(idxDir, INDEX_DIRECTORY);
+	IndexSignature sig = readSignature(directoryFile);
+	return sig;
   }
 
   public long getVersion() throws IOException
   {
-    IndexSignature sig = getCurrentIndexSignature();
-    return sig == null ? 0L : sig.getVersion();
+    return getVersion(_location);
+  }
+  
+  public static long getVersion(File idxDir) throws IOException{
+	IndexSignature sig = getCurrentIndexSignature(idxDir);
+	return sig == null ? 0L : sig.getVersion();
   }
   
   public void setVersion(long version) throws IOException

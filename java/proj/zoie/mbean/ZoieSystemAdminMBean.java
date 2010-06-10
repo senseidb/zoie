@@ -92,4 +92,8 @@ public interface ZoieSystemAdminMBean {
 	int getCurrentMemBatchSize();
     
     int getCurrentDiskBatchSize();
+    
+    long getMinUID() throws IOException;
+    
+    long getMaxUID() throws IOException;
 }

@@ -355,6 +355,44 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 	public void setMaxBatchSize(int maxBatchSize) {
 	  _rtdc.setMaxBatchSize(maxBatchSize);
 	}
+	
+    public long getMinUID() throws IOException
+    {
+      long minUID = Long.MAX_VALUE;
+      List<ZoieIndexReader<R>> readers = getIndexReaders();
+      try
+      {
+        for(ZoieIndexReader<R> reader : readers)
+        {
+          long uid = reader.getMinUID();
+          minUID = (uid < minUID ? uid : minUID);
+        }
+        return minUID;
+      }
+      finally
+      {
+        returnIndexReaders(readers);
+      }
+    }
+
+    public long getMaxUID() throws IOException
+    {
+      long maxUID = Long.MIN_VALUE;
+      List<ZoieIndexReader<R>> readers = getIndexReaders();
+      try
+      {
+        for(ZoieIndexReader<R> reader : readers)
+        {
+          long uid = reader.getMaxUID();
+          maxUID = (uid > maxUID ? uid : maxUID);
+        }
+        return maxUID;
+      }
+      finally
+      {
+        returnIndexReaders(readers);
+      }
+    }
 
 	public void exportSnapshot(WritableByteChannel channel) throws IOException
 	{
@@ -531,5 +569,15 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 	  {
 	    return ZoieSystem.this.getCurrentDiskBatchSize(); 
 	  }
+	  
+      public long getMinUID() throws IOException
+      {
+        return ZoieSystem.this.getMinUID();
+      }
+      
+      public long getMaxUID() throws IOException
+      {
+        return ZoieSystem.this.getMaxUID();
+      }
 	}
 }

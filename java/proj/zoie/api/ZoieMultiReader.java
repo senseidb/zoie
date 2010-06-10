@@ -105,6 +105,27 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
 		return subReader.getUID(docid-_starts[idx]);
 	}
 	
+    @Override
+    public long getMinUID()
+    {
+      long uid = Long.MAX_VALUE;
+      for(ZoieIndexReader reader : _subZoieReaders)
+      {
+        uid = (uid > reader.getMinUID() ? reader.getMinUID() : uid);
+      }
+      return uid;
+    }
+
+    @Override
+    public long getMaxUID()
+    {
+      long uid = Long.MIN_VALUE;
+      for(ZoieIndexReader reader : _subZoieReaders)
+      {
+        uid = (uid < reader.getMaxUID() ? reader.getMaxUID() : uid);
+      }
+      return uid;
+    }
 
 	@SuppressWarnings("unchecked")
 	@Override

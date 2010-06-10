@@ -182,4 +182,14 @@ public class ZoieSystemAdmin implements ZoieSystemAdminMBean {
     {
       _internalMBean.setNumLargeSegments(numLargeSegments);
     }
+    
+    public long getMinUID() throws IOException
+    {
+      return _internalMBean.getMinUID();
+    }
+    
+    public long getMaxUID() throws IOException
+    {
+      return _internalMBean.getMaxUID();
+    }
 }

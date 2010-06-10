@@ -179,7 +179,7 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndex
 		_decorator = decorator;
 		_delDocIds = new ContextAccessor<int[]>(this, "delset");// new InheritableThreadLocal<int[]>();
 		_minUID=Long.MAX_VALUE;
-		_maxUID=0;
+		_maxUID=Long.MIN_VALUE;
 	}
 	
 	abstract public List<R> getDecoratedReaders() throws IOException;

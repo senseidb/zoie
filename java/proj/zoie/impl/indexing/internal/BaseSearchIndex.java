@@ -45,9 +45,11 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
 	  protected IndexWriter _indexWriter = null;
 	  protected volatile LongOpenHashSet _delDocs = new LongOpenHashSet();
 	  protected final SearchIndexManager<R> _idxMgr;
+	  protected boolean _closeWriterAfterUpdate;
 	  
-	  protected BaseSearchIndex(SearchIndexManager<R> idxMgr){
+	  protected BaseSearchIndex(SearchIndexManager<R> idxMgr, boolean closeWriterAfterUpdate){
 		  _idxMgr = idxMgr;
+		  _closeWriterAfterUpdate = closeWriterAfterUpdate;
 	  }
 	  
 	  /**
@@ -113,6 +115,10 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
 	      if (idxMod!=null)
 	      {
 	        idxMod.commit();
+	        if(_closeWriterAfterUpdate)
+	        {
+	          closeIndexWriter();
+	        }
 	      }
 	    }
 	  }

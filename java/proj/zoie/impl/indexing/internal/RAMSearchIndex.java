@@ -45,7 +45,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
 	  public static final Logger log = Logger.getLogger(RAMSearchIndex.class);
 
 	  public RAMSearchIndex(long version, IndexReaderDecorator<R> decorator,SearchIndexManager<R> idxMgr){
-		super(idxMgr);
+		super(idxMgr, false);
 	    _directory = new RAMDirectory();
 	    _version = version;
 	    _decorator = decorator;

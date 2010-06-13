@@ -165,11 +165,12 @@ public class AsyncDataConsumer<V> implements DataConsumer<V>
   {
     
     if(_consumerThread == null) throw new ZoieException("not running");
-    
     synchronized(this)
     {
       while(_currentVersion < version)
       {
+        log.info("syncWithVersion " + _currentVersion + "  " + version);
+        this.notifyAll();
     	  long now1 = System.currentTimeMillis();
         if(timeInMillis<=0)
         {
@@ -177,7 +178,8 @@ public class AsyncDataConsumer<V> implements DataConsumer<V>
         }
         try
         {
-          this.wait(timeInMillis);
+          long waitTime = Math.min(200, timeInMillis);
+          this.wait(waitTime);
         }
         catch(InterruptedException e)
         {

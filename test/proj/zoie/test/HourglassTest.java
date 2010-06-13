@@ -98,8 +98,7 @@ public class HourglassTest extends ZoieTestCase
         readers = hourglass.getIndexReaders();
         reader = new MultiReader(readers.toArray(new IndexReader[0]),false);
         numDoc = reader.numDocs();
-//        System.out.println("numDoc " + numDoc);
-        Thread.sleep(2);
+        Thread.sleep(500);
       }
       List<Directory> dirlist = factory.getAllArchivedDirectories();
 //      System.out.println(Arrays.toString(dirlist.toArray(new Directory[0])));
@@ -178,6 +177,7 @@ public class HourglassTest extends ZoieTestCase
 
     public HourglassIndexable convertAndInterpret(String src)
     {
+      log.info("converting " + src);
       return new TestHourglassIndexable(src);
     }
     

@@ -66,6 +66,7 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 	private final Queue<IndexingEventListener> _lsnrList;
 	private final BatchedIndexDataLoader<R, V> _rtdc;
 	private final DiskLuceneIndexDataLoader<R> _diskLoader;
+	private volatile boolean alreadyShutdown = false;
 	
 	/**
 	 * Creates a new ZoieSystem.
@@ -276,11 +277,22 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 	public void shutdown()
 	{
 		log.info("shutting down zoie...");
+		try
+    {
+      flushEvents(200000);
+    } catch (ZoieException e)
+    {
+      log.error("zoie shutdown encountered ", e);
+    }
 		_rtdc.shutdown();
-        super.stop();
+    super.stop();
     _searchIdxMgr.close();
 		log.info("zoie shutdown successfully.");
-		
+		alreadyShutdown = true;
+	}
+	public boolean alreadyShutdown()
+	{
+	  return alreadyShutdown;
 	}
 	
 	public void refreshDiskReader() throws IOException

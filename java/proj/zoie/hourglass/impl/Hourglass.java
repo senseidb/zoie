@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.log4j.Logger;
@@ -36,7 +38,7 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
   private final IndexReaderDecorator<R> _decorator;
   private final ZoieConfig _zConfig;
   private volatile ZoieSystem<R, V> _currentZoie;
-  private volatile ZoieSystem<R, V> _oldZoie = null;
+  private final LinkedList<ZoieSystem<R, V>> _oldZoies = new LinkedList<ZoieSystem<R,V>>();
   private final List<ZoieIndexReader<R>> archiveList = new ArrayList<ZoieIndexReader<R>>();
   private volatile boolean _isShutdown = false;
   private final ReentrantReadWriteLock _shutdownLock = new ReentrantReadWriteLock();
@@ -122,29 +124,36 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
         r.incRef();
         list.add(r);
       }
-      if (_oldZoie!=null)
+      if (_oldZoies.size()!=0)
       {
-        if(_oldZoie.getCurrentBatchSize()+_oldZoie.getCurrentDiskBatchSize()+_oldZoie.getCurrentMemBatchSize()==0)
+        log.info("number of old zoie now: " + _oldZoies.size());
+        for(ZoieSystem<R, V> oldZoie : _oldZoies)
         {
-          // all events on disk.
-          log.info("shutting down ... " + _oldZoie.getAdminMBean().getIndexDir());
-          _oldZoie.shutdown();
-          String dirName = _oldZoie.getAdminMBean().getIndexDir();
-          IndexReader reader = IndexReader.open(new SimpleFSDirectory(new File(dirName)),true);
-          _oldZoie = null;
-          ZoieMultiReader<R> zoiereader = new ZoieMultiReader<R>(reader, _decorator);
-          archiveList.add(zoiereader);
-          zoiereader.incRef();
-          list.add(zoiereader);
-        } else
-        {
-          List<ZoieIndexReader<R>> oldlist = _oldZoie.getIndexReaders();// already incRef.
-          list.addAll(oldlist);
+          if(oldZoie.getCurrentBatchSize()+oldZoie.getCurrentDiskBatchSize()+oldZoie.getCurrentMemBatchSize()==0)
+          {
+            // all events on disk.
+            log.info("shutting down ... " + oldZoie.getAdminMBean().getIndexDir());
+            oldZoie.shutdown();
+            String dirName = oldZoie.getAdminMBean().getIndexDir();
+            IndexReader reader = IndexReader.open(new SimpleFSDirectory(new File(dirName)),true);
+            ZoieMultiReader<R> zoiereader = new ZoieMultiReader<R>(reader, _decorator);
+            archiveList.add(zoiereader);
+            zoiereader.incRef();
+            list.add(zoiereader);
+          } else
+          {
+            List<ZoieIndexReader<R>> oldlist = oldZoie.getIndexReaders();// already incRef.
+            list.addAll(oldlist);
+          }
         }
+        _oldZoies.clear();
       }
       // add the index readers for the current realtime index
       List<ZoieIndexReader<R>> readers = _currentZoie.getIndexReaders(); // already incRef
       list.addAll(readers);
+    } catch(CorruptIndexException e)
+    {
+      log.info(e);
     } finally
     {
       _shutdownLock.readLock().unlock();
@@ -181,7 +190,7 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
       } else
       {
         // new time period
-        _oldZoie = _currentZoie;
+        _oldZoies.add(_currentZoie);
         _dirMgr = _dirMgrFactory.getDirectoryManager();
         _dirMgrFactory.clearRecentlyChanged();
         _currentZoie = createZoie(_dirMgr);
@@ -205,8 +214,10 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
         return;
       }
       _isShutdown = true;
-      if (_oldZoie!=null)
-        _oldZoie.shutdown();
+      for(ZoieSystem<R, V> oldZoie : _oldZoies)
+      {
+        oldZoie.shutdown();
+      }
       if (_currentZoie != null)
         _currentZoie.shutdown();
       for(ZoieIndexReader<R> r : archiveList)

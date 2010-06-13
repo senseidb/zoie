@@ -240,7 +240,6 @@ public class BatchedIndexDataLoader<R extends IndexReader,V> implements DataCons
 	   */
 	  public void flushEvents(long timeOut) throws ZoieException
 	  {
-	    
 	    synchronized(this)
 	    {
 	      while(_eventCount>0)
@@ -256,7 +255,8 @@ public class BatchedIndexDataLoader<R extends IndexReader,V> implements DataCons
 	        }
 	        try
 	        {
-	          this.wait(timeOut);
+	          long waittime = Math.min(200, timeOut);
+	          this.wait(waittime);
 	        }
 	        catch (InterruptedException e)
 	        {

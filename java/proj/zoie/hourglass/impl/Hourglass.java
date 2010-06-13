@@ -109,42 +109,46 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
   public List<ZoieIndexReader<R>> getIndexReaders() throws IOException
   {
     List<ZoieIndexReader<R>> list = new ArrayList<ZoieIndexReader<R>>();
-    _shutdownLock.readLock().lock();
-    if (_isShutdown)
+    try
+    {
+      _shutdownLock.readLock().lock();
+      if (_isShutdown)
+      {
+        return list;// if already shutdown, return an empty list
+      }
+      // add the archived index readers
+      for(ZoieIndexReader<R> r : archiveList)
+      {
+        r.incRef();
+        list.add(r);
+      }
+      if (_oldZoie!=null)
+      {
+        if(_oldZoie.getCurrentBatchSize()+_oldZoie.getCurrentDiskBatchSize()+_oldZoie.getCurrentMemBatchSize()==0)
+        {
+          // all events on disk.
+          log.info("shutting down ... " + _oldZoie.getAdminMBean().getIndexDir());
+          _oldZoie.shutdown();
+          String dirName = _oldZoie.getAdminMBean().getIndexDir();
+          IndexReader reader = IndexReader.open(new SimpleFSDirectory(new File(dirName)),true);
+          _oldZoie = null;
+          ZoieMultiReader<R> zoiereader = new ZoieMultiReader<R>(reader, _decorator);
+          archiveList.add(zoiereader);
+          zoiereader.incRef();
+          list.add(zoiereader);
+        } else
+        {
+          List<ZoieIndexReader<R>> oldlist = _oldZoie.getIndexReaders();// already incRef.
+          list.addAll(oldlist);
+        }
+      }
+      // add the index readers for the current realtime index
+      List<ZoieIndexReader<R>> readers = _currentZoie.getIndexReaders(); // already incRef
+      list.addAll(readers);
+    } finally
     {
       _shutdownLock.readLock().unlock();
-      return list;// if already shutdown, return an empty list
     }
-    // add the archived index readers
-    for(ZoieIndexReader<R> r : archiveList)
-    {
-      r.incRef();
-      list.add(r);
-    }
-    if (_oldZoie!=null)
-    {
-      if(_oldZoie.getCurrentBatchSize()+_oldZoie.getCurrentDiskBatchSize()+_oldZoie.getCurrentMemBatchSize()==0)
-      {
-        // all events on disk.
-        log.info("shutting down ... " + _oldZoie.getAdminMBean().getIndexDir());
-        _oldZoie.shutdown();
-        String dirName = _oldZoie.getAdminMBean().getIndexDir();
-        IndexReader reader = IndexReader.open(new SimpleFSDirectory(new File(dirName)),true);
-        _oldZoie = null;
-        ZoieMultiReader<R> zoiereader = new ZoieMultiReader<R>(reader, _decorator);
-        archiveList.add(zoiereader);
-        zoiereader.incRef();
-        list.add(zoiereader);
-      } else
-      {
-        List<ZoieIndexReader<R>> oldlist = _oldZoie.getIndexReaders();// already incRef.
-        list.addAll(oldlist);
-      }
-    }
-    // add the index readers for the current realtime index
-    List<ZoieIndexReader<R>> readers = _currentZoie.getIndexReaders(); // already incRef
-    list.addAll(readers);
-    _shutdownLock.readLock().unlock();
     return list;
   }
 
@@ -162,57 +166,65 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
   public void consume(Collection<DataEvent<V>> data)
       throws ZoieException
   {
-    _shutdownLock.readLock().lock();
-    if (_isShutdown)
+    try
+    {
+      _shutdownLock.readLock().lock();
+      if (_isShutdown)
+      {
+        return; // if the system is already shut down, we don't do anything.
+      }
+      // TODO  need to check time boundary. When we hit boundary, we need to trigger DM to 
+      // use new dir for zoie and the old one will be archive.
+      if (!_dirMgrFactory.updateDirectoryManager())
+      {
+        _currentZoie.consume(data);
+      } else
+      {
+        // new time period
+        _oldZoie = _currentZoie;
+        _dirMgr = _dirMgrFactory.getDirectoryManager();
+        _dirMgrFactory.clearRecentlyChanged();
+        _currentZoie = createZoie(_dirMgr);
+        _currentZoie.start();
+        _currentZoie.consume(data);
+      }
+    } finally
     {
       _shutdownLock.readLock().unlock();
-      return; // if the system is already shut down, we don't do anything.
     }
-    // TODO  need to check time boundary. When we hit boundary, we need to trigger DM to 
-    // use new dir for zoie and the old one will be archive.
-    if (!_dirMgrFactory.updateDirectoryManager())
-    {
-      _currentZoie.consume(data);
-    } else
-    {
-      // new time period
-      _oldZoie = _currentZoie;
-      _dirMgr = _dirMgrFactory.getDirectoryManager();
-      _dirMgrFactory.clearRecentlyChanged();
-      _currentZoie = createZoie(_dirMgr);
-      _currentZoie.start();
-      _currentZoie.consume(data);
-    }
-    _shutdownLock.readLock().unlock();
   }
   
   public void shutdown()
   {
-    _shutdownLock.writeLock().lock();
-    if (_isShutdown)
+    try
+    {
+      _shutdownLock.writeLock().lock();
+      if (_isShutdown)
+      {
+        log.info("system already shut down");
+        return;
+      }
+      _isShutdown = true;
+      if (_oldZoie!=null)
+        _oldZoie.shutdown();
+      if (_currentZoie != null)
+        _currentZoie.shutdown();
+      for(ZoieIndexReader<R> r : archiveList)
+      {
+        try
+        {
+          r.decRef();
+        } catch (IOException e)
+        {
+          log.error("error decRef during shutdown", e);
+        }
+        log.info("refCount at shutdown: " + r.getRefCount());
+      }
+      log.info("shut down");
+    } finally
     {
       _shutdownLock.writeLock().unlock();
-      log.info("system already shut down");
-      return;
     }
-    _isShutdown = true;
-    if (_oldZoie!=null)
-      _oldZoie.shutdown();
-    if (_currentZoie != null)
-      _currentZoie.shutdown();
-    for(ZoieIndexReader<R> r : archiveList)
-    {
-      try
-      {
-        r.decRef();
-      } catch (IOException e)
-      {
-        log.error("error decRef during shutdown", e);
-      }
-      log.info("refCount at shutdown: " + r.getRefCount());
-    }
-    log.info("shut down");
-    _shutdownLock.writeLock().unlock();
   }
 
   /* (non-Javadoc)

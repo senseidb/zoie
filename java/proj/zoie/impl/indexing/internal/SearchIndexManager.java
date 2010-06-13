@@ -105,7 +105,37 @@ public class SearchIndexManager<R extends IndexReader>{
 	  {
 		  return _diskIndex.getSegmentCount();
 	  }
-	  
+
+	  public int getRAMASegmentCount()
+	  {
+	    Mem<R> mem = _mem;
+	    if (mem.get_memIndexA()==null) return -1;
+	    int ret;
+      try
+      {
+        ret = mem.get_memIndexA().getSegmentCount();
+      } catch (IOException e)
+      {
+        ret = -1;
+      }
+      return ret;
+	  }
+
+	  public int getRAMBSegmentCount()
+	  {
+      Mem<R> mem = _mem;
+      if (mem.get_memIndexB()==null) return -1;
+      int ret;
+      try
+      {
+        ret = mem.get_memIndexB().getSegmentCount();
+      } catch (IOException e)
+      {
+        ret = -1;
+      }
+      return ret;
+	  }
+
 	  public void setNumLargeSegments(int numLargeSegments)
 	  {
 	    _diskIndex._mergePolicyParams.setNumLargeSegments(numLargeSegments);

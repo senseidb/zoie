@@ -327,7 +327,15 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 	public int getDiskSegmentCount() throws IOException{
 	  return _searchIdxMgr.getDiskSegmentCount();
 	}
-	
+  public int getRAMASegmentCount()
+  {
+    return _searchIdxMgr.getRAMASegmentCount();
+  }
+  public int getRAMBSegmentCount()
+  {
+    return _searchIdxMgr.getRAMBSegmentCount();
+  }
+
 	/**
    * return the index readers. Since Zoie reuse the index readers, the reference counting
    * is centralized. Same readers should not be returned more than once.
@@ -478,6 +486,16 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 	  public int getDiskIndexSegmentCount() throws IOException{
 	    return ZoieSystem.this.getDiskSegmentCount();
 	  }
+
+    public int getRAMASegmentCount()
+    {
+      return ZoieSystem.this.getRAMASegmentCount();
+    }
+
+    public int getRAMBSegmentCount()
+    {
+      return ZoieSystem.this.getRAMBSegmentCount();
+    }
 
 	  public boolean isRealtime(){
 	    return ZoieSystem.this.isReadltimeIndexing();

@@ -19,16 +19,17 @@ package proj.zoie.mbean;
 /**
  * Interface for monitoring a data provider
  */
-public interface DataProviderAdminMBean {
+public interface DataProviderAdminMBean
+{
 	void start();
 	void stop();
 	void pause();
 	void resume();
 	void setBatchSize(int batchSize);
-    void setMaxEventsPerMinute(long maxEventsPerMinute);
+	void setMaxEventsPerMinute(long maxEventsPerMinute);
 	int getBatchSize();
 	long getEventCount();
 	long getEventsPerMinute();
 	long getMaxEventsPerMinute();
-    public String getStatus();
+  public String getStatus();
 }

@@ -27,11 +27,13 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
 import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieMultiReader;
+import proj.zoie.api.impl.util.IndexUtil;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
 public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
@@ -191,4 +193,9 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
           commitDeletes();
 	    }
 	  }
+
+  public int getSegmentCount() throws IOException
+  {
+    return _directory==null?-1:IndexUtil.getNumSegments(_directory);
+  }
 }

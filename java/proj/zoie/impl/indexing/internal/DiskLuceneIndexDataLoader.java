@@ -200,27 +200,21 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
 		// we should optimize
 		synchronized(_optimizeMonitor)
 		{
-	    	BaseSearchIndex<R> idx=getSearchIndex();
-	        IndexWriter writer=null;  
-	        try
-	        {
-	          writer=idx.openIndexWriter(_analyzer, _similarity);
-	          writer.optimize(numSegs);
-	        }
-	        finally
-	        {
-	        	if (writer!=null)
-	        	{
-	        		try {
-						writer.close();
-					} catch (CorruptIndexException e) {
-						log.fatal("possible index corruption! "+e.getMessage());
-					} catch (IOException e) {
-						log.error(e.getMessage(),e);
-					}
-	        	}
-	        }
-	        _idxMgr.refreshDiskReader();
+		  BaseSearchIndex<R> idx=getSearchIndex();
+		  IndexWriter writer=null;  
+		  try
+		  {
+		    writer=idx.openIndexWriter(_analyzer, _similarity);
+		    writer.optimize(numSegs);
+		  }
+		  finally
+		  {
+		    if (writer!=null)
+		    {
+		      idx.closeIndexWriter();
+		    }
+		  }
+		  _idxMgr.refreshDiskReader();
 		}
 		log.info("index optimized");
 	}

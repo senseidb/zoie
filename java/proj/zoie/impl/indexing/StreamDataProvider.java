@@ -64,16 +64,18 @@ public abstract class StreamDataProvider<V> implements DataProvider<V>,DataProvi
 	  return thread.getEventsPerMinute();
 	}
 	
-	public long getMaxEventsPerMinute() {
-      DataThread<V> thread = _thread;
-      if (thread==null) return 0;
-      return thread.getMaxEventsPerMinute();
+	public long getMaxEventsPerMinute()
+	{
+	  return _maxEventsPerMinute;
 	}
 
-	public void setMaxEventsPerMinute(long maxEventsPerMinute) {
-      DataThread<V> thread = _thread;
-      if (thread==null) return;
-      thread.setMaxEventsPerMinute(maxEventsPerMinute);
+	private volatile long _maxEventsPerMinute = 666;
+	public void setMaxEventsPerMinute(long maxEventsPerMinute)
+	{
+	  _maxEventsPerMinute = maxEventsPerMinute;
+	  DataThread<V> thread = _thread;
+	  if (thread==null) return;
+	  thread.setMaxEventsPerMinute(_maxEventsPerMinute);
 	}
 	
 	public String getStatus() {
@@ -127,6 +129,7 @@ public abstract class StreamDataProvider<V> implements DataProvider<V>,DataProvi
 		{
 			reset();
 			_thread = new DataThread<V>(this);
+			_thread.setMaxEventsPerMinute(_maxEventsPerMinute);
 			_thread.start();
 		}
 	}
@@ -144,13 +147,11 @@ public abstract class StreamDataProvider<V> implements DataProvider<V>,DataProvi
 		private boolean _paused;
 		private boolean _stop;
 		private AtomicLong _eventCount = new AtomicLong(0);
-		private volatile long _eventStart = System.nanoTime();
 		private volatile long _throttle = 40000;//Long.MAX_VALUE;
 		
 		private void resetEventTimer()
 		{
 		  _eventCount.set(0);
-		  _eventStart = System.nanoTime();
 		}
 		
 		private String getStatus()
@@ -184,8 +185,8 @@ public abstract class StreamDataProvider<V> implements DataProvider<V>,DataProvi
 		{
 			synchronized(this)
 			{
-	            _stop = true;
-			   this.notifyAll();
+			  _stop = true;
+			  this.notifyAll();
 			}
 		}
 		
@@ -208,34 +209,51 @@ public abstract class StreamDataProvider<V> implements DataProvider<V>,DataProvi
 		}
 		
 		private void flush()
-	    {
-	    	// FLUSH
-		    Collection<DataEvent<V>> tmp;
-		    tmp = _batch;
-            _batch = new LinkedList<DataEvent<V>>();
+		{
+		  // FLUSH
+		  Collection<DataEvent<V>> tmp;
+		  tmp = _batch;
+		  _batch = new LinkedList<DataEvent<V>>();
 
-		    try
-	        {
-		      if(_dataProvider._consumer!=null)
-		      {
-		        _eventCount.getAndAdd(tmp.size());
-		    	  _dataProvider._consumer.consume(tmp);
-		      }
-	        }
-	        catch (ZoieException e)
-	        {
-	          log.error(e.getMessage(), e);
-	        }
-	    }
-		
+		  try
+		  {
+		    if(_dataProvider._consumer!=null)
+		    {
+		      _eventCount.getAndAdd(tmp.size());
+		      updateStats();
+		      _dataProvider._consumer.consume(tmp);
+		    }
+		  }
+		  catch (ZoieException e)
+		  {
+		    log.error(e.getMessage(), e);
+		  }
+		}
+		private long lastcount=0;
+		private synchronized void updateStats()
+		{
+		  long newcount = _eventCount.get();
+		  long count = newcount - lastcount;
+		  lastcount = newcount;
+      long now = System.nanoTime();
+      if (now - last60slots[currentslot]>1000000000L)
+      {
+        // in nano seconds, passed one second
+        currentslot = (currentslot + 1) % last60.length;
+        last60slots[currentslot] = now;
+        last60[currentslot] = 0;
+      }
+      last60[currentslot] += count;
+		}
+
 		public long getCurrentVersion()
 		{
-			synchronized(this)
-			{
-		      return _currentVersion;
-			}
+		  synchronized(this)
+		  {
+		    return _currentVersion;
+		  }
 		}
-		
+
 		public void syncWthVersion(long timeInMillis, long version) throws ZoieException
 		{
 		  long now = System.currentTimeMillis();
@@ -245,17 +263,17 @@ public abstract class StreamDataProvider<V> implements DataProvider<V>,DataProvi
 		    while(_currentVersion < version)
 		    {
 		      if(now > due)
-              {
-                throw new ZoieException("sync timed out");
-              }
+		      {
+		        throw new ZoieException("sync timed out");
+		      }
 		      try
 		      {
-                this.notifyAll();
+		        this.notifyAll();
 		        this.wait(due - now);
 		      }
 		      catch(InterruptedException e)
 		      {
-	              log.warn(e.getMessage(), e);
+		        log.warn(e.getMessage(), e);
 		      }
 		      now = System.currentTimeMillis();
 		    }
@@ -264,18 +282,21 @@ public abstract class StreamDataProvider<V> implements DataProvider<V>,DataProvi
 
 		public void run()
 		{
-          long version = _currentVersion;
+		  long version = _currentVersion;
 		  while (!_stop)
 		  {
+        updateStats();
 		    synchronized(this)
 		    {
 		      while(!_stop && (_paused || (getEventsPerMinute() > _throttle)))
 		      {
 		        try {
 		          this.wait(500);
-		        } catch (InterruptedException e) {
+		        } catch (InterruptedException e)
+		        {
 		          continue;
 		        }
+		        updateStats();
 		      }
 		    }
 		    if (!_stop)
@@ -290,7 +311,7 @@ public abstract class StreamDataProvider<V> implements DataProvider<V>,DataProvi
 		          if (_batch.size()>=_dataProvider._batchSize)
 		          {
 		            flush();
-                    _currentVersion = version;
+		            _currentVersion = version;
 		            this.notifyAll();
 		          }
 		        }
@@ -300,9 +321,9 @@ public abstract class StreamDataProvider<V> implements DataProvider<V>,DataProvi
 		        synchronized(this)
 		        {
 		          flush();
-                  _stop=true;
-                  _currentVersion = version;
-                  this.notifyAll();
+		          _stop=true;
+		          _currentVersion = version;
+		          this.notifyAll();
 		          return;
 		        }
 		      }
@@ -314,21 +335,29 @@ public abstract class StreamDataProvider<V> implements DataProvider<V>,DataProvi
 		{
 		  return _eventCount.get();
 		}
-
-		private long getEventsPerMinute(){
-		  long diff = (System.nanoTime() - _eventStart)/1000000;
-		  if ( diff<=0 ) return 0;
-		  return _eventCount.get()*60000/diff;
-		}
+		private long[] last60 = new long[60];
+    private long[] last60slots = new long[60];
+		private volatile int currentslot = 0;
+		private final int window = 3;//window size 3 seconds
+    private long getEventsPerMinute()
+    {
+      int slot = currentslot;
+      long countwindow = 0;
+      long count = 0;
+      for(int i = 0 ; i < 60; i++)
+      {
+        int id = (slot - i + 60) % 60;
+        if (i<window)
+          countwindow += last60[id];
+        count += last60[id];
+      }
+      // use the higher of the rates in the time window and last 60 seconds
+      return Math.max(countwindow*60/window, count);
+    }
 		
-		private long getMaxEventsPerMinute()
+		private void setMaxEventsPerMinute(long maxEventsPerMinute)
 		{
-		  return _throttle;
+		  _throttle = maxEventsPerMinute;
 		}
-		
-        private void setMaxEventsPerMinute(long maxEventsPerMinute)
-        {
-          _throttle = maxEventsPerMinute;
-        }
 	}
 }

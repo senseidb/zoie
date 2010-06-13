@@ -88,6 +88,8 @@ public interface ZoieSystemAdminMBean {
 	boolean isUseCompoundFile();
 	
 	int getDiskIndexSegmentCount() throws IOException;
+  int getRAMASegmentCount();
+  int getRAMBSegmentCount();
 	
 	int getCurrentMemBatchSize();
     

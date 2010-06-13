@@ -162,6 +162,14 @@ public class ZoieSystemAdmin implements ZoieSystemAdminMBean {
     public int getDiskIndexSegmentCount() throws IOException{
 		return _internalMBean.getDiskIndexSegmentCount();
 	}
+    public int getRAMASegmentCount()
+    {
+      return _internalMBean.getRAMASegmentCount();
+    }
+    public int getRAMBSegmentCount()
+    {
+      return _internalMBean.getRAMBSegmentCount();
+    }
 
     public int getMaxSmallSegments()
     {

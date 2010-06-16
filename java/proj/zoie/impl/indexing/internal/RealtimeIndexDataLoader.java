@@ -16,6 +16,7 @@ package proj.zoie.impl.indexing.internal;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -177,7 +178,15 @@ public class RealtimeIndexDataLoader<R extends IndexReader, V> extends BatchedIn
       {
         long t2=System.currentTimeMillis();
         _eventCount -= eventCount;
-        log.info(this+" flushed batch of "+eventCount+" events to disk indexer, took: "+(t2-t1)+" current event count: "+_eventCount);
+        int segmentCount = -1;
+        try
+        {
+          segmentCount = _idxMgr.getDiskSegmentCount();
+        } catch (IOException e)
+        {
+          log.error("error getting new segment count after disk flush", e);
+        }
+        log.info(this+" flushed batch of "+eventCount+" events to disk indexer, took: "+(t2-t1)+" current event count: "+_eventCount + ", current disk segment count: " + segmentCount);
         IndexUpdatedEvent evt = new IndexUpdatedEvent(eventCount,t1,t2,_eventCount);
         fireIndexingEvent(evt);
         notifyAll();

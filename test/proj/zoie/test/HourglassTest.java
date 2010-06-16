@@ -70,6 +70,7 @@ public class HourglassTest extends ZoieTestCase
         return decorated;
       }}, zConfig);
     MemoryStreamDataProvider<String> memoryProvider=new MemoryStreamDataProvider<String>();
+    memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
     memoryProvider.setDataConsumer(hourglass);
     memoryProvider.start();
     int initNumDocs = getTotalNumDocs(hourglass);

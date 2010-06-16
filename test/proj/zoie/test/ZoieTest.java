@@ -96,6 +96,7 @@ public class ZoieTest extends ZoieTestCase
     idxSystem.start();
 
     MemoryStreamDataProvider<String> memoryProvider=new MemoryStreamDataProvider<String>();
+    memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
     memoryProvider.setDataConsumer(idxSystem);
     memoryProvider.start();
 
@@ -149,6 +150,7 @@ public class ZoieTest extends ZoieTestCase
 	  idxSystem.start();
 	    
 	  MemoryStreamDataProvider<String> memoryProvider=new MemoryStreamDataProvider<String>();
+    memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
 	  memoryProvider.setDataConsumer(idxSystem);
 	  memoryProvider.start();
 	  
@@ -209,6 +211,7 @@ public class ZoieTest extends ZoieTestCase
       throw new ZoieException(e.getMessage(),e);
     }
     MemoryStreamDataProvider<String> memoryProvider=new MemoryStreamDataProvider<String>();
+    memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
     memoryProvider.setDataConsumer(idxSystem);
     memoryProvider.start();
     try
@@ -284,6 +287,7 @@ public class ZoieTest extends ZoieTestCase
   {
     MockDataLoader<Integer> consumer=new MockDataLoader<Integer>();
     MemoryStreamDataProvider<Integer> memoryProvider=new MemoryStreamDataProvider<Integer>();
+    memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
     memoryProvider.setDataConsumer(consumer);
     memoryProvider.start();
     try
@@ -333,6 +337,7 @@ public class ZoieTest extends ZoieTestCase
         asyncConsumer.start();
 
         MemoryStreamDataProvider<Integer> memoryProvider=new MemoryStreamDataProvider<Integer>();
+        memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
         memoryProvider.setDataConsumer(asyncConsumer);
         memoryProvider.start();
         memoryProvider.setBatchSize(batchSize);
@@ -510,6 +515,7 @@ public class ZoieTest extends ZoieTestCase
     }
 
     MemoryStreamDataProvider<String> memoryProvider=new MemoryStreamDataProvider<String>();
+    memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
     memoryProvider.setDataConsumer(idxSystem);
     memoryProvider.start();
     try
@@ -577,6 +583,7 @@ public class ZoieTest extends ZoieTestCase
     final String query = "zoie";
 
     MemoryStreamDataProvider<String> memoryProvider=new MemoryStreamDataProvider<String>();
+    memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
     memoryProvider.setDataConsumer(idxSystem);
     memoryProvider.start();
     try
@@ -720,6 +727,7 @@ public class ZoieTest extends ZoieTestCase
     idxSystem.start();
     int numDiskIdx = 0;
     MemoryStreamDataProvider<String> memoryProvider=new MemoryStreamDataProvider<String>();
+    memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
     memoryProvider.setDataConsumer(idxSystem);
     memoryProvider.start();
     idxSystem.setBatchSize(10);
@@ -757,6 +765,7 @@ public class ZoieTest extends ZoieTestCase
     idxSystem.start();
     int numDiskIdx = 0;
     MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>();
+    memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
     memoryProvider.setDataConsumer(idxSystem);
     memoryProvider.start();
     idxSystem.setBatchSize(5);

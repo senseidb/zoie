@@ -185,6 +185,7 @@ public class ZoieThreadTest extends ZoieTestCase
     }
 
     MemoryStreamDataProvider<String> memoryProvider=new MemoryStreamDataProvider<String>();
+    memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
     memoryProvider.setDataConsumer(idxSystem);
     memoryProvider.start();
     ExecutorService threadPool = ZoieExecutors.newCachedThreadPool();

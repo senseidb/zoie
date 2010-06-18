@@ -69,7 +69,7 @@ public abstract class StreamDataProvider<V> implements DataProvider<V>,DataProvi
 	  return _maxEventsPerMinute;
 	}
 
-	private volatile long _maxEventsPerMinute = -1;//begin with no indexing
+	private volatile long _maxEventsPerMinute = Long.MAX_VALUE;//begin with no indexing
 	public void setMaxEventsPerMinute(long maxEventsPerMinute)
 	{
 	  _maxEventsPerMinute = maxEventsPerMinute;

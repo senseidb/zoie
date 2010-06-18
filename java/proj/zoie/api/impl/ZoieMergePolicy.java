@@ -19,6 +19,7 @@ package proj.zoie.api.impl;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.log4j.Logger;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
@@ -34,86 +35,101 @@ import org.apache.lucene.index.SegmentInfos;
  */
 public class ZoieMergePolicy extends LogByteSizeMergePolicy
 {
-  public static final int DEFAULT_NUM_LARGE_SEGMENTS = 10;
-  
+  public static final Logger log = Logger.getLogger(ZoieMergePolicy.class.getName());
+  public static final int DEFAULT_NUM_LARGE_SEGMENTS = 7;
+  public static final int DEFAULT_NUM_SMALL_SEGMENTS = 8;
+  public static final int DEFAULT_MERGE_FACTOR = 7;
+
   private boolean _partialExpunge = false;
   private int _numLargeSegments = DEFAULT_NUM_LARGE_SEGMENTS;
-  private int _maxSmallSegments = 2 * LogMergePolicy.DEFAULT_MERGE_FACTOR;
+  private int _maxSmallSegments = DEFAULT_NUM_SMALL_SEGMENTS; // default merge factor plus 1.
   private int _maxSegments = _numLargeSegments + _maxSmallSegments;
-  
+
   public ZoieMergePolicy(IndexWriter writer)
   {
     super(writer);
+    super.setMergeFactor(DEFAULT_MERGE_FACTOR);// set default merge factor to 7. Less than 10. Good for search speed.
   }
-  
+
   public void setMergePolicyParams(MergePolicyParams params){
-	  if (params!=null){
-	    setPartialExpunge(params._doPartialExpunge);
-	    setNumLargeSegments(params._numLargeSegments);
-	    setMaxSmallSegments(params._maxSmallSegments);
-	    setPartialExpunge(params._doPartialExpunge);
-	    setMergeFactor(params._mergeFactor);
-	    setUseCompoundFile(params._useCompoundFile);
-	    setMaxMergeDocs(params._maxMergeDocs);
-	  }
+    if (params!=null){
+      setPartialExpunge(params._doPartialExpunge);
+      setNumLargeSegments(params._numLargeSegments);
+      setMergeFactor(params._mergeFactor);
+      setMaxSmallSegments(params._maxSmallSegments);
+      setPartialExpunge(params._doPartialExpunge);
+      setUseCompoundFile(params._useCompoundFile);
+      setMaxMergeDocs(params._maxMergeDocs);
+    }
   }
-  
+
   protected long size(SegmentInfo info) throws IOException
   {
     long byteSize = info.sizeInBytes();
     float delRatio = (info.docCount <= 0 ? 0.0f : ((float)info.getDelCount() / (float)info.docCount));
     return (info.docCount <= 0 ?  byteSize : (long)((float)byteSize * (1.0f - delRatio)));
   }
-  
+
   public void setPartialExpunge(boolean doPartialExpunge)
   {
     _partialExpunge = doPartialExpunge;
   }
-  
+
   public boolean getPartialExpunge()
   {
     return _partialExpunge;
   }
-  
+
   public void setNumLargeSegments(int numLargeSegments)
   {
     if (numLargeSegments < 2)
-      throw new IllegalArgumentException("numLargeSegments cannot be less than 2");
-    
+    {
+      log.warn("numLargeSegments cannot be less than 2, while " + numLargeSegments + " is requested. Override with 2.");
+      numLargeSegments = 2;
+    }
     _numLargeSegments = numLargeSegments;
     _maxSegments = _numLargeSegments + 2 * getMergeFactor();
   }
-  
+
   public int getNumLargeSegments()
   {
     return _numLargeSegments;
   }
-  
+
   public void setMaxSmallSegments(int maxSmallSegments)
   {
-    if (maxSmallSegments < getMergeFactor())
-      throw new IllegalArgumentException("maxSmallSegments cannot be less than mergeFactor");
-    
+    if (maxSmallSegments < getMergeFactor()+1)
+    {
+      log.warn("MergeFactor is " +getMergeFactor() + ". maxSmallSegments is requested to be: "
+          + maxSmallSegments + ". Override with mergeFactor + 1, since maxSmallSegments has to be greater than mergeFactor.");
+      maxSmallSegments = getMergeFactor() + 1;
+    }
     _maxSmallSegments = maxSmallSegments;
     _maxSegments = _numLargeSegments + _maxSmallSegments;
   }
-  
+
   public int getMaxSmallSegments()
   {
     return _maxSmallSegments;
   }
-  
+
   @Override
   public void setMergeFactor(int mergeFactor)
   {
+    if (mergeFactor<2)
+    {
+      log.warn("mergeFactor has to be at least 2. Override " + mergeFactor + " with 2");
+      mergeFactor = 2;
+    }
     super.setMergeFactor(mergeFactor);
     if(_maxSmallSegments < getMergeFactor())
     {
-      _maxSmallSegments = getMergeFactor();
+      log.warn("maxSmallSegments has to be greater than mergeFactor. Override maxSmallSegments to: " + (mergeFactor + 1));
+      _maxSmallSegments = getMergeFactor() + 1;
       _maxSegments = _numLargeSegments + _maxSmallSegments;
     }
   }
-  
+
   private boolean isOptimized(SegmentInfos infos, IndexWriter writer, int maxNumSegments, Set<?> segmentsToOptimize) throws IOException {
     final int numSegments = infos.size();
     int numToOptimize = 0;
@@ -127,18 +143,18 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
     }
 
     return numToOptimize <= maxNumSegments &&
-      (numToOptimize != 1 || isOptimized(writer, optimizeInfo));
+    (numToOptimize != 1 || isOptimized(writer, optimizeInfo));
   }
-  
+
   /** Returns true if this single nfo is optimized (has no
    *  pending norms or deletes, is in the same dir as the
    *  writer, and matches the current compound file setting */
   private boolean isOptimized(IndexWriter writer, SegmentInfo info)
-    throws IOException {
+  throws IOException {
     return !info.hasDeletions() &&
-      !info.hasSeparateNorms() &&
-      info.dir == writer.getDirectory() &&
-      info.getUseCompoundFile() == getUseCompoundFile();
+    !info.hasSeparateNorms() &&
+    info.dir == writer.getDirectory() &&
+    info.getUseCompoundFile() == getUseCompoundFile();
   }
 
   /** Returns the merges necessary to optimize the index.
@@ -151,7 +167,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
    *  in use may make use of concurrency. */
   @Override
   public MergeSpecification findMergesForOptimize(SegmentInfos infos, int maxNumSegments, Set segmentsToOptimize) throws IOException {
-    
+
     assert maxNumSegments > 0;
 
     MergeSpecification spec = null;
@@ -194,24 +210,24 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
     }
     return spec;
   }
-  
+
   private MergeSpecification findBalancedMerges(SegmentInfos infos, int infoLen, int maxNumSegments, boolean partialExpunge)
-    throws IOException
+  throws IOException
   {
     if (infoLen <= maxNumSegments) return null;
-    
+
     MergeSpecification spec = new MergeSpecification();
     boolean useCompoundFile = getUseCompoundFile();
 
     // use Viterbi algorithm to find the best segmentation.
     // we will try to minimize the size variance of resulting segments.
-    
+
     double[][] variance = createVarianceTable(infos, infoLen, maxNumSegments);
-    
+
     final int maxMergeSegments = infoLen - maxNumSegments + 1;
     double[] sumVariance = new double[maxMergeSegments];
     int[][] backLink = new int[maxNumSegments][maxMergeSegments];
-    
+
     for(int i = (maxMergeSegments - 1); i >= 0; i--)
     {
       sumVariance[i] = variance[0][i];
@@ -236,7 +252,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
         backLink[i][j] = minK;
       }
     }
-    
+
     // now, trace back the back links to find all merges,
     // also find a candidate for partial expunge if requested
     int mergeEnd = infoLen;
@@ -266,21 +282,21 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
       }
       mergeEnd = mergeStart;
     }
-    
+
     if(partialExpunge && maxDelCount > 0)
     {
       // expunge deletes
       spec.add(new OneMerge(infos.range(expungeCandidate, expungeCandidate + 1), useCompoundFile));
     }
-    
+
     return spec;
   }
-  
+
   private double[][] createVarianceTable(SegmentInfos infos, int last, int maxNumSegments) throws IOException
   {
     int maxMergeSegments = last - maxNumSegments + 1;
     double[][] variance = new double[last][maxMergeSegments];
-    
+
     // compute the optimal segment size
     long optSize = 0;
     long[] sizeArr = new long[last];
@@ -290,7 +306,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
       optSize += sizeArr[i];
     }
     optSize = (optSize / maxNumSegments);
-    
+
     for(int i = 0; i < last; i++)
     {
       long size = 0;
@@ -310,25 +326,25 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
     }
     return variance;
   }
-  
+
   /**
    * Finds merges necessary to expunge all deletes from the
    * index. The number of large segments will stay the same.
    */ 
   @Override
   public MergeSpecification findMergesToExpungeDeletes(SegmentInfos infos)
-    throws CorruptIndexException, IOException
+  throws CorruptIndexException, IOException
   {
     final int numSegs = infos.size();
     final int numLargeSegs = (numSegs < _numLargeSegments ? numSegs : _numLargeSegments);
     MergeSpecification spec = null;
-    
+
     if(numLargeSegs < numSegs)
     {
       SegmentInfos smallSegments = infos.range(numLargeSegs, numSegs);
       spec = super.findMergesToExpungeDeletes(smallSegments);
     }
-    
+
     if(spec == null) spec = new MergeSpecification();
     for(int i = 0; i < numLargeSegs; i++)
     {
@@ -340,7 +356,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
     }
     return spec;
   }
-  
+
   /** Checks if any merges are now necessary and returns a
    *  {@link MergePolicy.MergeSpecification} if so.
    *  This merge policy try to maintain {@link
@@ -354,13 +370,13 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
   {
     final int numSegs = infos.size();
     final int numLargeSegs = _numLargeSegments;
-    
+
     if(numSegs <= numLargeSegs) return null;
-    
+
     long totalLargeSegSize = 0;
     long totalSmallSegSize = 0;
     SegmentInfo info;
-    
+
     // compute the total size of large segments
     for(int i = 0; i < numLargeSegs; i++)
     {
@@ -373,13 +389,13 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
       info = infos.info(i);
       totalSmallSegSize += size(info);
     }
-    
+
     long targetSegSize = (totalLargeSegSize / (numLargeSegs - 1));
     if(targetSegSize <= totalSmallSegSize)
     {
       // the total size of small segments is big enough,
       // promote the small segments to a large segment and do balanced merge,
-      
+
       if(totalSmallSegSize < targetSegSize * 2)
       {
         MergeSpecification spec = findBalancedMerges(infos, numLargeSegs, (numLargeSegs - 1), _partialExpunge);
@@ -412,7 +428,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
       // apply the log merge policy to small segments.
       SegmentInfos smallSegments = infos.range(numLargeSegs, numSegs);
       MergeSpecification spec = super.findMerges(smallSegments);
-      
+
       if(_partialExpunge)
       {
         OneMerge expunge  = findOneSegmentToExpunge(infos, numLargeSegs);
@@ -425,12 +441,12 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
       return spec;
     }      
   }
-  
+
   private OneMerge findOneSegmentToExpunge(SegmentInfos infos, int maxNumSegments) throws IOException
   {
     int expungeCandidate = -1;
     int maxDelCount = 0;
-    
+
     for(int i = maxNumSegments - 1; i >= 0; i--)
     {
       SegmentInfo info = infos.info(i);
@@ -447,84 +463,124 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
     }
     return null;
   }
-  
 
-  public static class MergePolicyParams{
-	  private int _numLargeSegments;
-	  private int _maxSmallSegments;
-	  private boolean _doPartialExpunge;
-	  private int _mergeFactor;
-	  private boolean _useCompoundFile;
-	  private int _maxMergeDocs;
-	  
-	  public MergePolicyParams(){
-		  _useCompoundFile = false;
-		  _doPartialExpunge = false;
-		  _numLargeSegments = DEFAULT_NUM_LARGE_SEGMENTS;
-		  _maxSmallSegments = 2 * LogMergePolicy.DEFAULT_MERGE_FACTOR;
-		  _maxSmallSegments = _numLargeSegments + _maxSmallSegments;
-		  _mergeFactor = LogMergePolicy.DEFAULT_MERGE_FACTOR;
-		  _maxMergeDocs = LogMergePolicy.DEFAULT_MAX_MERGE_DOCS;
-	  }
-	  
-	  public void setNumLargeSegments(int numLargeSegments)
+
+  public static class MergePolicyParams
+  {
+    public static final Logger log = Logger.getLogger(ZoieMergePolicy.MergePolicyParams.class.getName());
+    private int _numLargeSegments;
+    private int _maxSmallSegments;
+    private boolean _doPartialExpunge;
+    private int _mergeFactor;
+    private boolean _useCompoundFile;
+    private int _maxMergeDocs;
+
+    public MergePolicyParams()
+    {
+      _useCompoundFile = false;
+      _doPartialExpunge = false;
+      _numLargeSegments = DEFAULT_NUM_LARGE_SEGMENTS;
+      _maxSmallSegments = DEFAULT_NUM_SMALL_SEGMENTS;//2 * LogMergePolicy.DEFAULT_MERGE_FACTOR;
+      _mergeFactor = DEFAULT_MERGE_FACTOR;//LogMergePolicy.DEFAULT_MERGE_FACTOR;
+      _maxMergeDocs = LogMergePolicy.DEFAULT_MAX_MERGE_DOCS;
+    }
+    public String toString()
+    {
+      StringBuffer sb = new StringBuffer();
+      sb.append("useCompoundFile: ").append(_useCompoundFile);
+      sb.append(", doPartialExpunge: ").append(_doPartialExpunge);
+      sb.append(", numLargeSegments: ").append(_numLargeSegments);
+      sb.append(", maxSmallSegments: ").append(_maxSmallSegments);
+      sb.append(", mergeFactor: ").append(_mergeFactor);
+      sb.append(", maxMergeDocs: ").append(_maxMergeDocs);
+      return sb.toString();
+    }
+
+    public synchronized void setNumLargeSegments(int numLargeSegments)
+    {
+      if (numLargeSegments < 2)
       {
-		  _numLargeSegments = numLargeSegments;
+        log.warn("numLargeSegments cannot be less than 2, while " + numLargeSegments + " is requested. Override with 2.");
+        numLargeSegments = 2;
       }
-      
-      public int getNumLargeSegments()
+      _numLargeSegments = numLargeSegments;
+      log.info(this.toString());
+    }
+
+    public synchronized int getNumLargeSegments()
+    {
+      return _numLargeSegments;
+    }
+
+    public synchronized void setMaxSmallSegments(int maxSmallSegments)
+    {
+      if (maxSmallSegments < getMergeFactor()+1)
       {
-        return _numLargeSegments;
+        log.warn("MergeFactor is " +getMergeFactor() + ". maxSmallSegments is requested to be: "
+            + maxSmallSegments + ". Override with mergeFactor + 1, since maxSmallSegments has to be greater than mergeFactor.");
+        maxSmallSegments = getMergeFactor() + 1;
       }
-      
-      public void setMaxSmallSegments(int maxSmallSegments)
+      _maxSmallSegments = maxSmallSegments;
+      log.info(this.toString());
+    }
+
+    public synchronized int getMaxSmallSegments()
+    {
+      return _maxSmallSegments;
+    }
+
+    public synchronized void setPartialExpunge(boolean doPartialExpunge)
+    {
+      _doPartialExpunge = doPartialExpunge;
+      log.info(this.toString());
+    }
+
+    public synchronized boolean getPartialExpunge()
+    {
+      return _doPartialExpunge;
+    }
+
+    public synchronized void setMergeFactor(int mergeFactor)
+    {
+      if (mergeFactor<2)
       {
-    	  _maxSmallSegments = maxSmallSegments;
+        log.warn("mergeFactor has to be at least 2. Override " + mergeFactor + " with 2");
+        mergeFactor = 2;
       }
-      
-      public int getMaxSmallSegments()
+      _mergeFactor = mergeFactor;
+      if(_maxSmallSegments < getMergeFactor())
       {
-        return _maxSmallSegments;
+        log.warn("maxSmallSegments has to be greater than mergeFactor. Override maxSmallSegments to: " + (mergeFactor + 1));
+        _maxSmallSegments = getMergeFactor() + 1;
       }
-      
-      public void setPartialExpunge(boolean doPartialExpunge)
-      {
-    	  _doPartialExpunge = doPartialExpunge;
-      }
-      
-      public boolean getPartialExpunge()
-      {
-        return _doPartialExpunge;
-      }
-      
-	  public void setMergeFactor(int mergeFactor)
-	  {
-		  _mergeFactor = mergeFactor;
-	  }
-	  
-	  public int getMergeFactor()
-	  {
-		return _mergeFactor;
-	  }
-		
-	  public void setMaxMergeDocs(int maxMergeDocs)
-	  {
-		  _maxMergeDocs = maxMergeDocs;
-	  }
-		
-	  public int getMaxMergeDocs()
-	  {
-		return _maxMergeDocs;
-	  }
-	  
-	  public void setUseCompoundFile(boolean useCompoundFile)
-	  {
-		_useCompoundFile = useCompoundFile;
-	  }
-	  
-	  public boolean isUseCompoundFile()
-	  {
-	    return _useCompoundFile;
-	  }
+      log.info(this.toString());
+    }
+
+    public synchronized int getMergeFactor()
+    {
+      return _mergeFactor;
+    }
+
+    public synchronized void setMaxMergeDocs(int maxMergeDocs)
+    {
+      _maxMergeDocs = maxMergeDocs;
+      log.info(this.toString());
+    }
+
+    public synchronized int getMaxMergeDocs()
+    {
+      return _maxMergeDocs;
+    }
+
+    public synchronized void setUseCompoundFile(boolean useCompoundFile)
+    {
+      _useCompoundFile = useCompoundFile;
+      log.info(this.toString());
+    }
+
+    public synchronized boolean isUseCompoundFile()
+    {
+      return _useCompoundFile;
+    }
   }
 }

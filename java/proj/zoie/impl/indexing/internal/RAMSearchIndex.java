@@ -27,34 +27,40 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.search.Similarity;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
 import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieMultiReader;
+import proj.zoie.api.impl.ZoieMergePolicy;
+import proj.zoie.api.impl.ZoieMergePolicy.MergePolicyParams;
 import proj.zoie.api.impl.util.IndexUtil;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
-public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
+public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
+{
 	  private long         _version;
 	  private final RAMDirectory _directory;
 	  private final IndexReaderDecorator<R> _decorator;
 	  
 	  // a consistent pair of reader and deleted set
-      private volatile ZoieIndexReader<R> _currentReader;
+	  private volatile ZoieIndexReader<R> _currentReader;
+    private final MergePolicyParams _mergePolicyParams;
+    
 	  
 	  public static final Logger log = Logger.getLogger(RAMSearchIndex.class);
 
 	  public RAMSearchIndex(long version, IndexReaderDecorator<R> decorator,SearchIndexManager<R> idxMgr){
 		super(idxMgr, false);
-	    _directory = new RAMDirectory();
-	    _version = version;
-	    _decorator = decorator;
-	    _currentReader = null;
-//	    ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
-//	    cms.setMaxThreadCount(1);
-	    _mergeScheduler = new SerialMergeScheduler();
+		_directory = new RAMDirectory();
+		_version = version;
+		_decorator = decorator;
+		_currentReader = null;
+		_mergeScheduler = new SerialMergeScheduler();
+		_mergePolicyParams = new MergePolicyParams();
+		_mergePolicyParams.setNumLargeSegments(2);
+		_mergePolicyParams.setMergeFactor(2);
+		_mergePolicyParams.setMaxSmallSegments(3);
 	  }
 	  
 	  public void close()
@@ -115,8 +121,8 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
 		}
 	  }
 	  
-      private ZoieIndexReader<R> openIndexReaderInternal() throws IOException
-      {
+	  private ZoieIndexReader<R> openIndexReaderInternal() throws IOException
+	  {
 	    if (IndexReader.indexExists(_directory))
 	    {
 	      IndexReader srcReader=null;
@@ -124,10 +130,10 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
 	      try
 	      {
 	        // for RAM indexes, just get a new index reader
-	    	srcReader=IndexReader.open(_directory,true);
-	    	finalReader=ZoieIndexReader.open(srcReader, _decorator);
-	    	DocIDMapper mapper = _idxMgr._docIDMapperFactory.getDocIDMapper((ZoieMultiReader<R>)finalReader);
-	    	finalReader.setDocIDMapper(mapper);
+	        srcReader=IndexReader.open(_directory,true);
+	        finalReader=ZoieIndexReader.open(srcReader, _decorator);
+	        DocIDMapper mapper = _idxMgr._docIDMapperFactory.getDocIDMapper((ZoieMultiReader<R>)finalReader);
+	        finalReader.setDocIDMapper(mapper);
 	        return finalReader;
 	      }
 	      catch(IOException ioe)
@@ -135,7 +141,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
 	        // if reader decoration fails, still need to close the source reader
 	        if (srcReader!=null)
 	        {
-	        	srcReader.close();
+	          srcReader.close();
 	        }
 	        throw ioe;
 	      }
@@ -156,6 +162,9 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
 	    // TODO disable compound file for RAMDirecory when lucene bug is fixed
 	    idxWriter.setUseCompoundFile(false);
 	    idxWriter.setMergeScheduler(_mergeScheduler);
+	    ZoieMergePolicy mergePolicy = new ZoieMergePolicy(idxWriter);
+	    mergePolicy.setMergePolicyParams(_mergePolicyParams );
+	    idxWriter.setMergePolicy(mergePolicy);
 	    idxWriter.setRAMBufferSizeMB(3);
 	    
 	    if (similarity != null)

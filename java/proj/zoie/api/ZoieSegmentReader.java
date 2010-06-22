@@ -147,6 +147,8 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 	public void setDelDocIds()
 	{
 	  _delDocIds.set(_currentDelDocIds);
+	  if (_decorator!=null && _decoratedReader!=null)
+	    _decorator.setDeleteSet(_decoratedReader, new ArrayDocIdSet(_currentDelDocIds));
 	}
 	
 	public R getDecoratedReader(){

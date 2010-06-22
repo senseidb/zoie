@@ -7,6 +7,7 @@ import java.util.Properties;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.DocIdSet;
 
 import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.ZoieIndexReader;
@@ -114,6 +115,11 @@ public class ZoieTestCase extends TestCase
 
     public IndexReader redecorate(IndexReader decorated,ZoieIndexReader<IndexReader> copy,boolean withDeletes) throws IOException {
       return decorated;
+    }
+
+    public void setDeleteSet(IndexReader reader, DocIdSet docIds)
+    {
+      // do nothing
     }
   }
 

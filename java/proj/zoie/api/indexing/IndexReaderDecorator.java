@@ -18,6 +18,7 @@ package proj.zoie.api.indexing;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.DocIdSet;
 
 import proj.zoie.api.ZoieIndexReader;
 
@@ -45,4 +46,5 @@ public interface IndexReaderDecorator<R extends IndexReader>
 	 * @throws IOException
 	 */
 	R redecorate(R decorated,ZoieIndexReader<R> copy,boolean withDeletes) throws IOException;
+	void setDeleteSet(R reader, DocIdSet docIds);
 }

@@ -24,10 +24,15 @@ import org.apache.lucene.search.DocIdSetIterator;
 public class ArrayDocIdSet extends DocIdSet
 {
   private final int[] _docids;
+  private final int _lengthminusone;
   
   public ArrayDocIdSet(int[] docids)
   {
     _docids = docids;
+    if (docids!=null)
+      _lengthminusone = docids.length - 1;
+    else
+      _lengthminusone = -1;
   }
   
   final private static int binarySearch(int[] a, int key) {
@@ -59,7 +64,7 @@ public class ArrayDocIdSet extends DocIdSet
     {
       int doc = -1;
       int current = -1;
-      int largest = _docids.length-1;
+      int largest = _lengthminusone;
       @Override
       public int docID()
       {
@@ -69,7 +74,7 @@ public class ArrayDocIdSet extends DocIdSet
       @Override
       public int nextDoc() throws IOException
       {
-        if (current<_docids.length-1)
+        if (current<_lengthminusone)
         {
           current++;
           doc = _docids[current];

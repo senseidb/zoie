@@ -16,6 +16,7 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
@@ -68,6 +69,11 @@ public class HourglassTest extends ZoieTestCase
       {
         // TODO Auto-generated method stub
         return decorated;
+      }
+
+      public void setDeleteSet(IndexReader reader, DocIdSet docIds)
+      {
+        // do nothing
       }}, zConfig);
     MemoryStreamDataProvider<String> memoryProvider=new MemoryStreamDataProvider<String>();
     memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);

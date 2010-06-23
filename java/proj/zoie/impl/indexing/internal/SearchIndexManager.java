@@ -101,10 +101,14 @@ public class SearchIndexManager<R extends IndexReader>{
 //	    return _dirMgr;
 //	  }
 	  
-	  public int getDiskSegmentCount() throws IOException
-	  {
-		  return _diskIndex.getSegmentCount();
-	  }
+    public int getDiskSegmentCount() throws IOException
+    {
+      return _diskIndex.getSegmentCount();
+    }
+    public String getDiskSegmentInfo()
+    {
+      return _diskIndex.getSegmentInfo();
+    }
 
 	  public int getRAMASegmentCount()
 	  {

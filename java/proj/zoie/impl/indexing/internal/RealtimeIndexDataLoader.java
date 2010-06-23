@@ -179,14 +179,17 @@ public class RealtimeIndexDataLoader<R extends IndexReader, V> extends BatchedIn
         long t2=System.currentTimeMillis();
         _eventCount -= eventCount;
         int segmentCount = -1;
+        String segmentInfo="";
         try
         {
           segmentCount = _idxMgr.getDiskSegmentCount();
+          segmentInfo = _idxMgr.getDiskSegmentInfo();
         } catch (IOException e)
         {
           log.error("error getting new segment count after disk flush", e);
         }
-        log.info(this+" flushed batch of "+eventCount+" events to disk indexer, took: "+(t2-t1)+" current event count: "+_eventCount + ", current disk segment count: " + segmentCount);
+        log.info("flushed batch of "+eventCount+" events to disk indexer, took: "+(t2-t1)+" current event count: "+_eventCount + ", current disk segment count: " + segmentCount);
+        log.info("post-flush segment info: " + segmentInfo);
         IndexUpdatedEvent evt = new IndexUpdatedEvent(eventCount,t1,t2,_eventCount);
         fireIndexingEvent(evt);
         notifyAll();

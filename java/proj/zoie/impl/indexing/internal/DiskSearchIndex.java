@@ -97,6 +97,25 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
     if (dir == null) return 0;
     return IndexUtil.getNumSegments(dir);
   }
+  public String getSegmentInfo()
+  {
+    if (_dirMgr == null || !_dirMgr.exists())
+    {
+      return "";
+    }
+
+    Directory dir = null;
+    try
+    {
+      dir = _dirMgr.getDirectory();
+    }
+    catch(Exception e)
+    {
+      return "";
+    }
+    if (dir == null) return "";
+    return IndexUtil.getSegmentsInfo(dir);
+  }
 
   /**
    * Close and releases dispenser and clean up

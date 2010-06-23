@@ -17,6 +17,7 @@ package proj.zoie.api.impl.util;
  */
 import java.io.IOException;
 
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.Directory;
 
@@ -30,5 +31,22 @@ public class IndexUtil {
 		SegmentInfos infos=new SegmentInfos();
 		infos.read(idx);
 		return infos.size();
+	}
+	public static String getSegmentsInfo(Directory idx)
+	{
+    SegmentInfos infos=new SegmentInfos();
+    try
+    {
+      infos.read(idx);
+      String x="";
+      for(int i=0;i<infos.size(); i++)
+      {
+        x += "[numDoc:" + infos.info(i).docCount + ",numDel:"+infos.info(i).getDelCount()+"]"; 
+      }
+      return x;
+    } catch (Exception e)
+    {
+      return e.toString();
+    }
 	}
 }

@@ -36,9 +36,9 @@ import org.apache.lucene.index.SegmentInfos;
 public class ZoieMergePolicy extends LogByteSizeMergePolicy
 {
   public static final Logger log = Logger.getLogger(ZoieMergePolicy.class.getName());
-  public static final int DEFAULT_NUM_LARGE_SEGMENTS = 7;
-  public static final int DEFAULT_NUM_SMALL_SEGMENTS = 8;
-  public static final int DEFAULT_MERGE_FACTOR = 7;
+  public static final int DEFAULT_NUM_LARGE_SEGMENTS = 6;
+  public static final int DEFAULT_NUM_SMALL_SEGMENTS = 7;
+  public static final int DEFAULT_MERGE_FACTOR = 6;
 
   private boolean _partialExpunge = false;
   private int _numLargeSegments = DEFAULT_NUM_LARGE_SEGMENTS;

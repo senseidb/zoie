@@ -29,6 +29,7 @@ import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.RAMDirectory;
 
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieMultiReader;
@@ -37,9 +38,8 @@ import proj.zoie.api.impl.ZoieMergePolicy.MergePolicyParams;
 import proj.zoie.api.impl.util.IndexUtil;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
-public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
-{
-	  private long         _version;
+public class RAMSearchIndex<R extends IndexReader, V extends ZoieVersion> extends BaseSearchIndex<R,V> {
+	  private V         _version;
 	  private final RAMDirectory _directory;
 	  private final IndexReaderDecorator<R> _decorator;
 	  
@@ -50,7 +50,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
 	  
 	  public static final Logger log = Logger.getLogger(RAMSearchIndex.class);
 
-	  public RAMSearchIndex(long version, IndexReaderDecorator<R> decorator,SearchIndexManager<R> idxMgr){
+	  public RAMSearchIndex(V version, IndexReaderDecorator<R> decorator,SearchIndexManager<R,V> idxMgr){
 		super(idxMgr, false);
 		_directory = new RAMDirectory();
 		_version = version;
@@ -72,12 +72,12 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
 	    }
 	  }
 	  
-	  public long getVersion()
+	  public V getVersion()
 	  {
 	    return _version;
 	  }
 
-	  public void setVersion(long version)
+	  public void setVersion(V version)
 	      throws IOException
 	  {
 	    _version = version;
@@ -85,7 +85,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
 
 	  public int getNumdocs()
 	  {
-		ZoieIndexReader<R> reader=null;
+		  ZoieIndexReader<R> reader=null;
 	    try
 	    {
 	      reader=openIndexReader();

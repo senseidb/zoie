@@ -6,9 +6,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import proj.zoie.api.DataConsumer.DataEvent;
+import proj.zoie.api.ZoieVersion;
 
-public interface PreparedStatementBuilder<T> {
-	PreparedStatement buildStatment(Connection conn, long fromVersion) throws SQLException;
+public interface PreparedStatementBuilder<T, V extends ZoieVersion> {
+	PreparedStatement buildStatment(Connection conn, V fromVersion) throws SQLException;
 	
 	/**
 	 * <b>The builder should not ever change the cursor of the result set. It should only work on the current row.</b>
@@ -16,5 +17,5 @@ public interface PreparedStatementBuilder<T> {
 	 * @return
 	 * @throws SQLException
 	 */
-	DataEvent<T> buildDataEvent(ResultSet rs) throws SQLException;
+	DataEvent<T,V> buildDataEvent(ResultSet rs) throws SQLException;
 }

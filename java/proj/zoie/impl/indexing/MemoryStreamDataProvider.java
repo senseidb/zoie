@@ -22,10 +22,11 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 import proj.zoie.api.DataConsumer.DataEvent;
+import proj.zoie.api.ZoieVersion;
 
-public class MemoryStreamDataProvider<V> extends StreamDataProvider<V> {
+public class MemoryStreamDataProvider<D,V extends ZoieVersion> extends StreamDataProvider<D,V> {
 
-	  private List<DataEvent<V>> _list;
+	  private List<DataEvent<D,V>> _list;
 	  private int _count;
 	  private boolean _stop;
 	  
@@ -35,7 +36,7 @@ public class MemoryStreamDataProvider<V> extends StreamDataProvider<V> {
 	  public MemoryStreamDataProvider()
 	  {
 	    super();
-	    _list= new LinkedList<DataEvent<V>>();
+	    _list= new LinkedList<DataEvent<D,V>>();
 	    _count=0;
 	    _stop=false;
 	  }
@@ -69,16 +70,16 @@ public class MemoryStreamDataProvider<V> extends StreamDataProvider<V> {
 	    } 
 	  }
 	  
-      public void addEvents(List<DataEvent<V>> list)
+      public void addEvents(List<DataEvent<D,V>> list)
       {
         if (list!=null && !list.isEmpty())
         {
-          Iterator<DataEvent<V>> iter=list.iterator();
+          Iterator<DataEvent<D,V>> iter=list.iterator();
           synchronized(this)
           {
             while(iter.hasNext())
             {
-              DataEvent<V> obj=iter.next();
+              DataEvent<D,V> obj=iter.next();
               _count++;
               _list.add(obj);
             }
@@ -87,7 +88,7 @@ public class MemoryStreamDataProvider<V> extends StreamDataProvider<V> {
         }
       }
 
-      public void addEvent(DataEvent<V> event)
+      public void addEvent(DataEvent<D,V> event)
       {
         if (event!=null)
         {
@@ -101,9 +102,9 @@ public class MemoryStreamDataProvider<V> extends StreamDataProvider<V> {
       }
 	  
 	  @Override
-	  public DataEvent<V> next()
+	  public DataEvent<D,V> next()
 	  {
-		DataEvent<V> obj=null;
+		DataEvent<D,V> obj=null;
         synchronized(this)
         {
           while(_list.isEmpty() && !_stop)
@@ -131,7 +132,7 @@ public class MemoryStreamDataProvider<V> extends StreamDataProvider<V> {
 	    synchronized(this)
 	    {
 	      return _count;
-        }
+      }
 	  }
 
 	  @Override

@@ -21,17 +21,19 @@ import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.impl.indexing.IndexUpdatedEvent;
 import proj.zoie.impl.indexing.ZoieSystem;
 
-public class ZoieIndexingStatusAdmin implements ZoieIndexingStatusAdminMBean,IndexingEventListener{
-	private final ZoieSystem<?,?> _zoieSystem;
+import proj.zoie.api.ZoieVersion;
+
+public class ZoieIndexingStatusAdmin<V extends ZoieVersion>implements ZoieIndexingStatusAdminMBean,IndexingEventListener<V>{
+	private final ZoieSystem<?,?,V> _zoieSystem;
 	private long _endTime;
 	private long _startTime;
 	private int _leftOver;
 	private int _size;
 	private long _totalTime;
 	private int _totalSize;
-	private long _diskVersion;
+	private V _diskVersion;
 	
-	public ZoieIndexingStatusAdmin(ZoieSystem<?,?> zoieSystem){
+	public ZoieIndexingStatusAdmin(ZoieSystem<?,?,V> zoieSystem){
 		_zoieSystem = zoieSystem;
 		_zoieSystem.addIndexingEventListener(this);
 		_startTime = 0L;
@@ -40,7 +42,7 @@ public class ZoieIndexingStatusAdmin implements ZoieIndexingStatusAdminMBean,Ind
 		_size = 0;
 		_totalSize = 0;
 		_totalTime = 0;
-		_diskVersion = 0l;
+		_diskVersion = null;
 	}
 	
 	public long getAverageIndexingBatchDuration() {
@@ -81,11 +83,11 @@ public class ZoieIndexingStatusAdmin implements ZoieIndexingStatusAdminMBean,Ind
 		}	
 	}
 
-	public void handleUpdatedDiskVersion(long version) {
+	public void handleUpdatedDiskVersion(V version) {
 		_diskVersion = version;
 	}
 
-	public long getCurrentDiskVersion() {
+	public V getCurrentDiskVersion() {
 		return _diskVersion;
 	}
 }

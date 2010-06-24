@@ -32,14 +32,15 @@ import org.apache.lucene.store.Directory;
 
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.impl.ZoieMergePolicy;
 import proj.zoie.api.impl.ZoieMergePolicy.MergePolicyParams;
 import proj.zoie.api.impl.util.IndexUtil;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
-public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
-  private final DirectoryManager        _dirMgr;
-  private final IndexReaderDispenser<R> _dispenser;
+public class DiskSearchIndex<R extends IndexReader, V extends ZoieVersion> extends BaseSearchIndex<R,V>{
+  private final DirectoryManager<V>        _dirMgr;
+  private final IndexReaderDispenser<R,V> _dispenser;
 
   final MergePolicyParams _mergePolicyParams;
 
@@ -47,16 +48,16 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
 
   public static final Logger log = Logger.getLogger(DiskSearchIndex.class);
 
-  public DiskSearchIndex(DirectoryManager dirMgr, IndexReaderDecorator<R> decorator,SearchIndexManager<R> idxMgr){
+  public DiskSearchIndex(DirectoryManager<V> dirMgr, IndexReaderDecorator<R> decorator,SearchIndexManager<R,V> idxMgr){
     super(idxMgr, true);  
     _dirMgr = dirMgr;
     _mergePolicyParams = new MergePolicyParams();
-    _dispenser = new IndexReaderDispenser<R>(_dirMgr, decorator,this);
+    _dispenser = new IndexReaderDispenser<R,V>(_dirMgr, decorator,this);
     _mergeScheduler = new SerialMergeScheduler();
     _deletionPolicy = new ZoieIndexDeletionPolicy();
   }
 
-  public long getVersion()
+  public V getVersion()
   {
     return _dispenser.getCurrentVersion();
   }
@@ -231,14 +232,14 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
   /**
    * Writes the current version/SCN to the disk
    */
-  public void setVersion(long version) throws IOException
+  public void setVersion(V version) throws IOException
   {
     _dirMgr.setVersion(version);
   }
 
   public DiskIndexSnapshot getSnapshot() throws IOException
   {
-    IndexSignature sig = new IndexSignature(_dirMgr.getVersion());
+    IndexSignature<V> sig = new IndexSignature<V>(_dirMgr.getVersion());
     if(sig != null)
     {
       ZoieIndexDeletionPolicy.Snapshot snapshot = _deletionPolicy.getSnapshot();

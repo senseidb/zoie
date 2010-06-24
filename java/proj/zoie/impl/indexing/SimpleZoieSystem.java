@@ -16,16 +16,16 @@ package proj.zoie.impl.indexing;
  * limitations under the License.
  */
 import java.io.File;
-
+import proj.zoie.api.ZoieVersion;
 import org.apache.lucene.index.IndexReader;
-
+import proj.zoie.api.ZoieVersionFactory;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 
 /**
  * @deprecated use {@link ZoieSystem#buildDefaultInstance(File, ZoieIndexableInterpreter, int, long, boolean)}
  * @param <V>
  */
-public class SimpleZoieSystem<V> extends ZoieSystem<IndexReader,V> {
+public class SimpleZoieSystem<D, V extends ZoieVersion> extends ZoieSystem<IndexReader,D,V> {
 
 	/**
 	 * @param idxDir
@@ -33,8 +33,8 @@ public class SimpleZoieSystem<V> extends ZoieSystem<IndexReader,V> {
 	 * @param batchSize
 	 * @param batchDelay
 	 */
-	public SimpleZoieSystem(File idxDir, ZoieIndexableInterpreter<V> interpreter,int batchSize, long batchDelay) {
-		super(idxDir, interpreter, new DefaultIndexReaderDecorator(), null,null,batchSize, batchDelay, true);
+	public SimpleZoieSystem(File idxDir, ZoieIndexableInterpreter<D> interpreter,int batchSize, long batchDelay,ZoieVersionFactory<V> zoieVersionFactory) {
+		super(idxDir, interpreter, new DefaultIndexReaderDecorator(), null,null,batchSize, batchDelay, true,zoieVersionFactory);
 	}
 
 }

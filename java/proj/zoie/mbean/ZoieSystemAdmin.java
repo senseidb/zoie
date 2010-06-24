@@ -21,8 +21,10 @@ import java.util.Date;
 import proj.zoie.api.ZoieException;
 import proj.zoie.impl.indexing.ZoieSystem;
 
-public class ZoieSystemAdmin implements ZoieSystemAdminMBean {
-	private final ZoieSystemAdminMBean _internalMBean;
+import proj.zoie.api.ZoieVersion;
+
+public class ZoieSystemAdmin<V extends ZoieVersion> implements ZoieSystemAdminMBean<V> {
+	private final ZoieSystemAdminMBean<V> _internalMBean;
 	
 	@SuppressWarnings("unchecked")
 	public ZoieSystemAdmin(ZoieSystem zoieSystem)
@@ -42,7 +44,7 @@ public class ZoieSystemAdmin implements ZoieSystemAdminMBean {
 		return _internalMBean.getBatchSize();
 	}
 
-	public long getCurrentDiskVersion() throws IOException{
+	public V getCurrentDiskVersion() throws IOException{
 		return _internalMBean.getCurrentDiskVersion();
 	}
 
@@ -70,7 +72,7 @@ public class ZoieSystemAdmin implements ZoieSystemAdminMBean {
 		return _internalMBean.getRamAIndexSize();
 	}
 
-	public long getRamAVersion() {
+	public V getRamAVersion() {
 		return _internalMBean.getRamAVersion();
 	}
 
@@ -78,7 +80,7 @@ public class ZoieSystemAdmin implements ZoieSystemAdminMBean {
 		return _internalMBean.getRamBIndexSize();
 	}
 
-	public long getRamBVersion() {
+	public V getRamBVersion() {
 		return _internalMBean.getRamBVersion();
 	}
 

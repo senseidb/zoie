@@ -23,6 +23,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.DataConsumer;
 import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieException;
@@ -30,7 +31,7 @@ import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 
-public class ThrottledLuceneNRTDataConsumer<V> implements DataConsumer<V>,IndexReaderFactory<IndexReader>{
+public class ThrottledLuceneNRTDataConsumer<D, V extends ZoieVersion> implements DataConsumer<D,V>,IndexReaderFactory<IndexReader>{
 	private static final Logger logger = Logger.getLogger(ThrottledLuceneNRTDataConsumer.class);
 
 	private static int MAX_READER_GENERATION = 3;
@@ -42,7 +43,7 @@ public class ThrottledLuceneNRTDataConsumer<V> implements DataConsumer<V>,IndexR
 	
 	private IndexWriter _writer;
 	private Analyzer _analyzer;
-	private ZoieIndexableInterpreter<V> _interpreter;
+	private ZoieIndexableInterpreter<D> _interpreter;
 	private Directory _dir;
 	private final long _throttleFactor;
 	private IndexReader _currentReader;
@@ -50,15 +51,15 @@ public class ThrottledLuceneNRTDataConsumer<V> implements DataConsumer<V>,IndexR
 	private HashSet<IndexReader> _returnSet = new HashSet<IndexReader>();
 	private ConcurrentLinkedQueue<IndexReader> _returnList = new ConcurrentLinkedQueue<IndexReader>();
 	
-	public ThrottledLuceneNRTDataConsumer(File dir,ZoieIndexableInterpreter<V> interpreter,long throttleFactor) throws IOException{
+	public ThrottledLuceneNRTDataConsumer(File dir,ZoieIndexableInterpreter<D> interpreter,long throttleFactor) throws IOException{
 		this(FSDirectory.open(dir),new StandardAnalyzer(Version.LUCENE_CURRENT),interpreter,throttleFactor);
 	}
 	
-	public ThrottledLuceneNRTDataConsumer(File dir,Analyzer analyzer,ZoieIndexableInterpreter<V> interpreter,long throttleFactor) throws IOException{
+	public ThrottledLuceneNRTDataConsumer(File dir,Analyzer analyzer,ZoieIndexableInterpreter<D> interpreter,long throttleFactor) throws IOException{
 		this(FSDirectory.open(dir),analyzer,interpreter,throttleFactor);
 	}
 	
-	public ThrottledLuceneNRTDataConsumer(Directory dir,Analyzer analyzer,ZoieIndexableInterpreter<V> interpreter,long throttleFactor){
+	public ThrottledLuceneNRTDataConsumer(Directory dir,Analyzer analyzer,ZoieIndexableInterpreter<D> interpreter,long throttleFactor){
 		_writer = null;
 		_analyzer = analyzer;
 		_interpreter = interpreter;
@@ -96,14 +97,14 @@ public class ThrottledLuceneNRTDataConsumer<V> implements DataConsumer<V>,IndexR
 		}
 	}
 	
-	public void consume(Collection<proj.zoie.api.DataConsumer.DataEvent<V>> events)
+	public void consume(Collection<proj.zoie.api.DataConsumer.DataEvent<D,V>> events)
 			throws ZoieException {
 		if (_writer == null){
 			throw new ZoieException("Internal IndexWriter null, perhaps not started?");
 		}
 		
 		if (events.size() > 0){
-			for (DataEvent<V> event : events){
+			for (DataEvent<D,V> event : events){
 				ZoieIndexable indexable = _interpreter.convertAndInterpret(event.getData());
 				if (indexable.isSkip()) continue;
 				
@@ -227,7 +228,7 @@ public class ThrottledLuceneNRTDataConsumer<V> implements DataConsumer<V>,IndexR
 		}
 	}
   
-  public long getVersion()
+  public V getVersion()
   {
     throw new UnsupportedOperationException();
   }

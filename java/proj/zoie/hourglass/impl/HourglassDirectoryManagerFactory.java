@@ -15,15 +15,16 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
 
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.DefaultDirectoryManager;
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.impl.indexing.internal.IndexSignature;
-
+import proj.zoie.api.ZoieVersionFactory;
 /**
  * @author "Xiaoyang Gu<xgu@linkedin.com>"
  *
  */
-public class HourglassDirectoryManagerFactory
+public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
 {
   public static final Logger log = Logger.getLogger(HourglassDirectoryManagerFactory.class);
 
@@ -32,14 +33,16 @@ public class HourglassDirectoryManagerFactory
   private final File _root;
   
   private volatile File _location;
-  private volatile DirectoryManager _currentDirMgr = null;
+  private volatile DirectoryManager<V> _currentDirMgr = null;
   private volatile boolean isRecentlyChanged = false;
   private SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd-HHmmssSSS"); 
   private volatile long _nextUpdateTime=0L;
   private boolean init = true;
-  public HourglassDirectoryManagerFactory(File root, long duration)
+  ZoieVersionFactory<V> _zoieVersionFactory;
+  public HourglassDirectoryManagerFactory(File root, long duration, ZoieVersionFactory<V> zoieVersionFactory)
   {
     _root = root;
+    _zoieVersionFactory = zoieVersionFactory;
     if (duration > _indexDuration)
     {
       _indexDuration = duration;
@@ -47,7 +50,7 @@ public class HourglassDirectoryManagerFactory
     log.info("starting HourglassDirectoryManagerFactory at " + root + " --- index rolling duration: " + duration +"ms");
     updateDirectoryManager();
   }
-  public DirectoryManager getDirectoryManager()
+  public DirectoryManager<V> getDirectoryManager()
   {
     return _currentDirMgr;
   }
@@ -86,7 +89,7 @@ public class HourglassDirectoryManagerFactory
     {
       log.error(e);
     }
-    _currentDirMgr = new DefaultDirectoryManager(_location);
+    _currentDirMgr = new DefaultDirectoryManager<V>(_location, _zoieVersionFactory);
     isRecentlyChanged = true;
     setNextUpdateTime();
     return isRecentlyChanged;
@@ -170,10 +173,10 @@ public class HourglassDirectoryManagerFactory
   /**
    * @return the max version from all the archived index
    */
-  public long getArchivedVersion()
+  public V getArchivedVersion()
   {
-    if (!_root.exists()) return 0L;
-    long version = 0L;
+    if (!_root.exists()) return null;
+    V version = null;
     File[] files = _root.listFiles();
     Arrays.sort(files);
     for(File file : files)
@@ -192,10 +195,17 @@ public class HourglassDirectoryManagerFactory
       if (!file.equals(_location))
       { // don't count the current one
         File directoryFile = new File(file, DirectoryManager.INDEX_DIRECTORY);
-        IndexSignature sig = DefaultDirectoryManager.readSignature(directoryFile);
+        IndexSignature<V> sig = DefaultDirectoryManager.readSignature(directoryFile, _zoieVersionFactory);
         if (sig!=null)
         {
-          if (sig.getVersion() > version) version = sig.getVersion();
+          //if (sig.getVersion() > version) version = sig.getVersion();
+          if(sig.getVersion() != null)
+          {
+            if(sig.getVersion().compareTo(version) >0)
+            {
+              version = sig.getVersion();
+            }
+          }
         } else
         {
           log.error("potential index corruption: indexSignature not in " + _location);

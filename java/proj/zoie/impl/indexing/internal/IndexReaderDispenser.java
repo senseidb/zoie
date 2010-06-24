@@ -22,13 +22,14 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieMultiReader;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
-public class IndexReaderDispenser<R extends IndexReader>
+public class IndexReaderDispenser<R extends IndexReader, V extends ZoieVersion>
 {
   private static final Logger log = Logger.getLogger(IndexReaderDispenser.class);
   
@@ -36,18 +37,18 @@ public class IndexReaderDispenser<R extends IndexReader>
   
 //  public static final String  INDEX_DIRECTORY = "index.directory";
   
-  static final class InternalIndexReader<R extends IndexReader> extends ZoieMultiReader<R>
+  static final class InternalIndexReader<R extends IndexReader, V extends ZoieVersion> extends ZoieMultiReader<R>
   {
     //private IndexSignature _sig;
-    private final IndexReaderDispenser<R> _dispenser;
+    private final IndexReaderDispenser<R,V> _dispenser;
 
-    InternalIndexReader(IndexReader in,IndexReaderDecorator<R> decorator,IndexReaderDispenser<R> dispenser) throws IOException
+    InternalIndexReader(IndexReader in,IndexReaderDecorator<R> decorator,IndexReaderDispenser<R,V> dispenser) throws IOException
     {
       super(in, decorator);
       _dispenser = dispenser;
     }
 
-    public InternalIndexReader(IndexReader in, IndexReader[] subReaders, IndexReaderDecorator<R> decorator,IndexReaderDispenser<R> dispenser) throws IOException
+    public InternalIndexReader(IndexReader in, IndexReader[] subReaders, IndexReaderDecorator<R> decorator,IndexReaderDispenser<R,V> dispenser) throws IOException
     {
       super(in, subReaders, decorator);
       _dispenser = dispenser;
@@ -56,17 +57,17 @@ public class IndexReaderDispenser<R extends IndexReader>
     @Override
     protected ZoieMultiReader<R> newInstance(IndexReader inner, IndexReader[] subReaders) throws IOException
     {
-      return new InternalIndexReader<R>(inner,subReaders,_decorator,_dispenser);
+      return new InternalIndexReader<R,V>(inner,subReaders,_decorator,_dispenser);
     }
   }
 
-  private volatile InternalIndexReader<R> _currentReader;
-  private volatile IndexSignature _currentSignature;
+  private volatile InternalIndexReader<R,V> _currentReader;
+  private volatile IndexSignature<V> _currentSignature;
   private final IndexReaderDecorator<R> _decorator;
-  private final DirectoryManager _dirMgr;
-  private DiskSearchIndex<R> _idx;
+  private final DirectoryManager<V> _dirMgr;
+  private DiskSearchIndex<R,V> _idx;
   
-  public IndexReaderDispenser(DirectoryManager dirMgr, IndexReaderDecorator<R> decorator,DiskSearchIndex<R> idx)
+  public IndexReaderDispenser(DirectoryManager<V> dirMgr, IndexReaderDecorator<R> decorator,DiskSearchIndex<R,V> idx)
   {
       _idx = idx;
     _dirMgr = dirMgr;
@@ -74,7 +75,7 @@ public class IndexReaderDispenser<R extends IndexReader>
     _currentSignature = null;
     try
     {
-      IndexSignature sig = new IndexSignature(_dirMgr.getVersion());
+      IndexSignature<V> sig = new IndexSignature<V>(_dirMgr.getVersion());
       if(sig != null)
       {
         getNewReader();
@@ -86,9 +87,9 @@ public class IndexReaderDispenser<R extends IndexReader>
     }
   }
   
-  public long getCurrentVersion()
+  public V getCurrentVersion()
   {
-    return _currentSignature!=null ? _currentSignature.getVersion(): 0L;
+    return _currentSignature!=null ? _currentSignature.getVersion(): null;
   }
   
   /**
@@ -99,7 +100,7 @@ public class IndexReaderDispenser<R extends IndexReader>
      * @return Constructed IndexReader instance.
      * @throws IOException
      */
-    private InternalIndexReader<R> newReader(DirectoryManager dirMgr, IndexReaderDecorator<R> decorator, IndexSignature signature)
+    private InternalIndexReader<R,V> newReader(DirectoryManager<V> dirMgr, IndexReaderDecorator<R> decorator, IndexSignature<V> signature)
         throws IOException
     {
       if (!dirMgr.exists()){
@@ -113,7 +114,7 @@ public class IndexReaderDispenser<R extends IndexReader>
     }
     
       int numTries=INDEX_OPEN_NUM_RETRIES;
-      InternalIndexReader<R> reader=null;
+      InternalIndexReader<R,V> reader=null;
       
       // try max of 5 times, there might be a case where the segment file is being updated
       while(reader==null)
@@ -134,7 +135,7 @@ public class IndexReaderDispenser<R extends IndexReader>
           
           try
           {
-            reader=new InternalIndexReader<R>(srcReader, decorator,this);
+            reader=new InternalIndexReader<R,V>(srcReader, decorator,this);
             _currentSignature = signature;
           }
           catch(IOException ioe)
@@ -171,7 +172,7 @@ public class IndexReaderDispenser<R extends IndexReader>
     public ZoieIndexReader<R> getNewReader() throws IOException
     {
         int numTries=INDEX_OPEN_NUM_RETRIES;   
-        InternalIndexReader<R> reader=null;
+        InternalIndexReader<R,V> reader=null;
               
         // try it for a few times, there is a case where lucene is swapping the segment file, 
         // or a case where the index directory file is updated, both are legitimate,
@@ -186,7 +187,7 @@ public class IndexReaderDispenser<R extends IndexReader>
       }
       numTries--;
       try{
-        IndexSignature sig = new IndexSignature(_dirMgr.getVersion());
+        IndexSignature<V> sig = new IndexSignature<V>(_dirMgr.getVersion());
   
         if (sig==null)
         {
@@ -198,7 +199,7 @@ public class IndexReaderDispenser<R extends IndexReader>
             break;
         }
         else{
-          reader = (InternalIndexReader<R>)_currentReader.reopen(true);
+          reader = (InternalIndexReader<R,V>)_currentReader.reopen(true);
           _currentSignature = sig;
         }
       }
@@ -246,6 +247,27 @@ public class IndexReaderDispenser<R extends IndexReader>
   }
     
   /**
+<<<<<<< HEAD
+=======
+   * @param readers
+   * @throws IOException
+   */
+  public void returnReaders(List<ZoieIndexReader<R>> readers) throws IOException
+  {
+    IOException error = null;
+    for (ZoieIndexReader<R> r : readers){
+      try {
+        if (r instanceof InternalIndexReader<?,?>) r.decRef();
+      } catch (IOException e) {
+        log.error(r + " " + e);
+        error = e;
+      }
+    }
+    if (error != null) throw error;
+  }
+  
+  /**
+>>>>>>> hao: Implementing comparable versions that can be read/write as strings via signature files.
    * Closes the factory.
    * 
    */

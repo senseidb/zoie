@@ -25,6 +25,7 @@ import org.apache.lucene.util.Version;
 
 import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.DataConsumer;
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.indexing.ZoieIndexable;

@@ -10,7 +10,7 @@
 	<classpathentry exported="true" kind="lib" path="lib/master/spring-webmvc.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/master/spring.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/test/junit.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/master/lucene-core.jar" sourcepath="/Users/xgu/Desktop/lucene-2.9.1-src.zip"/>
+	<classpathentry exported="true" kind="lib" path="lib/master/lucene-core.jar" sourcepath="/Users/hyan/Downloads/lucene-2.9.2"/>
 	<classpathentry kind="lib" path="test-perf/ext-libraries/performance-1.2.0.jar"/>
 	<classpathentry kind="lib" path="test-perf/ext-libraries/jfreechart-0.9.21.jar"/>
 	<classpathentry kind="lib" path="test-perf/ext-libraries/iText.zip"/>

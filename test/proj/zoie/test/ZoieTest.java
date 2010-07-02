@@ -1019,7 +1019,7 @@ public class ZoieTest extends ZoieTestCase
       list=new ArrayList<DataEvent<String,DefaultZoieVersion>>(TestData.testdata.length);
       for (int i=0;i<TestData.testdata.length;++i)
       {
-        zvt = new DefaultZoieVersion();
+        zvt = new DefaultZoieVersion();        
         zvt.setVersionId(i);
         list.add(new DataEvent<String,DefaultZoieVersion>(TestData.testdata[i],zvt));
       }
@@ -1028,6 +1028,9 @@ public class ZoieTest extends ZoieTestCase
       
       DefaultZoieVersion versionExported = new DefaultZoieVersion();
       versionExported.setVersionId(zvt.getVersionId());
+          
+      assertEquals("index version mismatch after first flush", TestData.testdata.length - 1, zvt.getVersionId());
+      
       
       int hits = countHits(idxSystem, q);
 

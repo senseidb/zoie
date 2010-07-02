@@ -39,6 +39,7 @@ public class DefaultZoieVersion extends ZoieVersion
       return 0;
     }    
   }   
+
   
   public static class DefaultZoieVersionFactory implements ZoieVersionFactory<DefaultZoieVersion>{
 
@@ -57,4 +58,5 @@ public class DefaultZoieVersion extends ZoieVersion
       return zvt;  
     } 
   }
+
 }

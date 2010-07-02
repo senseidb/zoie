@@ -131,7 +131,6 @@ public class ZoieTest extends ZoieTestCase
     {     
       readers=idxSystem.getIndexReaders();
       reader = new MultiReader(readers.toArray(new IndexReader[readers.size()]),false);
-      //System.out.println("ZoieTest:readers.size(): " + readers.size());
       for(int i=0; i<readers.size(); i++)
       {
         IndexReader ir = readers.get(i);
@@ -182,14 +181,11 @@ public class ZoieTest extends ZoieTestCase
 
       TopDocs hits=searcher.search(new TermQuery(new Term("contents","hao,yan")),10);
 
-      //System.out.println("hao: entering 1st searching");
       assertEquals(1,hits.totalHits);
       //assertEquals(String.valueOf((long)((long)Integer.MAX_VALUE*2L)),searcher.doc(hits.scoreDocs[0].doc).get("id"));
      assertEquals(String.valueOf((long)((long)Integer.MAX_VALUE*2L+1L)),searcher.doc(hits.scoreDocs[0].doc).get("id"));
-      //System.out.println("hao:entering 2nd searching");
 
       hits=searcher.search(new TermQuery(new Term("contents","hao")),10);
-     // System.out.println("hao:finish searching");
       assertEquals(1,hits.totalHits);
       assertEquals(String.valueOf((long)((long)Integer.MAX_VALUE*2L)),searcher.doc(hits.scoreDocs[0].doc).get("id"));
       System.out.println("hao: searching is successful");

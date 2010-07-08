@@ -214,15 +214,18 @@ public abstract class BaseSearchIndex<R extends IndexReader, V extends ZoieVersi
 	  
 	  public void loadFromIndex(BaseSearchIndex<R,V> index) throws IOException
 	  {
+	    // hao: open readOnly ram index reader
 	    ZoieIndexReader<R> reader = index.openIndexReader();
 	    if(reader == null) return;
 	    
 	    Directory dir = reader.directory();
 	    
+	    // hao: delete docs in disk index
       LongSet delDocs = _delDocs;
       clearDeletes();
       deleteDocs(delDocs);
 	    
+      // hao: merge the readOnly ram index with the disk index
 	    IndexWriter writer = null;
 	    try
 	    {
@@ -230,10 +233,20 @@ public abstract class BaseSearchIndex<R extends IndexReader, V extends ZoieVersi
 	      writer.addIndexesNoOptimize(new Directory[] { dir });
 	    }
 	    finally
-	    {
+	    {	      
+//	       V diskVersion = getVersion();
+//	       V ramVersion = index.getVersion();
+//	       V newDiskVersion = diskVersion == null ? ramVersion : (diskVersion.compareTo(ramVersion) < 0 ? ramVersion : diskVersion);
+//	       Map<String, String> commitVersionMap = new HashMap<String, String>();
+//        commitVersionMap.put("DiskZoieVersion ", newDiskVersion.toString());
+//	      writer.commit(commitVersionMap);
+//        System.out.println("commit disk user data" + commitVersionMap);  
+      
 	      closeIndexWriter();
 	    }
 	  }
+	  
+	  
 	      
 	  abstract public IndexWriter openIndexWriter(Analyzer analyzer,Similarity similarity) throws IOException;
 	  

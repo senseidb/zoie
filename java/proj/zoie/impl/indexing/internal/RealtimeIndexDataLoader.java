@@ -137,8 +137,10 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D, V extends ZoieVer
     long now = System.currentTimeMillis();
     long duration = now - _lastFlushTime;
     int eventCount = 0;
+    //System.out.println("DiskLuceneIndexDataLoader:processBatch():_currentBatchSize:" + _currentBatchSize + "_batchSize" + _batchSize);
     while(_currentBatchSize < _batchSize && !_stop && !_flush && duration < _delay)
     {
+      //System.out.println("DiskLuceneIndexDataLoader:processBatch():_currentBatchSize:" + _currentBatchSize + "_batchSize" + _batchSize);
       try
       {
         wait(_delay - duration);
@@ -150,6 +152,7 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D, V extends ZoieVer
       now = System.currentTimeMillis();
       duration = now - _lastFlushTime;
     }
+    //System.out.println("After the loop, DiskLuceneIndexDataLoader:processBatch():_currentBatchSize:" + _currentBatchSize + "_batchSize" + _batchSize);
     _flush = false;
     _lastFlushTime = now;
 
@@ -163,6 +166,7 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D, V extends ZoieVer
       _currentBatchSize = 0;
     }
 
+    //System.out.println("DiskLuceneIndexDataLoader:processBatch():eventCount:" + eventCount);
     if (eventCount > 0)
     {
       long t1=System.currentTimeMillis();

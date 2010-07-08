@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -29,7 +32,9 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.TopDocs;
 
+import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.indexing.OptimizeScheduler;
@@ -123,6 +128,7 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader, V extends ZoieVers
 	@Override
     public void loadFromIndex(RAMSearchIndex<R,V> ramIndex) throws ZoieException
     {
+	  
       synchronized(_optimizeMonitor)
       {
         try
@@ -163,7 +169,9 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader, V extends ZoieVers
         }
       }
     }
-    
+  
+	
+	
 	public void expungeDeletes() throws IOException
 	{
 		log.info("expunging deletes...");

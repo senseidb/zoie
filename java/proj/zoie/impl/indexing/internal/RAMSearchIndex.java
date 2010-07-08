@@ -158,6 +158,7 @@ public class RAMSearchIndex<R extends IndexReader, V extends ZoieVersion> extend
 	    
 	    // if index does not exist, create empty index
 	    boolean create = !IndexReader.indexExists(_directory); 
+	    // hao: autocommit is set to false with this constructor
 	    IndexWriter idxWriter = new IndexWriter(_directory, analyzer, create, MaxFieldLength.UNLIMITED); 
 	    // TODO disable compound file for RAMDirecory when lucene bug is fixed
 	    idxWriter.setUseCompoundFile(false);

@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -153,16 +155,25 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader, V extends Zoi
     {
       try
       {
+        // hao: get disk search idx, 
         BaseSearchIndex<R,V> idx = getSearchIndex();
+        //hao: merge the realyOnly ram idx with the disk idx
         idx.loadFromIndex(ramIndex);
         idx.clearDeletes(); // clear old deletes as deletes are written to the lucene index
+        // hao: update the disk idx reader
         idx.refresh(); // load the index reader
         idx.markDeletes(ramIndex.getDelDocs()); // inherit deletes
         idx.commitDeletes();
         idx.incrementEventCount(ramIndex.getEventsHandled());
+        
+        //Map<String, String> commitData = idx.getCommitData();
+        //System.out.println("disk vesion from the commit data" + commitData);  
+        
         //V newVersion = idx.getVersion().compareTo(ramIndex.getVersion()) < 0 ? ramIndex.getVersion(): idx.getVersion();
         V newVersion = idx.getVersion() == null ? ramIndex.getVersion() : (idx.getVersion().compareTo(ramIndex.getVersion()) < 0 ? ramIndex.getVersion(): idx.getVersion());
         idx.setVersion(newVersion);
+        //System.out.println("disk verson from the signature" + newVersion.toString());        
+               
         //idx.setVersion(Math.max(idx.getVersion(), ramIndex.getVersion()));
       }
       catch(IOException ioe)
@@ -172,6 +183,7 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader, V extends Zoi
       }
     }
     
+  
   /**
    * @return the version number of the search index.
    */

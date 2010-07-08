@@ -195,6 +195,8 @@ public class DefaultDirectoryManager<V extends ZoieVersion> implements Directory
     {
       throw e;
     }
+    
+    
   }
   
   public Date getLastIndexModifiedTime()

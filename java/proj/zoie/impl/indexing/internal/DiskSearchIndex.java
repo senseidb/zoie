@@ -174,6 +174,7 @@ public class DiskSearchIndex<R extends IndexReader, V extends ZoieVersion> exten
 
     // create a new modifier to the index, assuming at most one instance is running at any given time
     boolean create = !IndexReader.indexExists(directory);  
+    // hao: autocommit is set to false with this constructor
     IndexWriter idxWriter = new IndexWriter(directory, analyzer, create, _deletionPolicy, MaxFieldLength.UNLIMITED);
     idxWriter.setMergeScheduler(_mergeScheduler);
 

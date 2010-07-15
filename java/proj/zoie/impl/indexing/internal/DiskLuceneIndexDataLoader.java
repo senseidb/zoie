@@ -167,27 +167,21 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
 		log.info("expunging deletes...");
 		synchronized(_optimizeMonitor)
 		{
-			BaseSearchIndex<R> idx=getSearchIndex();
-	        IndexWriter writer=null;  
-	        try
-	        {
-	          writer=idx.openIndexWriter(_analyzer, _similarity);
-	          writer.expungeDeletes(true);
-	        }
-	        finally
-	        {
-	        	if (writer!=null)
-	        	{
-	        		try {
-						writer.close();
-					} catch (CorruptIndexException e) {
-						log.fatal("possible index corruption! "+e.getMessage());
-					} catch (IOException e) {
-						log.error(e.getMessage(),e);
-					}
-	        	}
-	        }
-	        _idxMgr.refreshDiskReader();
+		  BaseSearchIndex<R> idx=getSearchIndex();
+		  IndexWriter writer=null;  
+		  try
+		  {
+		    writer=idx.openIndexWriter(_analyzer, _similarity);
+		    writer.expungeDeletes(true);
+		  }
+		  finally
+		  {
+		    if (writer!=null)
+		    {
+		      idx.closeIndexWriter();
+		    }
+		  }
+		  _idxMgr.refreshDiskReader();
 		}
 		log.info("deletes expunged");
 	}

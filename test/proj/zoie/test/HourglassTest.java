@@ -18,6 +18,7 @@ import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -82,7 +83,7 @@ public class HourglassTest extends ZoieTestCase
     int initNumDocs = getTotalNumDocs(hourglass);
     System.out.println("initial number of DOCs: " + initNumDocs);
     
-    long numTestContent = 40250;
+    long numTestContent = 20250;
     long accumulatedTime = 0;
     for(int i=initNumDocs; i<initNumDocs + numTestContent; i++)
     {
@@ -107,16 +108,18 @@ public class HourglassTest extends ZoieTestCase
         numDoc = reader.numDocs();
         Thread.sleep(500);
       }
-      List<Directory> dirlist = factory.getAllArchivedDirectories();
-//      System.out.println(Arrays.toString(dirlist.toArray(new Directory[0])));
       accumulatedTime += (System.currentTimeMillis() - flushtime);
       Searcher searcher = new IndexSearcher(reader);
       TopDocs hits = searcher.search(new TermQuery(new Term("contents",""+i)), 10);
+      TopDocs hitsall = searcher.search(new MatchAllDocsQuery(), 10);
       try
       {
         assertEquals("one hit for " + i, 1, hits.totalHits);
+        assertEquals("MatchAllDocsHit ", i+1, hitsall.totalHits);
       } finally
       {
+        searcher.close();
+        searcher = null;
         reader.close();
         reader = null;
         hourglass.returnIndexReaders(readers);

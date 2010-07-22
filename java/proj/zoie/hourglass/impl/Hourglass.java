@@ -248,7 +248,6 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
       try
       {
         zoiereader = new ZoieMultiReader<R>(reader, _decorator);
-        zoiereader.incRef();
         _archives.add(zoiereader);
         Box<R, V> newbox = new Box<R, V>(_archives, retiring, actives, _decorator);
         box = newbox;

@@ -82,7 +82,7 @@ public class HourglassTest extends ZoieTestCase
     int initNumDocs = getTotalNumDocs(hourglass);
     System.out.println("initial number of DOCs: " + initNumDocs);
     
-    long numTestContent = 4025;
+    long numTestContent = 40250;
     long accumulatedTime = 0;
     for(int i=initNumDocs; i<initNumDocs + numTestContent; i++)
     {

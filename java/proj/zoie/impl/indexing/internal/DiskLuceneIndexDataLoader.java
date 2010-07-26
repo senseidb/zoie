@@ -188,6 +188,7 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
 	
 	public void optimize(int numSegs) throws IOException
 	{
+	  long t0 = System.currentTimeMillis();
 		if (numSegs<=1) numSegs = 1;
 		log.info("optmizing, numSegs: "+numSegs+" ...");
 		
@@ -210,7 +211,7 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
 		  }
 		  _idxMgr.refreshDiskReader();
 		}
-		log.info("index optimized");
+		log.info("index optimized in " + (System.currentTimeMillis() - t0) +"ms");
 	}
 	
 	public long getLastTimeOptimized()

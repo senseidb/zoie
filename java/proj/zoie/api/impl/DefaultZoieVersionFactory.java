@@ -4,7 +4,7 @@ import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.ZoieVersionFactory;
 import proj.zoie.api.DefaultZoieVersion;
 
-public class DefaultZoieVersionFactory implements ZoieVersionFactory<ZoieVersion>
+public class DefaultZoieVersionFactory implements ZoieVersionFactory<DefaultZoieVersion>
 { 
 
   public DefaultZoieVersionFactory()

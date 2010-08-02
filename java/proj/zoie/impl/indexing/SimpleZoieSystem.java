@@ -34,7 +34,7 @@ public class SimpleZoieSystem<D, V extends ZoieVersion> extends ZoieSystem<Index
 	 * @param batchDelay
 	 */
 	public SimpleZoieSystem(File idxDir, ZoieIndexableInterpreter<D> interpreter,int batchSize, long batchDelay,ZoieVersionFactory<V> zoieVersionFactory) {
-		super(idxDir, interpreter, new DefaultIndexReaderDecorator(), null,null,batchSize, batchDelay, true,zoieVersionFactory);
+		super(idxDir, interpreter, new DefaultIndexReaderDecorator(), null,null,batchSize, batchDelay, true, zoieVersionFactory);
 	}
 
 }

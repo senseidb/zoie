@@ -234,8 +234,6 @@ public class ZoieSystem<R extends IndexReader,D, V extends ZoieVersion> extends 
       if (interpreter==null) throw new IllegalArgumentException("null interpreter.");
 
       docidMapperFactory = docidMapperFactory==null ? new DefaultDocIDMapperFactory() : docidMapperFactory;
-      //zoieVersionFactory = zoieVersionFactory==null ? (ZoieVersionFactory<V>)(new DefaultZoieVersionFactory()) : zoieVersionFactory;
-      //System.out.println("ZoieSystem:zoieVersionFactory: " + zoieVersionFactory);
       _searchIdxMgr=new SearchIndexManager<R,V>(_dirMgr,indexReaderDecorator,docidMapperFactory,zoieVersionFactory);
       _realtimeIndexing=rtIndexing;
       _interpreter=interpreter;

@@ -21,19 +21,18 @@ import proj.zoie.impl.indexing.internal.IndexSignature;
 
 import proj.zoie.api.ZoieVersion;
 
-
 public class DefaultDirectoryManager<V extends ZoieVersion> implements DirectoryManager<V>
 {
   public static final Logger log = Logger.getLogger(DefaultDirectoryManager.class);
   
   private File _location;
   ZoieVersionFactory<V> _zoieVersionFactory;
-  
   public DefaultDirectoryManager(File location, ZoieVersionFactory<V> zoieVersionFactory)
   {
     if (location==null) throw new IllegalArgumentException("null index directory.");
     _zoieVersionFactory = zoieVersionFactory;
     _location = location;
+    _zoieVersionFactory = zoieVersionFactory;
   }
   
   public File getLocation()

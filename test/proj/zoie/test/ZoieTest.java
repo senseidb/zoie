@@ -44,6 +44,8 @@ import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.api.DocIDMapper.DocIDArray;
 
+import proj.zoie.api.ZoieVersionFactory;
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.DefaultZoieVersion;
 import proj.zoie.api.DefaultZoieVersion.DefaultZoieVersionFactory;
 import proj.zoie.api.impl.DocIDMapperImpl;
@@ -101,7 +103,8 @@ public class ZoieTest extends ZoieTestCase
 
   public void testIndexWithAnalyzer() throws ZoieException,IOException{
     File idxDir=getIdxDir();
-    ZoieSystem<IndexReader,String,DefaultZoieVersion> idxSystem=createZoie(idxDir,true,20,new WhitespaceAnalyzer(),null,null);
+    DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
+    ZoieSystem<IndexReader,String,DefaultZoieVersion> idxSystem=createZoie(idxDir,true,20,new WhitespaceAnalyzer(),null,defaultZoieVersionFactory);
     idxSystem.start();
 
     MemoryStreamDataProvider<String, DefaultZoieVersion> memoryProvider=new MemoryStreamDataProvider<String, DefaultZoieVersion>();
@@ -835,6 +838,7 @@ public class ZoieTest extends ZoieTestCase
       sig = dirMgr.getCurrentIndexSignature();
 
       dzv = (DefaultZoieVersion)(sig.getVersion());
+      System.out.println("count: "+ count);
       assertEquals("index version mismatch after second flush", (count - 1), dzv.getVersionId());
     }
     catch(ZoieException e)
@@ -1041,6 +1045,7 @@ public class ZoieTest extends ZoieTestCase
       throw new ZoieException(e.getMessage(),e);
     }
 
+    
     try
     {
       List<DataEvent<String,DefaultZoieVersion>> list;
@@ -1073,8 +1078,8 @@ public class ZoieTest extends ZoieTestCase
       exportFile.close();
       exportFile = null;
       channel = null;
-
-      list=new ArrayList<DataEvent<String,DefaultZoieVersion>>(TestData.testdata.length);
+     
+      list=new ArrayList<DataEvent<String,DefaultZoieVersion>>(TestData.testdata2.length);
       for (int i=0; i < TestData.testdata2.length; ++i)
       {
         zvt = new DefaultZoieVersion();
@@ -1085,10 +1090,9 @@ public class ZoieTest extends ZoieTestCase
       idxSystem.consume(list);
       idxSystem.flushEvents(100000);
       zvt = (DefaultZoieVersion)dirMgr.getVersion();
-      
       assertEquals("index version mismatch after second flush", TestData.testdata.length + TestData.testdata2.length - 1, zvt.getVersionId());
       assertEquals("should have no hits", 0, countHits(idxSystem, q));
-
+      
       exportFile = new RandomAccessFile(new File(getTmpDir(), "zoie_export.dat"), "r");
       channel = exportFile.getChannel();
       idxSystem.importSnapshot(channel);
@@ -1099,6 +1103,7 @@ public class ZoieTest extends ZoieTestCase
       
       zvt = (DefaultZoieVersion)dirMgr.getVersion();      
       assertEquals("imported version is wrong", versionExported.getVersionId(), zvt.getVersionId());    }
+     
     catch(ZoieException e)
     {
       throw e;

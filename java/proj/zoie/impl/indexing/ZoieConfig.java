@@ -6,6 +6,7 @@ import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.Version;
 
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.impl.DefaultDocIDMapperFactory;
 import proj.zoie.api.ZoieVersionFactory;
@@ -55,6 +56,7 @@ public class ZoieConfig<V extends ZoieVersion>
     this.batchDelay = DEFAULT_SETTING_BATCHDELAY;
     this.rtIndexing = true;
     this.maxBatchSize = DEFAULT_MAX_BATCH_SIZE;
+    this.zoieVersionFactory = zoieVersionFactory;
   }
 
   public DocIDMapperFactory getDocidMapperFactory()

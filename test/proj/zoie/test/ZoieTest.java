@@ -719,15 +719,16 @@ public class ZoieTest extends ZoieTestCase
       q = parser.parse("zoie");
       readers=idxSystem.getIndexReaders();
       
-//      for(int i=0; i<readers.size(); i++)
-//      {
-//        IndexReader ir = readers.get(i);
-//        Map<String, String> commitData = IndexReader.getCommitUserData(ir.directory()); // = new HashMap<String,String>();
-//        System.out.println("i:" + i + "ZoieTest: directory: " + ir.directory());
-//        System.out.println("i:" + i + "ZoieTest: commitData(ZoieVersion): " + commitData);  
-//      }
-//      
-//      if(2>1) return;
+      for(int i=0; i<readers.size(); i++)
+      {
+        IndexReader ir = readers.get(i);
+        Map<String, String> commitData = IndexReader.getCommitUserData(ir.directory()); // = new HashMap<String,String>();
+        System.out.println("i:" + i + "ZoieTest: directory: " + ir.directory());
+        System.out.println("i:" + i + "ZoieTest: commitData(ZoieVersion): " + commitData);  
+      }
+      
+      if(2>1) return;
+      
       MultiReader reader=new MultiReader(readers.toArray(new IndexReader[readers.size()]),false);
 
       searcher=new IndexSearcher(reader);
@@ -791,7 +792,7 @@ public class ZoieTest extends ZoieTestCase
     {
       memoryProvider.stop();
       idxSystem.shutdown();
-      deleteDirectory(idxDir);
+      //deleteDirectory(idxDir);
     }
   }
 

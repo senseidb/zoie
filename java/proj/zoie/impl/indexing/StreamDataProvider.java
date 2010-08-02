@@ -370,5 +370,6 @@ public abstract class StreamDataProvider<D,V extends ZoieVersion> implements Dat
 		{
 		  _throttle = maxEventsPerMinute;
 		}
+		
 	}
 }

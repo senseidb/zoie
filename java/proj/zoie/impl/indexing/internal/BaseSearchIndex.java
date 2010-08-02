@@ -240,7 +240,7 @@ public abstract class BaseSearchIndex<R extends IndexReader, V extends ZoieVersi
 //	       Map<String, String> commitVersionMap = new HashMap<String, String>();
 //        commitVersionMap.put("DiskZoieVersion ", newDiskVersion.toString());
 //	      writer.commit(commitVersionMap);
-//        System.out.println("commit disk user data" + commitVersionMap);  
+        //System.out.println("commit disk user data" + commitVersionMap);  
       
 	      closeIndexWriter();
 	    }

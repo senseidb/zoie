@@ -18,6 +18,7 @@ public class ZoieTestSuite extends TestSuite {
       "testHourglassDirectoryManagerFactory"});
   public static List<Class> allClasses = Arrays.asList(new Class[]{ZoieTest.class, ZoieThreadTest.class, HourglassTest.class});
 
+  
   public static Test suite()
   {
     TestSuite suite=new TestSuite();

@@ -67,7 +67,7 @@ public class ZoieTestCase extends TestCase
   protected static File getIdxDir()
   {
     File tmpDir=new File(System.getProperty("java.io.tmpdir"));
-    //System.out.println("tmpDir is: " + tmpDir);
+    System.out.println("tmpDir is: " + tmpDir);
     File tempFile = new File(tmpDir, "test-idx");
     int i = 0;
     while (tempFile.exists())

@@ -10,13 +10,17 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.SimpleFSDirectory;
 
 import proj.zoie.api.DataConsumer;
@@ -25,10 +29,12 @@ import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieMultiReader;
+import proj.zoie.api.impl.util.FileUtil;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 import proj.zoie.impl.indexing.ZoieConfig;
 import proj.zoie.impl.indexing.ZoieSystem;
+import proj.zoie.impl.indexing.internal.ZoieIndexDeletionPolicy;
 
 public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<ZoieIndexReader<R>>, DataConsumer<V>
 {
@@ -39,6 +45,8 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
   private final ZoieConfig _zConfig;
   private volatile ZoieSystem<R, V> _currentZoie;
   private volatile boolean _isShutdown = false;
+  private final ReentrantReadWriteLock _shutdownLock = new ReentrantReadWriteLock();
+  private final ReentrantLock _consumeLock = new ReentrantLock();
   private final ReaderManager<R, V> _readerMgr;
   private volatile long _currentVersion = 0L;
   public Hourglass(HourglassDirectoryManagerFactory dirMgrFactory, ZoieIndexableInterpreter<V> interpreter, IndexReaderDecorator<R> readerDecorator,ZoieConfig zoieConfig)
@@ -107,16 +115,44 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
    * @see proj.zoie.hourglass.impl.Hourglass#returnIndexReaders(List)
    * @see proj.zoie.api.IndexReaderFactory#getIndexReaders()
    */
-  public synchronized List<ZoieIndexReader<R>> getIndexReaders() throws IOException
+  public List<ZoieIndexReader<R>> getIndexReaders() throws IOException
   {
-    List<ZoieIndexReader<R>> list = new ArrayList<ZoieIndexReader<R>>();
-    if (_isShutdown)
+    long t0 = System.currentTimeMillis();
+    try
     {
-      log.warn("System already shut down. No search request allowed.");
-      return list;// if already shutdown, return an empty list
+      _shutdownLock.readLock().lock();
+      if (_isShutdown)
+      {
+        log.warn("System already shut down. No search request allowed.");
+        List<ZoieIndexReader<R>> list = new ArrayList<ZoieIndexReader<R>>();
+        return list;// if already shutdown, return an empty list
+      }
+      if (System.currentTimeMillis() - lastupdate < 50)
+      {
+        List<ZoieIndexReader<R>> rlist = list;
+        for(ZoieIndexReader<R> r : rlist)
+        {
+          r.incRef();
+        }
+        return rlist;
+      }
+      List<ZoieIndexReader<R>> olist = list;
+      returnIndexReaders(olist);
+      list = _readerMgr.getIndexReaders();
+      for(ZoieIndexReader<R> r : list)
+      {
+        r.incRef();
+      }
+      lastupdate = System.currentTimeMillis();
+      return list;
     }
-    return _readerMgr.getIndexReaders();
+    finally
+    {
+      _shutdownLock.readLock().unlock();
+    }
   }
+  private volatile long lastupdate=0;
+  private  volatile   List<ZoieIndexReader<R>> list = new ArrayList<ZoieIndexReader<R>>();
 
   /* (non-Javadoc)
    * @see proj.zoie.api.IndexReaderFactory#returnIndexReaders(java.util.List)
@@ -129,38 +165,60 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
   /* (non-Javadoc)
    * @see proj.zoie.api.DataConsumer#consume(java.util.Collection)
    */
-  public synchronized void consume(Collection<DataEvent<V>> data) throws ZoieException
+  public void consume(Collection<DataEvent<V>> data) throws ZoieException
   {
-    if (data == null || data.size() == 0) return;
-    if (_isShutdown)
+    try
     {
-      log.warn("System already shut down. Rejects indexing request.");
-      return; // if the system is already shut down, we don't do anything.
-    }
-    // TODO  need to check time boundary. When we hit boundary, we need to trigger DM to 
-    // use new dir for zoie and the old one will be archive.
-    if (!_dirMgrFactory.updateDirectoryManager())
+      _consumeLock.lock(); // one at a time so we don't mess up during forward rolling.
+                           // also we cannot do two consumptions at the same time anyway.
+      try
+      {
+        _shutdownLock.readLock().lock();
+        if (data == null || data.size() == 0) return;
+        if (_isShutdown)
+        {
+          log.warn("System already shut down. Rejects indexing request.");
+          return; // if the system is already shut down, we don't do anything.
+        }
+        // need to check time boundary. When we hit boundary, we need to trigger DM to 
+        // use new dir for zoie and the old one will be archive.
+        if (!_dirMgrFactory.updateDirectoryManager())
+        {
+          _currentZoie.consume(data);
+        } else
+        {
+          // new time period
+          _currentZoie = _readerMgr.retireAndNew(_currentZoie);
+          _currentZoie.start();
+          _currentZoie.consume(data);
+        }
+      } finally
+      {
+        _shutdownLock.readLock().unlock();
+      }
+    } finally
     {
-      _currentZoie.consume(data);
-    } else
-    {
-      // new time period
-      _currentZoie = _readerMgr.retireAndNew(_currentZoie);
-      _currentZoie.start();
-      _currentZoie.consume(data);
+      _consumeLock.unlock();
     }
   }
 
-  public synchronized void shutdown()
+  public void shutdown()
   {
-    if (_isShutdown)
+    try
     {
-      log.info("system already shut down");
-      return;
+      _shutdownLock.writeLock().lock();
+      if (_isShutdown)
+      {
+        log.info("system already shut down");
+        return;
+      }
+      _isShutdown = true;
+      _readerMgr.shutdown();
+      log.info("shut down complete.");
+    } finally
+    {
+      _shutdownLock.writeLock().unlock();
     }
-    _isShutdown = true;
-    _readerMgr.shutdown();
-    log.info("shut down complete.");
   }
 
   /* (non-Javadoc)
@@ -177,6 +235,7 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
     private final Hourglass<R, V> hg;
     private final IndexReaderDecorator<R> _decorator;
     private volatile Box<R, V> box;
+    private volatile boolean isShutdown = false;
     private ExecutorService threadPool = Executors.newCachedThreadPool();
     public ReaderManager(Hourglass<R, V> hourglass, HourglassDirectoryManagerFactory dirMgrFactory,
         IndexReaderDecorator<R> decorator,
@@ -186,6 +245,110 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
       _dirMgrFactory = dirMgrFactory;
       _decorator = decorator;
       box = new Box<R, V>(initArchives, Collections.EMPTY_LIST, Collections.EMPTY_LIST, _decorator);
+      threadPool.execute(new Runnable(){
+
+        @Override
+        public void run()
+        {
+          while(true)
+          {
+            try
+            {
+              Thread.sleep(1000);
+            } catch (InterruptedException e)
+            {
+              // TODO Auto-generated catch block
+              e.printStackTrace();
+            }
+            
+            List<ZoieIndexReader<R>> arc = new LinkedList<ZoieIndexReader<R>>(box._archives);
+            if (isShutdown) break;
+            long b4 = System.currentTimeMillis();
+            if (arc.size()>3)
+            { 
+              log.info("to consolidate");
+            } else continue;
+            SimpleFSDirectory target = (SimpleFSDirectory) arc.get(0).directory();
+            log.info("into: "+target.getFile().getAbsolutePath());
+            SimpleFSDirectory sources[] = new SimpleFSDirectory[arc.size()-1];
+            for(int i=1; i<arc.size(); i++)
+            {
+              sources[i-1] = (SimpleFSDirectory) arc.get(i).directory();
+              log.info("from: " + sources[i-1].getFile().getAbsolutePath());
+            }
+            IndexWriter idxWriter = null;
+            try
+            {
+              idxWriter = new IndexWriter(target, null, false, new ZoieIndexDeletionPolicy(), MaxFieldLength.UNLIMITED);
+              idxWriter.addIndexesNoOptimize(sources);
+              idxWriter.optimize(1);
+            } catch (CorruptIndexException e)
+            {
+              // TODO Auto-generated catch block
+              e.printStackTrace();
+            } catch (LockObtainFailedException e)
+            {
+              // TODO Auto-generated catch block
+              e.printStackTrace();
+            } catch (IOException e)
+            {
+              // TODO Auto-generated catch block
+              e.printStackTrace();
+            } finally
+            {
+              if (idxWriter != null)
+              {
+                try
+                {
+                  idxWriter.close();
+                  for(SimpleFSDirectory dir : sources)
+                  {
+                    FileUtil.rmDir(dir.getFile());
+                    log.info(dir.getFile() + "---" + dir.getFile().exists());
+                  }
+                  IndexReader reader = IndexReader.open(target, true);
+                  ZoieMultiReader<R> zoiereader = new ZoieMultiReader<R>(reader, _decorator);
+                  List<ZoieIndexReader<R>> add = new LinkedList<ZoieIndexReader<R>>();
+                  add.add(zoiereader);
+                  long b5 = System.currentTimeMillis();
+                  swapArchives(arc, add);
+                  log.info("done consolidate in " + (System.currentTimeMillis() - b4)+"ms  blocked for " + (System.currentTimeMillis()-b5));
+                } catch (CorruptIndexException e)
+                {
+                  // TODO Auto-generated catch block
+                  e.printStackTrace();
+                } catch (IOException e)
+                {
+                  // TODO Auto-generated catch block
+                  e.printStackTrace();
+                }
+              }
+            }
+          }
+        }});
+    }
+    public synchronized void swapArchives(List<ZoieIndexReader<R>> remove, List<ZoieIndexReader<R>> add)
+    {
+      List<ZoieIndexReader<R>> archives = new LinkedList<ZoieIndexReader<R>>(add);
+      if (!box._archives.containsAll(remove))
+      {
+        log.error("potential sync issue. ");
+      }
+      archives.addAll(box._archives);
+      archives.removeAll(remove);
+      for(ZoieIndexReader<R> r : remove)
+      {
+        try
+        {
+          r.decRef();
+        } catch (IOException e)
+        {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
+      }
+      Box<R, V> newbox = new Box<R, V>(archives, box._retiree, box._actives, _decorator);
+      box = newbox;
     }
     public synchronized ZoieSystem<R, V> retireAndNew(final ZoieSystem<R, V> old)
     {
@@ -235,10 +398,15 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
       Box<R, V> newbox = new Box<R, V>(_archives, retiring, actives, _decorator);
       box = newbox;
     }
-    public synchronized void shutdown()
+    private synchronized void preshutdown()
     {
       log.info("shutting down thread pool.");
       threadPool.shutdown();
+      isShutdown = true;
+    }
+    public void shutdown()
+    {
+      preshutdown();
       while(true)
       {
         TimeUnit unit=TimeUnit.SECONDS;
@@ -256,28 +424,24 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
       box.shutdown();
       log.info("shutting down indices complete.");
     }
-    public List<ZoieIndexReader<R>> getIndexReaders() throws IOException
+    public synchronized List<ZoieIndexReader<R>> getIndexReaders() throws IOException
     {
       List<ZoieIndexReader<R>> list = new ArrayList<ZoieIndexReader<R>>();
-      synchronized(this)
+      // add the archived index readers
+      for(ZoieIndexReader<R> r : box._archives)
       {
-        if (box == null) return list;
-        // add the archived index readers
-        for(ZoieIndexReader<R> r : box._archives)
-        {
-          r.incRef();
-          list.add(r);
-        }
-        // add the retiring index readers
-        for(ZoieSystem<R, V> zoie : box._retiree)
-        {
-          list.addAll(zoie.getIndexReaders());
-        }
-        // add the active index readers
-        for(ZoieSystem<R, V> zoie : box._actives)
-        {
-          list.addAll(zoie.getIndexReaders());
-        }
+        r.incRef();
+        list.add(r);
+      }
+      // add the retiring index readers
+      for(ZoieSystem<R, V> zoie : box._retiree)
+      {
+        list.addAll(zoie.getIndexReaders());
+      }
+      // add the active index readers
+      for(ZoieSystem<R, V> zoie : box._actives)
+      {
+        list.addAll(zoie.getIndexReaders());
       }
       return list;
     }  

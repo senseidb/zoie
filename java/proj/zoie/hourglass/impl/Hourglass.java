@@ -52,13 +52,6 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
   public Hourglass(HourglassDirectoryManagerFactory dirMgrFactory, ZoieIndexableInterpreter<V> interpreter, IndexReaderDecorator<R> readerDecorator,ZoieConfig zoieConfig)
   {
     _zConfig = zoieConfig;
-    // The following line is a HACK to get it to work with Zoie and save memory
-    // used for DocIDMapper.
-    // Zoie uses DocIDMapper to convert from UID to doc ID in delete handling.
-    // Hourglass assumes that the index is append only (no deletes, no updates)
-    // and never needs to handle deletion.
-    _zConfig.setDocidMapperFactory(NullDocIDMapperFactory.INSTANCE);
-
     _dirMgrFactory = dirMgrFactory;
     _dirMgrFactory.clearRecentlyChanged();
     _interpreter = interpreter;
@@ -90,7 +83,7 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
         log.error("IOException", e);
       }
     }
-    log.info("load "+dirs.size()+" archived indices in " + (System.currentTimeMillis() - t0) + "ms");
+    log.info("load "+dirs.size()+" archived indices of " + getSizeBytes() +" bytes in " + (System.currentTimeMillis() - t0) + "ms");
     return archives;
   }
   private ZoieSystem<R, V> createZoie(DirectoryManager dirmgr)
@@ -301,10 +294,11 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
                 try
                 {
                   idxWriter.close();
+                  // remove the originals from disk
                   for(SimpleFSDirectory dir : sources)
                   {
                     FileUtil.rmDir(dir.getFile());
-                    log.info(dir.getFile() + "---" + dir.getFile().exists());
+                    log.info(dir.getFile() + "---" + (dir.getFile().exists()?" not deleted ":" deleted"));
                   }
                   IndexReader reader = IndexReader.open(target, true);
                   ZoieMultiReader<R> zoiereader = new ZoieMultiReader<R>(reader, _decorator);
@@ -447,6 +441,8 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
     }  
     protected void retire(ZoieSystem<R, V> zoie)
     {
+      long t0 = System.currentTimeMillis();
+      log.info("retiring " + zoie.getAdminMBean().getIndexDir());
       while(true)
       {
         try
@@ -477,6 +473,8 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
         log.error("retiring " + zoie.getAdminMBean().getIndexDir() + " Should investigate. But move on now.", e);
       }
       archive(zoie, reader);
+      log.info("retired " + zoie.getAdminMBean().getIndexDir() + " in " + (System.currentTimeMillis()-t0)+"ms");
+      log.info("Disk Index Size Total Now: " + (hg.getSizeBytes()/1024L) + "KB");
       zoie.shutdown();
     }
     private IndexReader getArchive(ZoieSystem<R, V> zoie) throws CorruptIndexException, IOException
@@ -539,5 +537,9 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
         zoie.shutdown();
       }
     }
+  }
+  public long getSizeBytes()
+  {
+    return _dirMgrFactory.getDiskIndexSizeBytes();
   }
 }

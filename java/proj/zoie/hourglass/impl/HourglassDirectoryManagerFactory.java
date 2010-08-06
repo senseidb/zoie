@@ -17,6 +17,7 @@ import org.apache.lucene.store.SimpleFSDirectory;
 
 import proj.zoie.api.DefaultDirectoryManager;
 import proj.zoie.api.DirectoryManager;
+import proj.zoie.api.impl.util.FileUtil;
 import proj.zoie.impl.indexing.internal.IndexSignature;
 
 /**
@@ -126,6 +127,14 @@ public class HourglassDirectoryManagerFactory
     Calendar mycal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
     mycal.setTimeInMillis(getPeriod(cal.getTimeInMillis()));
     return dateFormatter.format(mycal.getTime());
+  }
+  public File getRoot()
+  {
+    return _root;
+  }
+  public long getDiskIndexSizeBytes()
+  {
+    return FileUtil.sizeFile(_root);
   }
 
   /**

@@ -237,7 +237,13 @@ public class DefaultDirectoryManager implements DirectoryManager
     }
     finally
     {
-      if(raf != null) raf.close();
+      try
+      {
+      if (fc != null) fc.close();
+      } finally
+      {
+        if (raf != null) raf.close();
+      }
     }
   }
   
@@ -257,7 +263,13 @@ public class DefaultDirectoryManager implements DirectoryManager
     }
     finally
     {
-      if(raf != null) raf.close();
+      try
+      {
+      if (fc != null) fc.close();
+      } finally
+      {
+        if (raf != null) raf.close();
+      }
     }
     return amount;
   }

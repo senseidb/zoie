@@ -39,6 +39,7 @@ import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.impl.DefaultDocIDMapperFactory;
+import proj.zoie.api.impl.util.FileUtil;
 import proj.zoie.api.indexing.DefaultOptimizeScheduler;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.api.indexing.IndexingEventListener;
@@ -472,6 +473,24 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 	  public int getDiskIndexSize() {
 	    return ZoieSystem.this._searchIdxMgr.getDiskIndexSize();
 	  }
+
+    public long getDiskIndexSizeBytes()
+    {
+      return FileUtil.sizeFile(new File(getIndexDir()));
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see proj.zoie.mbean.ZoieSystemAdminMBean#getDiskFreeSpaceBytes()
+     */
+    public long getDiskFreeSpaceBytes()
+    {
+      File index = new File(getIndexDir());
+      if (!index.exists())
+        return -1;
+      return index.getUsableSpace();
+    }
 
 	  public String getDiskIndexerStatus() {
 	    return String.valueOf(ZoieSystem.this._searchIdxMgr.getDiskIndexerStatus());

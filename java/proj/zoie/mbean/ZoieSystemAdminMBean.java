@@ -1,4 +1,5 @@
 package proj.zoie.mbean;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,82 +21,89 @@ import java.util.Date;
 
 import proj.zoie.api.ZoieException;
 
-public interface ZoieSystemAdminMBean {
-	int getDiskIndexSize();
-	
-	long getCurrentDiskVersion() throws IOException;
-	
-	int getRamAIndexSize();
-	
-	long getRamAVersion();
-	
-	int getRamBIndexSize();
-	
-	long getRamBVersion();
-	
-	String getDiskIndexerStatus();
-	
-	long getBatchDelay();
-	
-	void setBatchDelay(long delay);
-	
-	int getBatchSize();
-	
-	void setBatchSize(int batchSize);
-	
-	boolean isRealtime();
-	
-	String getIndexDir();
-	
-	void refreshDiskReader()  throws IOException;
-	
-	Date getLastDiskIndexModifiedTime();
-	  
-	Date getLastOptimizationTime();
-	  
-	void optimize(int numSegs) throws IOException;
-	
-    void flushToDiskIndex() throws ZoieException;
-    
-    void flushToMemoryIndex() throws ZoieException;
-	
-	void purgeIndex() throws IOException;
+public interface ZoieSystemAdminMBean
+{
+  int getDiskIndexSize();
 
-	int getMaxBatchSize();
-	  
-	void setMaxBatchSize(int maxBatchSize);  
-	
-	void setMergeFactor(int mergeFactor);
-	
-	int getMergeFactor();
-	
-    void setNumLargeSegments(int numLargeSegments);
-    
-    int getNumLargeSegments();
-    
-    void setMaxSmallSegments(int maxSmallSegments);
-    
-    public int getMaxSmallSegments();
-    
-	void setMaxMergeDocs(int maxMergeDocs);
-	
-	int getMaxMergeDocs();
-	
-	void expungeDeletes() throws IOException;
-	
-	void setUseCompoundFile(boolean useCompoundFile);
-	
-	boolean isUseCompoundFile();
-	
-	int getDiskIndexSegmentCount() throws IOException;
+  long getDiskIndexSizeBytes();
+
+  long getDiskFreeSpaceBytes();
+
+  long getCurrentDiskVersion() throws IOException;
+
+  int getRamAIndexSize();
+
+  long getRamAVersion();
+
+  int getRamBIndexSize();
+
+  long getRamBVersion();
+
+  String getDiskIndexerStatus();
+
+  long getBatchDelay();
+
+  void setBatchDelay(long delay);
+
+  int getBatchSize();
+
+  void setBatchSize(int batchSize);
+
+  boolean isRealtime();
+
+  String getIndexDir();
+
+  void refreshDiskReader() throws IOException;
+
+  Date getLastDiskIndexModifiedTime();
+
+  Date getLastOptimizationTime();
+
+  void optimize(int numSegs) throws IOException;
+
+  void flushToDiskIndex() throws ZoieException;
+
+  void flushToMemoryIndex() throws ZoieException;
+
+  void purgeIndex() throws IOException;
+
+  int getMaxBatchSize();
+
+  void setMaxBatchSize(int maxBatchSize);
+
+  void setMergeFactor(int mergeFactor);
+
+  int getMergeFactor();
+
+  void setNumLargeSegments(int numLargeSegments);
+
+  int getNumLargeSegments();
+
+  void setMaxSmallSegments(int maxSmallSegments);
+
+  public int getMaxSmallSegments();
+
+  void setMaxMergeDocs(int maxMergeDocs);
+
+  int getMaxMergeDocs();
+
+  void expungeDeletes() throws IOException;
+
+  void setUseCompoundFile(boolean useCompoundFile);
+
+  boolean isUseCompoundFile();
+
+  int getDiskIndexSegmentCount() throws IOException;
+
   int getRAMASegmentCount();
+
   int getRAMBSegmentCount();
-	
-	int getCurrentMemBatchSize();
-    
-    int getCurrentDiskBatchSize();
-    
-    long getMinUID() throws IOException;
-    
-    long getMaxUID() throws IOException;
+
+  int getCurrentMemBatchSize();
+
+  int getCurrentDiskBatchSize();
+
+  long getMinUID() throws IOException;
+
+  long getMaxUID() throws IOException;
 }

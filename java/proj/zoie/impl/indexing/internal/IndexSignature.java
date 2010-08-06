@@ -45,15 +45,35 @@ public class IndexSignature {
     }
 
     public void save(OutputStream out) throws IOException{
-      BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, "UTF-8"));
+      BufferedWriter writer = null;
+      try
+      {
+      writer = new BufferedWriter(new OutputStreamWriter(out, "UTF-8"));
       writer.write(String.valueOf(_version));
       writer.flush();
+      } catch(IOException e)
+      {
+        log.error(e);
+      } finally
+      {
+        if (writer!=null) writer.close();
+      }
     }
     
     public static IndexSignature read(InputStream in) throws IOException
     {
       BufferedReader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"));
-      String line = reader.readLine();
+      String line = null;
+      try
+      {
+        line = reader.readLine();
+      } catch (IOException e)
+      {
+        log.error(e);
+      }finally
+      {
+        reader.close();
+      }
       
       if (line != null)
       {

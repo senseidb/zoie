@@ -120,6 +120,7 @@ public class RealtimeIndexDataLoader<R extends IndexReader, V> extends BatchedIn
             continue;
           }
         }
+        this.notifyAll();
       }
     }
   }

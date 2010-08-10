@@ -23,34 +23,49 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
+import proj.zoie.api.ZoieVersion;
+import proj.zoie.api.ZoieVersionFactory;
+
 import org.apache.log4j.Logger;
 
-public class IndexSignature {
+public class IndexSignature <V extends ZoieVersion>{
 	private static Logger log = Logger.getLogger(IndexSignature.class);
 	
-    private long   _version;                     // current version
-
-    public IndexSignature(long version){
+  
+    private V  _version;                     // current version
+    public IndexSignature(V version){
       _version = version;
-    }
-
-    public void updateVersion(long version)
+    }   
+    
+    public void updateVersion(V version)
     {
       _version = version;
     }
 
-    public long getVersion()
+    public V getVersion()
     {
       return _version;
     }
 
-    public void save(OutputStream out) throws IOException{
+    public void save(OutputStream out) throws IOException
+    {
       BufferedWriter writer = null;
       try
       {
-      writer = new BufferedWriter(new OutputStreamWriter(out, "UTF-8"));
-      writer.write(String.valueOf(_version));
-      writer.flush();
+        writer = new BufferedWriter(new OutputStreamWriter(out, "UTF-8"));
+        //writer.write(String.valueOf(_version));
+        //System.out.println("IndexSignature:save:_version" + _version);
+        if(_version == null)
+        {
+          //System.out.println("IndexSignature:save:_version: write null");
+          writer.write("null");
+        }
+        else
+        {
+          //System.out.println("IndexSignature:save:_version: write " + _version.encodeToString());
+          writer.write(_version.encodeToString());          
+        }
+        writer.flush();
       } catch(IOException e)
       {
         log.error(e);
@@ -60,39 +75,35 @@ public class IndexSignature {
       }
     }
     
-    public static IndexSignature read(InputStream in) throws IOException
+  public static <V extends ZoieVersion> IndexSignature<V> read(InputStream in, ZoieVersionFactory<V> zoieVersionFactory) throws IOException
+  {
+    BufferedReader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"));
+    String line = null;
+    try
     {
-      BufferedReader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"));
-      String line = null;
+      line = reader.readLine();
+    } catch (IOException e)
+    {
+      log.error(e);
+    } finally
+    {
+      reader.close();
+    }
+    if (line != null)
+    {
+      V version = null;
       try
       {
-        line = reader.readLine();
-      } catch (IOException e)
+        version = zoieVersionFactory.getZoieVersion(line);
+      } catch (Exception e)
       {
-        log.error(e);
-      }finally
-      {
-        reader.close();
+        log.warn(e);
+        version = null;
       }
-      
-      if (line != null)
-      {
-        long version = 0L;
-        try
-        {
-          version = Long.parseLong(line);
-        }
-        catch (Exception e)
-        {
-          log.warn(e.getMessage());
-            version = 0L;
-        }
-        
-        return new IndexSignature(version);
-      }
-      else
-      {
-        return null;
-      }
+      return new IndexSignature<V>(version);
+    } else
+    {
+      return null;
     }
+  }
 }

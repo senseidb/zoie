@@ -8,24 +8,25 @@ import java.sql.SQLException;
 import org.apache.log4j.Logger;
 
 import proj.zoie.api.DataConsumer;
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.impl.indexing.StreamDataProvider;
 
-public class JDBCStreamDataProvider<T> extends StreamDataProvider<T> {
+public class JDBCStreamDataProvider<T, V extends ZoieVersion> extends StreamDataProvider<T,V> {
   private static final Logger log = Logger.getLogger(JDBCStreamDataProvider.class);
   private static final long DEFAULT_PULL_TIME = 1000;
   private final JDBCConnectionFactory _connFactory;
-  private final PreparedStatementBuilder<T> _stmtBuilder;
-  private long _version;
+  private final PreparedStatementBuilder<T,V> _stmtBuilder;
+  private V _version;
   private Connection _conn;
   private PreparedStatement _stmt;
   private ResultSet _res;
   private long _pullTime;
 
-  public JDBCStreamDataProvider(JDBCConnectionFactory connFactory,PreparedStatementBuilder<T> stmtBuilder){
+  public JDBCStreamDataProvider(JDBCConnectionFactory connFactory,PreparedStatementBuilder<T,V> stmtBuilder){
     _connFactory = connFactory;
     _stmtBuilder = stmtBuilder;
-    _version = 0L;
+    _version = null;
     _conn = null;
     _stmt = null;
     _res = null;
@@ -41,8 +42,8 @@ public class JDBCStreamDataProvider<T> extends StreamDataProvider<T> {
   }
 
   @Override
-  public DataEvent<T> next() {
-    DataEvent<T> event = null;
+  public DataEvent<T,V> next() {
+    DataEvent<T,V> event = null;
     try
     {
       while(!_res.next())
@@ -90,11 +91,13 @@ public class JDBCStreamDataProvider<T> extends StreamDataProvider<T> {
       }
     }
 
-    DataConsumer<T> dc = getDataConsumer(); 
+    DataConsumer<T,V> dc = getDataConsumer(); 
     if (dc == null)
     {
-      _version = 0;
-      log.warn("problem opening index, maynot exist, defaulting version to 0");
+      // ? Hao: needs to fix later
+      _version = null;
+      log.warn("problem opening index, maynot exist, defaulting version to null");
+      //log.warn("problem opening index, maynot exist, defaulting version to 0");
     } else
       _version = dc.getVersion();
     if (_conn == null){

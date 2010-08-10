@@ -16,13 +16,14 @@ package proj.zoie.mbean;
  * limitations under the License.
  */
 import java.util.Date;
+import proj.zoie.api.ZoieVersion;
 
-public interface ZoieIndexingStatusAdminMBean {
+public interface ZoieIndexingStatusAdminMBean<V extends ZoieVersion> {
 	long getLastIndexingBatchDuration();
 	long getAverageIndexingBatchDuration();
 	void resetAverage();
 	Date getLastIndexingEndTime();
 	int getLastIndexingBatchSize();
 	int getLastIndexingBatchLeftOver();
-	long getCurrentDiskVersion();
+	V getCurrentDiskVersion();
 }

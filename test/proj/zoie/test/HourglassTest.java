@@ -22,7 +22,6 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.Directory;
 
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
@@ -34,6 +33,8 @@ import proj.zoie.hourglass.impl.Hourglass;
 import proj.zoie.hourglass.impl.HourglassDirectoryManagerFactory;
 import proj.zoie.impl.indexing.MemoryStreamDataProvider;
 import proj.zoie.impl.indexing.ZoieConfig;
+import proj.zoie.api.DefaultZoieVersion;
+import proj.zoie.api.DefaultZoieVersion.DefaultZoieVersionFactory;
 
 /**
  * @author "Xiaoyang Gu<xgu@linkedin.com>"
@@ -53,11 +54,13 @@ public class HourglassTest extends ZoieTestCase
   public void testHourglassDirectoryManagerFactory() throws IOException, InterruptedException, ZoieException
   {
     File idxDir = getIdxDir();
-    HourglassDirectoryManagerFactory factory = new HourglassDirectoryManagerFactory(idxDir, 10000);
-    ZoieConfig zConfig = new ZoieConfig();
+    DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
+    HourglassDirectoryManagerFactory<DefaultZoieVersion> factory = new HourglassDirectoryManagerFactory<DefaultZoieVersion>(idxDir, 10000,defaultZoieVersionFactory);
+    
+    ZoieConfig<DefaultZoieVersion> zConfig = new ZoieConfig<DefaultZoieVersion>(defaultZoieVersionFactory);
     zConfig.setBatchSize(3);
     zConfig.setBatchDelay(10);
-    Hourglass<IndexReader, String> hourglass = new Hourglass<IndexReader, String>(factory, new HourglassTestInterpreter(), new IndexReaderDecorator<IndexReader>(){
+    Hourglass<IndexReader, String,DefaultZoieVersion> hourglass = new Hourglass<IndexReader, String,DefaultZoieVersion>(factory, new HourglassTestInterpreter(), new IndexReaderDecorator<IndexReader>(){
 
       public IndexReader decorate(ZoieIndexReader<IndexReader> indexReader)
           throws IOException
@@ -76,7 +79,7 @@ public class HourglassTest extends ZoieTestCase
       {
         // do nothing
       }}, zConfig);
-    MemoryStreamDataProvider<String> memoryProvider=new MemoryStreamDataProvider<String>();
+    MemoryStreamDataProvider<String, DefaultZoieVersion> memoryProvider=new MemoryStreamDataProvider<String, DefaultZoieVersion>();
     memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
     memoryProvider.setDataConsumer(hourglass);
     memoryProvider.start();
@@ -87,8 +90,10 @@ public class HourglassTest extends ZoieTestCase
     long accumulatedTime = 0;
     for(int i=initNumDocs; i<initNumDocs + numTestContent; i++)
     {
-      List<DataEvent<String>> list=new ArrayList<DataEvent<String>>(2);
-      list.add(new DataEvent<String>(i,"" +i));
+      List<DataEvent<String,DefaultZoieVersion>> list=new ArrayList<DataEvent<String,DefaultZoieVersion>>(2);
+      DefaultZoieVersion dzv = new DefaultZoieVersion();
+      dzv.setVersionId(i);
+      list.add(new DataEvent<String,DefaultZoieVersion>("" +i, dzv));
       memoryProvider.addEvents(list);
       if (i%113 !=0) continue;
       long flushtime = System.currentTimeMillis();
@@ -136,7 +141,7 @@ public class HourglassTest extends ZoieTestCase
     hourglass.shutdown();
     return;
   }
-  private int getTotalNumDocs(Hourglass<IndexReader, String> hourglass)
+  private int getTotalNumDocs(Hourglass<IndexReader, String,DefaultZoieVersion> hourglass)
   {
     int numDocs = 0;
     List<ZoieIndexReader<IndexReader>> readers = null;

@@ -19,9 +19,10 @@ package proj.zoie.mbean;
 import java.io.IOException;
 import java.util.Date;
 
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.ZoieException;
 
-public interface ZoieSystemAdminMBean
+public interface ZoieSystemAdminMBean<V extends ZoieVersion>
 {
   int getDiskIndexSize();
 
@@ -29,15 +30,15 @@ public interface ZoieSystemAdminMBean
 
   long getDiskFreeSpaceBytes();
 
-  long getCurrentDiskVersion() throws IOException;
+  V getCurrentDiskVersion() throws IOException;
 
   int getRamAIndexSize();
 
-  long getRamAVersion();
+  V getRamAVersion();
 
   int getRamBIndexSize();
 
-  long getRamBVersion();
+  V getRamBVersion();
 
   String getDiskIndexerStatus();
 

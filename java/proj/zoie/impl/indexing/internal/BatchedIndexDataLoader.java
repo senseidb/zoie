@@ -27,6 +27,7 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.index.IndexReader;
 
 import proj.zoie.api.DataConsumer;
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.indexing.AbstractZoieIndexable;
 import proj.zoie.api.indexing.IndexingEventListener;
@@ -48,21 +49,21 @@ import proj.zoie.impl.indexing.IndexingThread;
  * @param <R>
  * @param <V>
  */
-public class BatchedIndexDataLoader<R extends IndexReader,V> implements DataConsumer<V> {
+public class BatchedIndexDataLoader<R extends IndexReader,D, V extends ZoieVersion> implements DataConsumer<D,V> {
 
 	protected int _batchSize;
 	protected long _delay;
-	protected final DataConsumer<ZoieIndexable> _dataLoader;
-	protected List<DataEvent<ZoieIndexable>> _batchList;
+	protected final DataConsumer<ZoieIndexable, V> _dataLoader;
+	protected List<DataEvent<ZoieIndexable, V>> _batchList;
 	protected final LoaderThread _loadMgrThread;
 	protected long _lastFlushTime;
 	protected int _eventCount;
 	protected int _maxBatchSize;
 	protected boolean _stop;
 	protected boolean _flush;
-	protected final SearchIndexManager<R> _idxMgr;
-	protected final ZoieIndexableInterpreter<V> _interpreter;
-	private final Queue<IndexingEventListener> _lsnrList;
+	protected final SearchIndexManager<R,V> _idxMgr;
+	protected final ZoieIndexableInterpreter<D> _interpreter;
+	private final Queue<IndexingEventListener<V>> _lsnrList;
 	  
 	  private static Logger log = Logger.getLogger(BatchedIndexDataLoader.class);
 	  
@@ -74,16 +75,16 @@ public class BatchedIndexDataLoader<R extends IndexReader,V> implements DataCons
 	   * @param idxMgr
 	   * @param lsnrList the list of IndexingEventListeners. This should be a <b>Synchronized</b> list if the content of this list is mutable.
 	   */
-	  public BatchedIndexDataLoader(DataConsumer<ZoieIndexable> dataLoader, int batchSize,int maxBatchSize,long delay,
-                                    SearchIndexManager<R> idxMgr,
-                                    ZoieIndexableInterpreter<V> interpreter,
-                                    Queue<IndexingEventListener> lsnrList)
+	  public BatchedIndexDataLoader(DataConsumer<ZoieIndexable,V> dataLoader, int batchSize,int maxBatchSize,long delay,
+                                    SearchIndexManager<R,V> idxMgr,
+                                    ZoieIndexableInterpreter<D> interpreter,
+                                    Queue<IndexingEventListener<V>> lsnrList)
 	  {
 	    _maxBatchSize=Math.max(maxBatchSize, batchSize);
 	    _batchSize=Math.min(batchSize, _maxBatchSize);
 	    _delay=delay;
 	    _dataLoader=dataLoader;
-	    _batchList=new LinkedList<DataEvent<ZoieIndexable>>();
+	    _batchList=new LinkedList<DataEvent<ZoieIndexable,V>>();
 	    _lastFlushTime=0L;
 	    _eventCount=0;
 	    _loadMgrThread=new LoaderThread();
@@ -98,7 +99,7 @@ public class BatchedIndexDataLoader<R extends IndexReader,V> implements DataCons
 	  protected final void fireIndexingEvent(IndexingEvent evt){
 		  if (_lsnrList!=null && _lsnrList.size() > 0){
   		    synchronized(_lsnrList) {
-  			  for (IndexingEventListener lsnr : _lsnrList){
+  			  for (IndexingEventListener<V> lsnr : _lsnrList){
   				  try{
   				    lsnr.handleIndexingEvent(evt);
   				  }
@@ -110,10 +111,10 @@ public class BatchedIndexDataLoader<R extends IndexReader,V> implements DataCons
 		  }
 	  }
 	  
-	  protected final void fireNewVersionEvent(long newVersion){
+	  protected final void fireNewVersionEvent(V newVersion){
 		  if (_lsnrList!=null && _lsnrList.size() > 0){
   		    synchronized(_lsnrList) {
-  			  for (IndexingEventListener lsnr : _lsnrList){
+  			  for (IndexingEventListener<V> lsnr : _lsnrList){
   				  try{
   				    lsnr.handleUpdatedDiskVersion(newVersion);
   				  }
@@ -165,22 +166,22 @@ public class BatchedIndexDataLoader<R extends IndexReader,V> implements DataCons
 	   * 
 	   * @see proj.zoie.api.DataConsumer#consume(java.util.Collection)
 	   */
-	  public void consume(Collection<DataEvent<V>> events) throws ZoieException
+	  public void consume(Collection<DataEvent<D,V>> events) throws ZoieException
 	  {
 	    if (events != null)
 	    {
-	      ArrayList<DataEvent<ZoieIndexable>> indexableList =
-	          new ArrayList<DataEvent<ZoieIndexable>>(events.size());
-	      Iterator<DataEvent<V>> iter = events.iterator();
+	      ArrayList<DataEvent<ZoieIndexable,V>> indexableList =
+	          new ArrayList<DataEvent<ZoieIndexable,V>>(events.size());
+	      Iterator<DataEvent<D,V>> iter = events.iterator();
 	      while (iter.hasNext())
 	      {
 	        try
 	        {
-	          DataEvent<V> event = iter.next();
-	          ZoieIndexable indexable = ((ZoieIndexableInterpreter<V>) _interpreter).convertAndInterpret(event.getData());
+	          DataEvent<D,V> event = iter.next();
+	          ZoieIndexable indexable = ((ZoieIndexableInterpreter<D>) _interpreter).convertAndInterpret(event.getData());
 	          
-	          DataEvent<ZoieIndexable> newEvent =
-	              new DataEvent<ZoieIndexable>(event.getVersion(), indexable);
+	          DataEvent<ZoieIndexable,V> newEvent =
+	              new DataEvent<ZoieIndexable,V>(indexable, event.getVersion());
 	          indexableList.add(newEvent);
 	        }
 	        catch (Exception e)
@@ -224,10 +225,10 @@ public class BatchedIndexDataLoader<R extends IndexReader,V> implements DataCons
        * This method needs to be called within a synchronized block on 'this'.
        * @return the list of data events already received. A new list is created to receive new data events.
        */
-      protected List<DataEvent<ZoieIndexable>> getBatchList()
+      protected List<DataEvent<ZoieIndexable,V>> getBatchList()
 	  {
-        List<DataEvent<ZoieIndexable>> tmpList=_batchList;
-        _batchList=new LinkedList<DataEvent<ZoieIndexable>>();
+        List<DataEvent<ZoieIndexable,V>> tmpList=_batchList;
+        _batchList=new LinkedList<DataEvent<ZoieIndexable,V>>();
         return tmpList;
 	  }
 	  
@@ -278,17 +279,17 @@ public class BatchedIndexDataLoader<R extends IndexReader,V> implements DataCons
 	   */
 	  protected void processBatch()
 	  {
-        List<DataEvent<ZoieIndexable>> tmpList=null;
+        List<DataEvent<ZoieIndexable,V>> tmpList=null;
         long now=System.currentTimeMillis();
         long duration=now-_lastFlushTime;
 
-        long currentVersion;
+        V currentVersion;
 	      
 	    try{
 	      currentVersion = _idxMgr.getCurrentDiskVersion();
 	    }
 	    catch(IOException ioe){
-	      currentVersion = -1L;
+	      currentVersion = null;
 	    }
 	    
         synchronized(this)
@@ -342,7 +343,7 @@ public class BatchedIndexDataLoader<R extends IndexReader,V> implements DataCons
               IndexUpdatedEvent evt = new IndexUpdatedEvent(eventCount,t1,t2,_eventCount);
               fireIndexingEvent(evt);
               try{
-                long newVersion = _idxMgr.getCurrentDiskVersion();
+                V newVersion = _idxMgr.getCurrentDiskVersion();
                 if (currentVersion != newVersion){
                 	fireNewVersionEvent(newVersion);
                 }
@@ -434,7 +435,7 @@ public class BatchedIndexDataLoader<R extends IndexReader,V> implements DataCons
 
 	  }
 	  
-	public long getVersion()
+	public V getVersion()
 	{
 	  throw new UnsupportedOperationException();
 	}

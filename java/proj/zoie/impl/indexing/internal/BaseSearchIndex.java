@@ -34,20 +34,21 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 
 import proj.zoie.api.DocIDMapper;
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 
-public abstract class BaseSearchIndex<R extends IndexReader> {
+public abstract class BaseSearchIndex<R extends IndexReader, V extends ZoieVersion> {
 	  private static final Logger log = Logger.getLogger(BaseSearchIndex.class);
 	  
 	  private int _eventsHandled=0;
 	  protected MergeScheduler _mergeScheduler;
 	  protected IndexWriter _indexWriter = null;
 	  protected volatile LongOpenHashSet _delDocs = new LongOpenHashSet();
-	  protected final SearchIndexManager<R> _idxMgr;
+	  protected final SearchIndexManager<R,V> _idxMgr;
 	  protected boolean _closeWriterAfterUpdate;
 	  
-	  protected BaseSearchIndex(SearchIndexManager<R> idxMgr, boolean closeWriterAfterUpdate){
+	  protected BaseSearchIndex(SearchIndexManager<R,V> idxMgr, boolean closeWriterAfterUpdate){
 		  _idxMgr = idxMgr;
 		  _closeWriterAfterUpdate = closeWriterAfterUpdate;
 	  }
@@ -56,7 +57,7 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
 	   * gets index version, e.g. SCN
 	   * @return index version
 	   */
-	  abstract public long getVersion();
+	  abstract V getVersion();
 	  
 	  /**
 	   * gets number of docs in the index, .e.g maxdoc - number of deleted docs
@@ -69,7 +70,7 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
 	   * @param version
 	   * @throws IOException
 	   */
-	  abstract public void setVersion(long version)
+	  abstract public void setVersion(V version)
 	      throws IOException;
 	  
 	  /**
@@ -156,7 +157,7 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
 	  
 	  private void deleteDocs(LongSet delDocs) throws IOException
 	  {
-		int[] delArray=null;
+		  int[] delArray=null;
 	    if (delDocs!=null && delDocs.size() > 0)
 	    {
 	      ZoieIndexReader<R> reader= openIndexReader();
@@ -175,7 +176,7 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
 		    		}
 	    		}
 	    	}
-	        delArray = delList.toIntArray();
+	      delArray = delList.toIntArray();
 	      }
 	    }
 	      
@@ -211,17 +212,20 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
 	    }
 	  }
 	  
-	  public void loadFromIndex(BaseSearchIndex<R> index) throws IOException
+	  public void loadFromIndex(BaseSearchIndex<R,V> index) throws IOException
 	  {
+	    // hao: open readOnly ram index reader
 	    ZoieIndexReader<R> reader = index.openIndexReader();
 	    if(reader == null) return;
 	    
 	    Directory dir = reader.directory();
 	    
-        LongSet delDocs = _delDocs;
-        clearDeletes();
-        deleteDocs(delDocs);
+	    // hao: delete docs in disk index
+      LongSet delDocs = _delDocs;
+      clearDeletes();
+      deleteDocs(delDocs);
 	    
+      // hao: merge the readOnly ram index with the disk index
 	    IndexWriter writer = null;
 	    try
 	    {
@@ -229,10 +233,20 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
 	      writer.addIndexesNoOptimize(new Directory[] { dir });
 	    }
 	    finally
-	    {
+	    {	      
+//	       V diskVersion = getVersion();
+//	       V ramVersion = index.getVersion();
+//	       V newDiskVersion = diskVersion == null ? ramVersion : (diskVersion.compareTo(ramVersion) < 0 ? ramVersion : diskVersion);
+//	       Map<String, String> commitVersionMap = new HashMap<String, String>();
+//        commitVersionMap.put("DiskZoieVersion ", newDiskVersion.toString());
+//	      writer.commit(commitVersionMap);
+        //System.out.println("commit disk user data" + commitVersionMap);  
+      
 	      closeIndexWriter();
 	    }
 	  }
+	  
+	  
 	      
 	  abstract public IndexWriter openIndexWriter(Analyzer analyzer,Similarity similarity) throws IOException;
 	  

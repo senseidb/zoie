@@ -28,6 +28,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Similarity;
 
 import proj.zoie.api.DataConsumer;
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.api.indexing.ZoieIndexable;
@@ -40,28 +41,28 @@ import proj.zoie.impl.indexing.IndexUpdatedEvent;
  * @author ymatsuda, xgu
  *
  */
-public class RealtimeIndexDataLoader<R extends IndexReader, V> extends BatchedIndexDataLoader<R,V>
+public class RealtimeIndexDataLoader<R extends IndexReader, D, V extends ZoieVersion> extends BatchedIndexDataLoader<R,D,V>
 {
   private int _currentBatchSize;
-  private final DataConsumer<ZoieIndexable>  _ramConsumer;
-  private final DiskLuceneIndexDataLoader<R> _luceneDataLoader;
+  private final DataConsumer<ZoieIndexable,V>  _ramConsumer;
+  private final DiskLuceneIndexDataLoader<R,V> _luceneDataLoader;
   private final Analyzer                     _analyzer;
   private final Similarity                   _similarity;
   
   private static Logger log = Logger.getLogger(RealtimeIndexDataLoader.class);
   
-  public RealtimeIndexDataLoader(DiskLuceneIndexDataLoader<R> dataLoader, int batchSize,int maxBatchSize,long delay,
+  public RealtimeIndexDataLoader(DiskLuceneIndexDataLoader<R,V> dataLoader, int batchSize,int maxBatchSize,long delay,
                                  Analyzer analyzer,
                                  Similarity similarity,
-                                 SearchIndexManager<R> idxMgr,
-                                 ZoieIndexableInterpreter<V> interpreter,
-                                 Queue<IndexingEventListener> lsnrList)
+                                 SearchIndexManager<R,V> idxMgr,
+                                 ZoieIndexableInterpreter<D> interpreter,
+                                 Queue<IndexingEventListener<V>> lsnrList)
   {
-    super(dataLoader, batchSize, maxBatchSize, delay, idxMgr, interpreter, lsnrList);
+    super((DataConsumer<ZoieIndexable,V>)dataLoader, batchSize, maxBatchSize, delay, idxMgr, interpreter, lsnrList);
     _analyzer = analyzer;
     _similarity = similarity;
     _currentBatchSize = 0;
-    _ramConsumer = new RAMLuceneIndexDataLoader<R>(_analyzer, _similarity, _idxMgr);
+    _ramConsumer = new RAMLuceneIndexDataLoader<R,V>(_analyzer, _similarity, _idxMgr);
     _luceneDataLoader = dataLoader;
   }
   
@@ -69,23 +70,23 @@ public class RealtimeIndexDataLoader<R extends IndexReader, V> extends BatchedIn
    * @see proj.zoie.impl.indexing.internal.BatchedIndexDataLoader#consume(java.util.Collection)
    */
   @Override
-  public void consume(Collection<DataEvent<V>> events) throws ZoieException
+  public void consume(Collection<DataEvent<D,V>> events) throws ZoieException
   {
     if (events != null)
     {
-      ArrayList<DataEvent<ZoieIndexable>> indexableList =
-          new ArrayList<DataEvent<ZoieIndexable>>(events.size());
-      Iterator<DataEvent<V>> iter = events.iterator();
+      ArrayList<DataEvent<ZoieIndexable,V>> indexableList =
+          new ArrayList<DataEvent<ZoieIndexable,V>>(events.size());
+      Iterator<DataEvent<D,V>> iter = events.iterator();
       while (iter.hasNext())
       {
         try
         {
-          DataEvent<V> event = iter.next();
+          DataEvent<D,V> event = iter.next();
           ZoieIndexable indexable =
-                ((ZoieIndexableInterpreter<V>) _interpreter).convertAndInterpret(event.getData());
+                ((ZoieIndexableInterpreter<D>) _interpreter).convertAndInterpret(event.getData());
           
-          DataEvent<ZoieIndexable> newEvent =
-              new DataEvent<ZoieIndexable>(event.getVersion(), indexable);
+          DataEvent<ZoieIndexable,V> newEvent =
+              new DataEvent<ZoieIndexable,V>(indexable,event.getVersion());
           indexableList.add(newEvent);
         }
         catch (Exception e)
@@ -133,12 +134,14 @@ public class RealtimeIndexDataLoader<R extends IndexReader, V> extends BatchedIn
   @Override
   protected synchronized void processBatch()
   {
-    RAMSearchIndex<R> readOnlyMemIndex = null;
+    RAMSearchIndex<R,V> readOnlyMemIndex = null;
     long now = System.currentTimeMillis();
     long duration = now - _lastFlushTime;
     int eventCount = 0;
+    //System.out.println("DiskLuceneIndexDataLoader:processBatch():_currentBatchSize:" + _currentBatchSize + "_batchSize" + _batchSize);
     while(_currentBatchSize < _batchSize && !_stop && !_flush && duration < _delay)
     {
+      //System.out.println("DiskLuceneIndexDataLoader:processBatch():_currentBatchSize:" + _currentBatchSize + "_batchSize" + _batchSize);
       try
       {
         wait(_delay - duration);
@@ -150,6 +153,7 @@ public class RealtimeIndexDataLoader<R extends IndexReader, V> extends BatchedIn
       now = System.currentTimeMillis();
       duration = now - _lastFlushTime;
     }
+    //System.out.println("After the loop, DiskLuceneIndexDataLoader:processBatch():_currentBatchSize:" + _currentBatchSize + "_batchSize" + _batchSize);
     _flush = false;
     _lastFlushTime = now;
 
@@ -163,6 +167,7 @@ public class RealtimeIndexDataLoader<R extends IndexReader, V> extends BatchedIn
       _currentBatchSize = 0;
     }
 
+    //System.out.println("DiskLuceneIndexDataLoader:processBatch():eventCount:" + eventCount);
     if (eventCount > 0)
     {
       long t1=System.currentTimeMillis();

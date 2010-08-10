@@ -36,6 +36,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.DataConsumer;
 import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieException;
@@ -43,7 +44,7 @@ import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 
-public class LuceneNRTDataConsumer<V> implements DataConsumer<V>,IndexReaderFactory<IndexReader>{
+public class LuceneNRTDataConsumer<D, V extends ZoieVersion> implements DataConsumer<D,V>,IndexReaderFactory<IndexReader>{
 	private static final Logger logger = Logger.getLogger(LuceneNRTDataConsumer.class);
 	
 	/**
@@ -54,18 +55,18 @@ public class LuceneNRTDataConsumer<V> implements DataConsumer<V>,IndexReaderFact
 	
 	private IndexWriter _writer;
 	private Analyzer _analyzer;
-	private ZoieIndexableInterpreter<V> _interpreter;
+	private ZoieIndexableInterpreter<D> _interpreter;
 	private Directory _dir;
 	
-	public LuceneNRTDataConsumer(File dir,ZoieIndexableInterpreter<V> interpreter) throws IOException{
+	public LuceneNRTDataConsumer(File dir,ZoieIndexableInterpreter<D> interpreter) throws IOException{
 		this(FSDirectory.open(dir),new StandardAnalyzer(Version.LUCENE_CURRENT),interpreter);
 	}
 	
-	public LuceneNRTDataConsumer(File dir,Analyzer analyzer,ZoieIndexableInterpreter<V> interpreter) throws IOException{
+	public LuceneNRTDataConsumer(File dir,Analyzer analyzer,ZoieIndexableInterpreter<D> interpreter) throws IOException{
 		this(FSDirectory.open(dir),analyzer,interpreter);
 	}
 	
-	public LuceneNRTDataConsumer(Directory dir,Analyzer analyzer,ZoieIndexableInterpreter<V> interpreter){
+	public LuceneNRTDataConsumer(Directory dir,Analyzer analyzer,ZoieIndexableInterpreter<D> interpreter){
 		_writer = null;
 		_analyzer = analyzer;
 		_interpreter = interpreter;
@@ -90,14 +91,14 @@ public class LuceneNRTDataConsumer<V> implements DataConsumer<V>,IndexReaderFact
 		}
 	}
 	
-	public void consume(Collection<proj.zoie.api.DataConsumer.DataEvent<V>> events)
+	public void consume(Collection<proj.zoie.api.DataConsumer.DataEvent<D,V>> events)
 			throws ZoieException {
 		if (_writer == null){
 			throw new ZoieException("Internal IndexWriter null, perhaps not started?");
 		}
 		
 		if (events.size() > 0){
-			for (DataEvent<V> event : events){
+			for (DataEvent<D,V> event : events){
 				ZoieIndexable indexable = _interpreter.convertAndInterpret(event.getData());
 				if (indexable.isSkip()) continue;
 				
@@ -172,7 +173,7 @@ public class LuceneNRTDataConsumer<V> implements DataConsumer<V>,IndexReaderFact
 		}
 	}
 
-  public long getVersion()
+  public V getVersion()
   {
     throw new UnsupportedOperationException();
   }

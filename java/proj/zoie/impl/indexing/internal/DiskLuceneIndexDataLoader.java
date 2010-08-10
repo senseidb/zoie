@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -29,21 +32,24 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.TopDocs;
 
+import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.indexing.OptimizeScheduler;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.OptimizeScheduler.OptimizeType;
 import proj.zoie.impl.indexing.internal.SearchIndexManager.Status;
 
-public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneIndexDataLoader<R> {
+public class DiskLuceneIndexDataLoader<R extends IndexReader, V extends ZoieVersion> extends LuceneIndexDataLoader<R,V> {
 
 	private long _lastTimeOptimized;
 	private static final Logger log = Logger.getLogger(DiskLuceneIndexDataLoader.class);
 	private Object _optimizeMonitor;
 	private OptimizeScheduler _optScheduler;
 	
-	public DiskLuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R> idxMgr) {
+	public DiskLuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R,V> idxMgr) {
 		super(analyzer, similarity, idxMgr);
 		_lastTimeOptimized=System.currentTimeMillis();
 		_optimizeMonitor = new Object();
@@ -58,7 +64,7 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
 	}
 
 	@Override
-	protected BaseSearchIndex<R> getSearchIndex() {
+	protected BaseSearchIndex<R,V> getSearchIndex() {
 		return _idxMgr.getDiskIndex();
 	}
 
@@ -75,7 +81,7 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
     }
 
 	@Override
-	public void consume(Collection<DataEvent<ZoieIndexable>> events)
+	public void consume(Collection<DataEvent<ZoieIndexable,V>> events)
 			throws ZoieException {
 		// updates the in memory status before and after the work
 		synchronized(_optimizeMonitor)
@@ -87,6 +93,7 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
 		    _idxMgr.setPartialExpunge(optType == OptimizeType.PARTIAL);
 		    try
 		    {
+		      System.out.println("DiskLuceneIndexDataLoader:consume(): disk consume");
 		      super.consume(events);
 		    }
 		    finally
@@ -119,8 +126,9 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
 	}
 	
 	@Override
-    public void loadFromIndex(RAMSearchIndex<R> ramIndex) throws ZoieException
+    public void loadFromIndex(RAMSearchIndex<R,V> ramIndex) throws ZoieException
     {
+	  
       synchronized(_optimizeMonitor)
       {
         try
@@ -161,13 +169,15 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
         }
       }
     }
-    
+  
+	
+	
 	public void expungeDeletes() throws IOException
 	{
 		log.info("expunging deletes...");
 		synchronized(_optimizeMonitor)
 		{
-		  BaseSearchIndex<R> idx=getSearchIndex();
+		  BaseSearchIndex<R,V> idx=getSearchIndex();
 		  IndexWriter writer=null;  
 		  try
 		  {
@@ -195,7 +205,7 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
 		// we should optimize
 		synchronized(_optimizeMonitor)
 		{
-		  BaseSearchIndex<R> idx=getSearchIndex();
+		  BaseSearchIndex<R,V> idx=getSearchIndex();
 		  IndexWriter writer=null;  
 		  try
 		  {
@@ -221,7 +231,7 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
 	
 	public long exportSnapshot(WritableByteChannel channel) throws IOException
 	{
-	  DiskSearchIndex<R> idx = (DiskSearchIndex<R>)getSearchIndex();
+	  DiskSearchIndex<R,V> idx = (DiskSearchIndex<R,V>)getSearchIndex();
 	  if(idx != null)
 	  {
 	    DiskIndexSnapshot snapshot = null;
@@ -245,7 +255,7 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
 	
 	public void importSnapshot(ReadableByteChannel channel) throws IOException
 	{
-      DiskSearchIndex<R> idx = (DiskSearchIndex<R>)getSearchIndex();
+      DiskSearchIndex<R,V> idx = (DiskSearchIndex<R,V>)getSearchIndex();
       if(idx != null)
       {
         synchronized(_optimizeMonitor) // prevent index updates while taking a snapshot

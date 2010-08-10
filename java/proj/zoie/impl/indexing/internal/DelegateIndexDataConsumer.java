@@ -22,37 +22,38 @@ import java.util.Iterator;
 import org.apache.log4j.Logger;
 
 import proj.zoie.api.DataConsumer;
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 
-public class DelegateIndexDataConsumer<V> implements DataConsumer<V> {
+public class DelegateIndexDataConsumer<D,V extends ZoieVersion> implements DataConsumer<D, V> {
 	private static final Logger log = Logger.getLogger(DelegateIndexDataConsumer.class);
-	private final DataConsumer<ZoieIndexable> _diskConsumer;
-	private final DataConsumer<ZoieIndexable> _ramConsumer;
-	private final ZoieIndexableInterpreter<V> _interpreter;
+	private final DataConsumer<ZoieIndexable,V> _diskConsumer;
+	private final DataConsumer<ZoieIndexable,V> _ramConsumer;
+	private final ZoieIndexableInterpreter<D> _interpreter;
 	
-	public DelegateIndexDataConsumer(DataConsumer<ZoieIndexable> diskConsumer,DataConsumer<ZoieIndexable> ramConsumer,ZoieIndexableInterpreter<V> interpreter)
+	public DelegateIndexDataConsumer(DataConsumer<ZoieIndexable,V> diskConsumer,DataConsumer<ZoieIndexable,V> ramConsumer,ZoieIndexableInterpreter<D> interpreter)
 	{
 	  	_diskConsumer=diskConsumer;
 	  	_ramConsumer=ramConsumer;
 	  	_interpreter=interpreter;
 	}
 	
-	public void consume(Collection<DataEvent<V>> data)
+	public void consume(Collection<DataEvent<D,V>> data)
 			throws ZoieException {
 		if (data!=null)
 		{
 		  //PriorityQueue<DataEvent<ZoieIndexable>> indexableList = new PriorityQueue<DataEvent<ZoieIndexable>>(data.size(), DataEvent.getComparator());
-		  ArrayList<DataEvent<ZoieIndexable>> indexableList=new ArrayList<DataEvent<ZoieIndexable>>(data.size());
-		  Iterator<DataEvent<V>> iter=data.iterator();
+		  ArrayList<DataEvent<ZoieIndexable,V>> indexableList=new ArrayList<DataEvent<ZoieIndexable,V>>(data.size());
+		  Iterator<DataEvent<D,V>> iter=data.iterator();
 		  while(iter.hasNext())
 		  {
 			  try{
-			    DataEvent<V> event=iter.next();
-			    ZoieIndexable indexable = ((ZoieIndexableInterpreter<V>)_interpreter).convertAndInterpret(event.getData());
+			    DataEvent<D,V> event=iter.next();
+			    ZoieIndexable indexable = ((ZoieIndexableInterpreter<D>)_interpreter).convertAndInterpret(event.getData());
 			   
-			    DataEvent<ZoieIndexable> newEvent=new DataEvent<ZoieIndexable>(event.getVersion(),indexable);
+			    DataEvent<ZoieIndexable,V> newEvent=new DataEvent<ZoieIndexable,V>(indexable,event.getVersion());
 			    indexableList.add(newEvent);
 			  }
 			  catch(Exception e){
@@ -66,7 +67,7 @@ public class DelegateIndexDataConsumer<V> implements DataConsumer<V> {
 		    {
 	          if (_ramConsumer != null)
 	          {
-	            ArrayList<DataEvent<ZoieIndexable>> ramList=new ArrayList<DataEvent<ZoieIndexable>>(indexableList);
+	            ArrayList<DataEvent<ZoieIndexable,V>> ramList=new ArrayList<DataEvent<ZoieIndexable,V>>(indexableList);
 	            _ramConsumer.consume(ramList);
 	          }
 	          _diskConsumer.consume(indexableList);
@@ -82,7 +83,7 @@ public class DelegateIndexDataConsumer<V> implements DataConsumer<V> {
 		}
 	}
   
-  public long getVersion()
+  public V getVersion()
   {
     throw new UnsupportedOperationException();
   }

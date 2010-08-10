@@ -19,17 +19,20 @@ import proj.zoie.api.impl.util.ChannelUtil;
 import proj.zoie.api.impl.util.FileUtil;
 import proj.zoie.impl.indexing.internal.IndexSignature;
 
-public class DefaultDirectoryManager implements DirectoryManager
+import proj.zoie.api.ZoieVersion;
+
+public class DefaultDirectoryManager<V extends ZoieVersion> implements DirectoryManager<V>
 {
   public static final Logger log = Logger.getLogger(DefaultDirectoryManager.class);
-
-  private File _location;
   
-  public DefaultDirectoryManager(File location)
+  private File _location;
+  ZoieVersionFactory<V> _zoieVersionFactory;
+  public DefaultDirectoryManager(File location, ZoieVersionFactory<V> zoieVersionFactory)
   {
     if (location==null) throw new IllegalArgumentException("null index directory.");
-
+    _zoieVersionFactory = zoieVersionFactory;
     _location = location;
+    _zoieVersionFactory = zoieVersionFactory;
   }
   
   public File getLocation()
@@ -57,7 +60,7 @@ public class DefaultDirectoryManager implements DirectoryManager
     
     if(create)
     {
-      IndexSignature sig = null;
+      IndexSignature<V> sig = null;
       if (_location.exists())
       {
         sig = getCurrentIndexSignature();
@@ -66,7 +69,7 @@ public class DefaultDirectoryManager implements DirectoryManager
       if (sig == null)
       {
         File directoryFile = new File(_location, INDEX_DIRECTORY);
-        sig = new IndexSignature(0L);
+        sig = new IndexSignature<V>(null);
         try
         {
           saveSignature(sig, directoryFile);
@@ -81,7 +84,7 @@ public class DefaultDirectoryManager implements DirectoryManager
     return new SimpleFSDirectory(_location);
   }
   
-  public static IndexSignature readSignature(File file)
+  public static <V extends ZoieVersion> IndexSignature<V> readSignature(File file, ZoieVersionFactory<V> zoieVersionFactory)
   {
     if (file.exists())
     {
@@ -89,7 +92,7 @@ public class DefaultDirectoryManager implements DirectoryManager
       try
       {
         fin = new FileInputStream(file);
-        return IndexSignature.read(fin);
+        return IndexSignature.read(fin, zoieVersionFactory);
       }
       catch (IOException ioe)
       {
@@ -118,10 +121,11 @@ public class DefaultDirectoryManager implements DirectoryManager
     }
   }
   
-  protected void saveSignature(IndexSignature sig, File file) throws IOException
+  protected void saveSignature(IndexSignature<V> sig, File file) throws IOException
   {
     if (!file.exists())
     {
+      //System.out.println("DefaultDirectoryManager:saveSignature:createNewFile");
       file.createNewFile();
     }
     FileOutputStream fout = null;
@@ -151,32 +155,30 @@ public class DefaultDirectoryManager implements DirectoryManager
    * @param indexHome
    * @return
    */
-  public IndexSignature getCurrentIndexSignature()
+  public IndexSignature<V> getCurrentIndexSignature()
   {
-    return getCurrentIndexSignature(_location);
+    return getCurrentIndexSignature(_location, _zoieVersionFactory);
   }
   
-  public static IndexSignature getCurrentIndexSignature(File idxDir){
+  public static <V extends ZoieVersion> IndexSignature<V> getCurrentIndexSignature(File idxDir,ZoieVersionFactory<V> zoieVersionFactory){
 	File directoryFile = new File(idxDir, INDEX_DIRECTORY);
-	IndexSignature sig = readSignature(directoryFile);
+	IndexSignature<V> sig = readSignature(directoryFile, zoieVersionFactory);
 	return sig;
   }
+  
 
-  public long getVersion() throws IOException
+  
+  public V getVersion() throws IOException
   {
-    return getVersion(_location);
+    IndexSignature<V> sig = getCurrentIndexSignature();
+    return sig == null ? null : sig.getVersion();
   }
   
-  public static long getVersion(File idxDir) throws IOException{
-	IndexSignature sig = getCurrentIndexSignature(idxDir);
-	return sig == null ? 0L : sig.getVersion();
-  }
-  
-  public void setVersion(long version) throws IOException
+  public void setVersion(V version) throws IOException
   {
     // update new index file
     File directoryFile = new File(_location, INDEX_DIRECTORY);
-    IndexSignature sig = readSignature(directoryFile);
+    IndexSignature<V> sig = readSignature(directoryFile, _zoieVersionFactory);
     sig.updateVersion(version);
     try
     {
@@ -192,6 +194,8 @@ public class DefaultDirectoryManager implements DirectoryManager
     {
       throw e;
     }
+    
+    
   }
   
   public Date getLastIndexModifiedTime()

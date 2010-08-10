@@ -20,16 +20,19 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Stack;
 
+import proj.zoie.api.ZoieVersion;
+import proj.zoie.api.ZoieVersionFactory;
+import proj.zoie.api.DefaultZoieVersion;
 import proj.zoie.api.DataConsumer.DataEvent;
 
-public class FileDataProvider extends StreamDataProvider<File>
+public class FileDataProvider extends StreamDataProvider<File, DefaultZoieVersion> implements ZoieVersionFactory<DefaultZoieVersion>
 {
 	private final File _dir;
-	private long _currentVersion;
+	private DefaultZoieVersion _currentVersion;
 	private Stack<Iterator<File>> _stack;
 	private Iterator<File> _currentIterator;
 	private boolean _looping;
-	
+		
 	public FileDataProvider(File dir)
 	{
 		super();
@@ -46,6 +49,25 @@ public class FileDataProvider extends StreamDataProvider<File>
 		return _dir;
 	}
 
+	public DefaultZoieVersion getZoieVersion(String str)
+	{
+	  return _currentVersion;
+	}
+	
+	public DefaultZoieVersion getMinZoieVersion()
+	{
+	  return null;
+	}
+	
+	public DefaultZoieVersion nextZoieVersion()
+	{
+	  String desp = _currentVersion.encodeToString();
+	  DefaultZoieVersion dzv = getZoieVersion(_currentVersion.encodeToString());
+	  dzv.setVersionId(dzv.getVersionId()+1);  
+	  
+	  return dzv;	
+	}
+	
 	@Override
 	public void reset()
 	{
@@ -65,13 +87,15 @@ public class FileDataProvider extends StreamDataProvider<File>
 	}
 	
 	@Override
-	public DataEvent<File> next() {
+	public DataEvent<File,DefaultZoieVersion> next() {
 		if(_currentIterator.hasNext())
 		{
 			File next=_currentIterator.next();
 			if (next.isFile())
 			{
-				return new DataEvent<File>(_currentVersion++,next);
+			  // ?? hao: how to implement version++
+				// new DataEvent<File>(next, _currentVersion++);
+				return new DataEvent<File,DefaultZoieVersion>(next,nextZoieVersion());
 			}
 			else
 			{

@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -33,24 +35,25 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Similarity;
 
 import proj.zoie.api.DataConsumer;
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieSegmentReader;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 
-public abstract class LuceneIndexDataLoader<R extends IndexReader> implements DataConsumer<ZoieIndexable> {
+public abstract class LuceneIndexDataLoader<R extends IndexReader, V extends ZoieVersion> implements DataConsumer<ZoieIndexable,V> {
 	private static final Logger log = Logger.getLogger(LuceneIndexDataLoader.class);
 	protected final Analyzer _analyzer;
 	protected final Similarity _similarity;
-	protected final SearchIndexManager<R> _idxMgr;
+	protected final SearchIndexManager<R,V> _idxMgr;
 
-	protected LuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R> idxMgr) {
+	protected LuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R,V> idxMgr) {
 		_analyzer = analyzer;
 		_similarity = similarity;
 		_idxMgr=idxMgr;
 	}
 
-	protected abstract BaseSearchIndex<R> getSearchIndex();
+	protected abstract BaseSearchIndex<R,V> getSearchIndex();
 	
     protected abstract void propagateDeletes(LongSet delDocs) throws IOException;
     protected abstract void commitPropagatedDeletes() throws IOException;
@@ -62,23 +65,24 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
 	 * @see proj.zoie.api.DataConsumer#consume(java.util.Collection)
 	 * 
 	 */
-	public void consume(Collection<DataEvent<ZoieIndexable>> events) throws ZoieException {
+	public void consume(Collection<DataEvent<ZoieIndexable,V>> events) throws ZoieException {
 		int eventCount = events.size();
         if (events == null || eventCount == 0)
 			return;
 
-		BaseSearchIndex<R> idx = getSearchIndex();
+		BaseSearchIndex<R,V> idx = getSearchIndex();
 
 		Long2ObjectMap<List<IndexingReq>> addList = new Long2ObjectOpenHashMap<List<IndexingReq>>();
-		long version = idx.getVersion();		// current version
+		V version = idx.getVersion();		// current version
 
 		LongSet delSet =new LongOpenHashSet();
 		
 		try {
-		  for(DataEvent<ZoieIndexable> evt : events)
+		  for(DataEvent<ZoieIndexable,V> evt : events)
 		  {
 		    if (evt == null) continue;
-    		    version = Math.max(version, evt.getVersion());
+    		    //version = Math.max(version, evt.getVersion());
+		        version = version == null ? evt.getVersion() : (version.compareTo(evt.getVersion()) < 0 ? evt.getVersion() : version);
     		    // interpret and get get the indexable instance
     		    ZoieIndexable indexable = evt.getData();
     		    if (indexable == null || indexable.isSkip())
@@ -96,7 +100,7 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
 											// nothing
 						{
 							Document doc = req.getDocument();
-							if (doc!=null){
+							if (doc!=null){							 
 							  ZoieSegmentReader.fillDocumentID(doc, uid);
 							}
 							// add to the insert list
@@ -108,21 +112,23 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
 							docList.add(req);
 						}
 					}
-				} else {
-					addList.remove(uid);
 				}
+				// hao: we do not need the following few lines
+				//else {
+					//addList.remove(uid);
+				//}
 			}
 
 			List<IndexingReq> docList = new ArrayList<IndexingReq>(addList.size());
 			for (List<IndexingReq> tmpList : addList.values()) {
 				docList.addAll(tmpList);
 			}
-            idx.updateIndex(delSet, docList, _analyzer,_similarity);
-            propagateDeletes(delSet);
+      idx.updateIndex(delSet, docList, _analyzer,_similarity);
+      propagateDeletes(delSet);
 			synchronized(_idxMgr)
 			{
-              idx.refresh();
-              commitPropagatedDeletes();
+         idx.refresh();
+         commitPropagatedDeletes();
 			}
 		} catch (IOException ioe) {
 			log.error("Problem indexing batch: " + ioe.getMessage(), ioe);
@@ -138,25 +144,37 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
 			{
 				log.warn(e.getMessage());
 			} finally {
-				if (idx instanceof DiskSearchIndex<?>) {
+				if (idx instanceof DiskSearchIndex<?,?>) {
 					log.info("disk indexing requests flushed.");
 				}
 			}
 		}
 	}
 	
-    public void loadFromIndex(RAMSearchIndex<R> ramIndex) throws ZoieException
+    public void loadFromIndex(RAMSearchIndex<R,V> ramIndex) throws ZoieException
     {
       try
       {
-        BaseSearchIndex<R> idx = getSearchIndex();
+        // hao: get disk search idx, 
+        BaseSearchIndex<R,V> idx = getSearchIndex();
+        //hao: merge the realyOnly ram idx with the disk idx
         idx.loadFromIndex(ramIndex);
         idx.clearDeletes(); // clear old deletes as deletes are written to the lucene index
+        // hao: update the disk idx reader
         idx.refresh(); // load the index reader
         idx.markDeletes(ramIndex.getDelDocs()); // inherit deletes
         idx.commitDeletes();
         idx.incrementEventCount(ramIndex.getEventsHandled());
-        idx.setVersion(Math.max(idx.getVersion(), ramIndex.getVersion()));
+        
+        //Map<String, String> commitData = idx.getCommitData();
+        //System.out.println("disk vesion from the commit data" + commitData);  
+        
+        //V newVersion = idx.getVersion().compareTo(ramIndex.getVersion()) < 0 ? ramIndex.getVersion(): idx.getVersion();
+        V newVersion = idx.getVersion() == null ? ramIndex.getVersion() : (idx.getVersion().compareTo(ramIndex.getVersion()) < 0 ? ramIndex.getVersion(): idx.getVersion());
+        idx.setVersion(newVersion);
+        //System.out.println("disk verson from the signature" + newVersion.toString());        
+               
+        //idx.setVersion(Math.max(idx.getVersion(), ramIndex.getVersion()));
       }
       catch(IOException ioe)
       {
@@ -165,13 +183,14 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
       }
     }
     
+  
   /**
    * @return the version number of the search index.
    */
-  public long getVersion()
+  public V getVersion()
   {
-    BaseSearchIndex<R> idx = getSearchIndex();
-    long version = 0;
+    BaseSearchIndex<R,V> idx = getSearchIndex();
+    V version = null;
     if (idx != null) version = idx.getVersion();
     return version;
   }

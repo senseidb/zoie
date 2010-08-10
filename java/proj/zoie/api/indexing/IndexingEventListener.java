@@ -17,10 +17,12 @@ package proj.zoie.api.indexing;
  */
 import java.io.Serializable;
 
+import proj.zoie.api.ZoieVersion;
+
 /**
  * <b> experimental api </b>. Call-back for indexing events.
  */
-public interface IndexingEventListener {
+public interface IndexingEventListener <V extends ZoieVersion>{
 	
 	/**
 	 * Indexing event abstraction.
@@ -42,5 +44,5 @@ public interface IndexingEventListener {
 	 * Handler for updated disk version
 	 * @param version new disk version
 	 */
-	void handleUpdatedDiskVersion(long version);
+	void handleUpdatedDiskVersion(V version);
 }

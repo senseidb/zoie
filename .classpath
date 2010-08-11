@@ -14,6 +14,5 @@
 	<classpathentry kind="lib" path="test-perf/ext-libraries/performance-1.2.0.jar"/>
 	<classpathentry kind="lib" path="test-perf/ext-libraries/jfreechart-0.9.21.jar"/>
 	<classpathentry kind="lib" path="test-perf/ext-libraries/iText.zip"/>
-	<classpathentry kind="src" path="/zoieFirehose"/>
 	<classpathentry kind="output" path="output"/>
 </classpath>

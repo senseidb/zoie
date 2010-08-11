@@ -511,7 +511,7 @@ public class ZoieTest extends ZoieTestCase
           return sb.toString();
         }
       };
-      queryThreads[i].setDaemon(false);
+      queryThreads[i].setDaemon(true);
     }
 
     MemoryStreamDataProvider<String> memoryProvider=new MemoryStreamDataProvider<String>();
@@ -945,6 +945,7 @@ public class ZoieTest extends ZoieTestCase
       exportFile = new RandomAccessFile(new File(getTmpDir(), "zoie_export.dat"), "rw");
       channel = exportFile.getChannel();
       idxSystem.exportSnapshot(channel);
+      channel.close();
       exportFile.close();
       exportFile = null;
       channel = null;
@@ -965,6 +966,7 @@ public class ZoieTest extends ZoieTestCase
       exportFile = new RandomAccessFile(new File(getTmpDir(), "zoie_export.dat"), "r");
       channel = exportFile.getChannel();
       idxSystem.importSnapshot(channel);
+      channel.close();
       exportFile.close();
 
       assertEquals("count is wrong", hits, countHits(idxSystem, q));

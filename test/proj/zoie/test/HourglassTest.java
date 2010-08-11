@@ -91,25 +91,31 @@ public class HourglassTest extends ZoieTestCase
       list.add(new DataEvent<String>(i,"" +i));
       memoryProvider.addEvents(list);
       if (i%113 !=0) continue;
-      memoryProvider.flush();
       long flushtime = System.currentTimeMillis();
       int numDoc = -1;
       List<ZoieIndexReader<IndexReader>> readers=null;
       IndexReader reader = null;
+      Searcher searcher = null;
+      int oldNum = -1;
       while(numDoc < i + 1)
       {
         if (reader!=null && readers!=null)
         {
+          searcher.close();
+          searcher = null;
           reader.close();
           hourglass.returnIndexReaders(readers);
         }
         readers = hourglass.getIndexReaders();
         reader = new MultiReader(readers.toArray(new IndexReader[0]),false);
-        numDoc = reader.numDocs();
-        Thread.sleep(500);
+        searcher = new IndexSearcher(reader);
+        TopDocs hitsall = searcher.search(new MatchAllDocsQuery(), 10);
+        numDoc = hitsall.totalHits;
+        if (numDoc!=oldNum)System.out.println("numDoc: " + numDoc);
+        oldNum = numDoc;
+        Thread.sleep(30);
       }
       accumulatedTime += (System.currentTimeMillis() - flushtime);
-      Searcher searcher = new IndexSearcher(reader);
       TopDocs hits = searcher.search(new TermQuery(new Term("contents",""+i)), 10);
       TopDocs hitsall = searcher.search(new MatchAllDocsQuery(), 10);
       try

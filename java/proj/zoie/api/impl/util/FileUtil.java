@@ -55,4 +55,22 @@ public class FileUtil {
 	    // try to delete the files, ok if it fails, this is just for testing
 	    deleteDir(tobeDeleted);
 	  }
+	public static long sizeFile(File location)
+	{
+	  if (location ==null || !location.exists()) return 0;
+	  long total = 0;
+    if (location.isDirectory())
+    {
+      File[] files=location.listFiles();
+      for (File file : files)
+      {
+        total += sizeFile(file);
+      }
+      return total;
+    }
+    else
+    {
+      return location.length();
+    }
+	}
 }

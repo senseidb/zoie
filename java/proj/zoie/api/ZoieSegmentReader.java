@@ -296,7 +296,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 	}
 
 	@Override
-	public synchronized void decRef() throws IOException {
-		
+	public void decRef() throws IOException {
+		// not synchronized, since it doesn't do anything anyway
 	}
 }

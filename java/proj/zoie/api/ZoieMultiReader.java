@@ -262,7 +262,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
   }
 
 	@Override
-	public synchronized ZoieIndexReader<R> reopen(boolean openReadOnly)
+	public ZoieIndexReader<R> reopen(boolean openReadOnly)
 			throws CorruptIndexException, IOException {
 
 		long version = in.getVersion();

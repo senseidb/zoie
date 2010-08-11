@@ -245,7 +245,7 @@ public class AsyncDataConsumer<V> implements DataConsumer<V>
         if(_consumerThread._stop) return;
         try
         {
-          this.wait();
+          this.wait(1000);
         }
         catch (InterruptedException e)
         {

@@ -194,27 +194,31 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
 	private int readerIndex(int n){
 		return readerIndex(n,_starts,_starts.length);
 	}
-	
-	final static int readerIndex(int n, int[] starts, int numSubReaders) {    // find reader for doc n:
-	    int lo = 0;                                      // search starts array
-	    int hi = numSubReaders - 1;                  // for first element less
 
-	    while (hi >= lo) {
-	      int mid = (lo + hi) >>> 1;
-	      int midValue = starts[mid];
-	      if (n < midValue)
-	        hi = mid - 1;
-	      else if (n > midValue)
-	        lo = mid + 1;
-	      else {                                      // found a match
-	        while (mid+1 < numSubReaders && starts[mid+1] == midValue) {
-	          mid++;                                  // scan to last match
-	        }
-	        return mid;
-	      }
-	    }
-	    return hi;
-	  }
+  final static int readerIndex(int n, int[] starts, int numSubReaders)
+  { // find reader for doc n:
+    int lo = 0; // search starts array
+    int hi = numSubReaders - 1; // for first element less
+
+    while (hi >= lo)
+    {
+      int mid = (lo + hi) >>> 1;
+      int midValue = starts[mid];
+      if (n < midValue)
+      {
+        hi = mid - 1;
+      } else if (n > midValue) // could be in this segment or subsequent ones
+      {
+        if (n < starts[mid + 1])
+          return mid;
+        lo = mid + 1;
+      } else
+      { // found a match
+        return mid;
+      }
+    }
+    return hi;
+  }
 
 	@Override
 	public TermDocs termDocs() throws IOException {

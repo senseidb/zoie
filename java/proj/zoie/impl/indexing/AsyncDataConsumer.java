@@ -170,6 +170,11 @@ public class AsyncDataConsumer<D, V extends ZoieVersion> implements DataConsumer
   public void syncWthVersion(long timeInMillis, V version) throws ZoieException
   {
     if(_consumerThread == null) throw new ZoieException("not running");
+    if (version == null)
+    {
+      log.info("buffered version is NULL. Nothing to flush.");
+      return;
+    }
     synchronized(this)
     {
       while(_currentVersion==null || _currentVersion.compareTo(version) < 0)

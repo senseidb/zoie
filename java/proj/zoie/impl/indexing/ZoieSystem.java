@@ -472,7 +472,7 @@ public class ZoieSystem<R extends IndexReader, D, V extends ZoieVersion>
     log.info("shutting down zoie...");
     try
     {
-      flushEvents(200000);
+      flushEvents(Long.MAX_VALUE);
     } catch (ZoieException e)
     {
       log.error("zoie shutdown encountered ", e);

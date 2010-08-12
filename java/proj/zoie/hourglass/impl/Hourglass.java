@@ -208,12 +208,12 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
         return;
       }
       _isShutdown = true;
-      _readerMgr.shutdown();
-      log.info("shut down complete.");
     } finally
     {
       _shutdownLock.writeLock().unlock();
     }
+    _readerMgr.shutdown();
+    log.info("shut down complete.");
   }
 
   /* (non-Javadoc)

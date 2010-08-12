@@ -5,10 +5,17 @@ package proj.zoie.test;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.apache.log4j.jmx.HierarchyDynamicMBean;
+import org.apache.log4j.spi.LoggerRepository;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -54,9 +61,44 @@ public class HourglassTest extends ZoieTestCase
   public void testHourglassDirectoryManagerFactory() throws IOException, InterruptedException, ZoieException
   {
     File idxDir = getIdxDir();
+    MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+    HierarchyDynamicMBean hdm = new HierarchyDynamicMBean();
+    String LOG4J_HIEARCHY_DEFAULT = "log4j:hiearchy=default";
+    try
+    {
+      mbeanServer.registerMBean(hdm, new ObjectName("HouseGlass:name=log4j"));
+      // Add the root logger to the Hierarchy MBean
+      hdm.addLoggerMBean(Logger.getRootLogger().getName());
+
+      // Get each logger from the Log4J Repository and add it to
+      // the Hierarchy MBean created above.
+      LoggerRepository r = LogManager.getLoggerRepository();
+
+      java.util.Enumeration loggers = r.getCurrentLoggers();
+
+      int count = 1;
+      while (loggers.hasMoreElements())
+      {
+        String name = ((Logger) loggers.nextElement()).getName();
+        if (log.isDebugEnabled())
+        {
+          log.debug("[contextInitialized]: Registering " + name);
+        }
+        hdm.addLoggerMBean(name);
+        count++;
+      }
+      if (log.isInfoEnabled())
+      {
+        log
+        .info("[contextInitialized]: " + count
+            + " log4j MBeans registered.");
+      }
+    } catch (Exception e)
+    {
+      log.error("[contextInitialized]: Exception catched: ", e);
+    }
     DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
     HourglassDirectoryManagerFactory<DefaultZoieVersion> factory = new HourglassDirectoryManagerFactory<DefaultZoieVersion>(idxDir, 10000,defaultZoieVersionFactory);
-    
     ZoieConfig<DefaultZoieVersion> zConfig = new ZoieConfig<DefaultZoieVersion>(defaultZoieVersionFactory);
     zConfig.setBatchSize(3);
     zConfig.setBatchDelay(10);

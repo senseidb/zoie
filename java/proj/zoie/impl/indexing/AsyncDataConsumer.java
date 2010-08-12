@@ -177,18 +177,24 @@ public class AsyncDataConsumer<D, V extends ZoieVersion> implements DataConsumer
     }
     synchronized(this)
     {
+      long timeRemaining = Long.MAX_VALUE;
       while(_currentVersion==null || _currentVersion.compareTo(version) < 0)
       {
-        log.info("syncWithVersion " + _currentVersion + "  " + version);
+        if (log.isDebugEnabled())
+        {
+          if (timeRemaining > timeInMillis + 5000)
+          log.debug("syncWithVersion: timeRemaining: " +timeInMillis+"ms current: " + _currentVersion + " expecting: " + version);
+          timeRemaining = timeInMillis;
+        }
         this.notifyAll();
     	  long now1 = System.currentTimeMillis();
         if(timeInMillis<=0)
         {
-          throw new ZoieException("sync timed out");
+          throw new ZoieException("sync timed out at current: " + _currentVersion + " expecting: " + version);
         }
         try
         {
-          long waitTime = Math.min(200, timeInMillis);
+          long waitTime = Math.min(5000, timeInMillis);
           this.notifyAll();
           this.wait(waitTime);
         }
@@ -238,10 +244,12 @@ public class AsyncDataConsumer<D, V extends ZoieVersion> implements DataConsumer
       }
       for(DataEvent<D,V> event : data)
       {
-        // _bufferedVersion = Math.max(_bufferedVersion, event.getVersion());
         _bufferedVersion = (_bufferedVersion == null) ? event.getVersion() : (_bufferedVersion.compareTo(event.getVersion()) < 0? event.getVersion() : _bufferedVersion);
-        //System.out.println("AysncDataConsumer:consumer():_bufferedVersion: " + _bufferedVersion);
         _batch.add(event);
+      }
+      if (log.isDebugEnabled())
+      {
+        log.debug("consume:receiving: buffered: " + _bufferedVersion);
       }
       this.notifyAll(); // wake up the thread waiting in flushBuffer()
     }
@@ -266,12 +274,14 @@ public class AsyncDataConsumer<D, V extends ZoieVersion> implements DataConsumer
         {
         }
       }
-      //version = Math.max(_currentVersion, _bufferedVersion);
       version = _currentVersion == null ? _bufferedVersion : ((_currentVersion.compareTo(_bufferedVersion) < 0) ? _bufferedVersion : _currentVersion);
       currentBatch = _batch;
       _batch = new LinkedList<DataEvent<D,V>>();
-      //System.out.println("AsyncDataConsumer:thread:flushBuffer():_currentVersion:"+_currentVersion + ", _bufferedVersion: " + _bufferedVersion + ";");
       this.notifyAll(); // wake up the thread waiting in consume(...)
+    }
+    if (log.isDebugEnabled())
+    {
+      log.debug("flushBuffer: pre-flush: currentVersion: " + _currentVersion + " processing version: " + version +" of size: " + currentBatch.size());
     }
     
     if(_consumer != null)
@@ -289,7 +299,10 @@ public class AsyncDataConsumer<D, V extends ZoieVersion> implements DataConsumer
     synchronized(this)
     {
       _currentVersion = version;
-      //System.out.println("AysncDataConsumer:flushBuffer():_currentVersion:" + _currentVersion+ ", _bufferedVersion:  " + _bufferedVersion + ";");
+      if (log.isDebugEnabled())
+      {
+        log.debug("flushBuffer: post-flush: currentVersion: " + _currentVersion);
+      }
       this.notifyAll(); // wake up the thread waiting in syncWthVersion()
     }    
   }

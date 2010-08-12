@@ -179,6 +179,7 @@ public class AsyncDataConsumer<V> implements DataConsumer<V>
         try
         {
           long waitTime = Math.min(200, timeInMillis);
+          this.notifyAll();
           this.wait(waitTime);
         }
         catch(InterruptedException e)
@@ -218,6 +219,7 @@ public class AsyncDataConsumer<V> implements DataConsumer<V>
         }
         try
         {
+          this.notifyAll();
           this.wait();
         }
         catch (InterruptedException e)
@@ -245,6 +247,7 @@ public class AsyncDataConsumer<V> implements DataConsumer<V>
         if(_consumerThread._stop) return;
         try
         {
+          this.notifyAll();
           this.wait(1000);
         }
         catch (InterruptedException e)

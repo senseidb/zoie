@@ -824,6 +824,20 @@ public class ZoieTest extends ZoieTestCase
 
     assertTrue(numDiskIdx > 0);
   }
+  public void testShutdown() throws Exception
+  {
+    File idxDir = getIdxDir();
+    ZoieSystem<IndexReader, String> idxSystem = createInRangeZoie(idxDir, true, new InRangeDocIDMapperFactory(0, 1000000, 0));
+    idxSystem.start();
+    MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>();
+    memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
+    memoryProvider.setDataConsumer(idxSystem);
+    memoryProvider.start();
+    idxSystem.setBatchSize(5);
+    memoryProvider.stop();
+    idxSystem.shutdown();
+    deleteDirectory(idxDir);
+  }
 
   public void testDocIDMapper()
   {

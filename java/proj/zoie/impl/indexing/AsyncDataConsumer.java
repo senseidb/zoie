@@ -169,16 +169,19 @@ public class AsyncDataConsumer<V> implements DataConsumer<V>
     {
       while(_currentVersion < version)
       {
-        log.info("syncWithVersion " + _currentVersion + "  " + version);
+        if (log.isDebugEnabled())
+        {
+          log.debug("syncWithVersion: timeRemaining: " +timeInMillis+"ms current: " + _currentVersion + " expecting: " + version);
+        }
         this.notifyAll();
     	  long now1 = System.currentTimeMillis();
         if(timeInMillis<=0)
         {
-          throw new ZoieException("sync timed out");
+          throw new ZoieException("sync timed out at current: " + _currentVersion + " expecting: " + version);
         }
         try
         {
-          long waitTime = Math.min(200, timeInMillis);
+          long waitTime = Math.min(5000, timeInMillis);
           this.notifyAll();
           this.wait(waitTime);
         }
@@ -231,6 +234,10 @@ public class AsyncDataConsumer<V> implements DataConsumer<V>
         _bufferedVersion = Math.max(_bufferedVersion, event.getVersion());
         _batch.add(event);
       }
+      if (log.isDebugEnabled())
+      {
+        log.debug("consume:receiving: buffered: " + _bufferedVersion);
+      }
       this.notifyAll(); // wake up the thread waiting in flushBuffer()
     }
   }
@@ -260,6 +267,10 @@ public class AsyncDataConsumer<V> implements DataConsumer<V>
       
       this.notifyAll(); // wake up the thread waiting in consume(...)
     }
+    if (log.isDebugEnabled())
+    {
+      log.debug("flushBuffer: pre-flush: currentVersion: " + _currentVersion + " processing version: " + version +" of size: " + currentBatch.size());
+    }
     
     if(_consumer != null)
     {
@@ -276,6 +287,10 @@ public class AsyncDataConsumer<V> implements DataConsumer<V>
     synchronized(this)
     {
       _currentVersion = version;
+      if (log.isDebugEnabled())
+      {
+        log.debug("flushBuffer: post-flush: currentVersion: " + _currentVersion);
+      }
       this.notifyAll(); // wake up the thread waiting in syncWthVersion()
     }    
   }

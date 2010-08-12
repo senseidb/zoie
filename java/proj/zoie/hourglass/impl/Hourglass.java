@@ -206,12 +206,12 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
         return;
       }
       _isShutdown = true;
-      _readerMgr.shutdown();
-      log.info("shut down complete.");
     } finally
     {
       _shutdownLock.writeLock().unlock();
     }
+    _readerMgr.shutdown();
+    log.info("shut down complete.");
   }
 
   /* (non-Javadoc)

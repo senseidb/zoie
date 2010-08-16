@@ -202,10 +202,21 @@ public class HourglassTest extends ZoieTestCase
   }
   public static class TestHourglassIndexable extends HourglassIndexable
   {
+    protected static long nextUID = System.currentTimeMillis();
+    public final long UID;
     final String _str;
     public TestHourglassIndexable(String str)
     {
+      UID = getNextUID();
       _str = str;
+    }
+    public static final synchronized long getNextUID()
+    {
+      return nextUID++;
+    }
+    public final long getUID()
+    {
+      return UID;
     }
     public Document buildDocument(){
       Document doc=new Document();

@@ -264,7 +264,7 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
           {
             try
             {
-              Thread.sleep(1000);
+              Thread.sleep(100000);
             } catch (InterruptedException e)
             {
               log.warn(e);
@@ -279,7 +279,7 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
                 log.info("Already shut down. Quiting maintenance thread.");
                 break;
               }
-              if (archives.size()>0)
+              if (archives.size()>7)
               { 
                 log.info("to maintain");
               } else continue;

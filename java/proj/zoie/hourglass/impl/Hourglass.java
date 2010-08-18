@@ -2,11 +2,14 @@ package proj.zoie.hourglass.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -266,7 +269,7 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
             {
               log.warn(e);
             }
-            List<ZoieIndexReader<R>> arc = new LinkedList<ZoieIndexReader<R>>(box._archives);
+            List<ZoieIndexReader<R>> archives = new LinkedList<ZoieIndexReader<R>>(box._archives);
             List<ZoieIndexReader<R>> add = new LinkedList<ZoieIndexReader<R>>();
             try
             {
@@ -276,13 +279,14 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
                 log.info("Already shut down. Quiting maintenance thread.");
                 break;
               }
-              if (arc.size()>3)
+              if (archives.size()>0)
               { 
-                log.info("to consolidate");
+                log.info("to maintain");
               } else continue;
-              maintenance(arc, add);
+//              consolidate(archives, add);
+              trim(archives);
               // swap the archive with consolidated one
-              swapArchives(arc, add);
+              swapArchives(archives, add);
             } finally
             {
               hourglass._shutdownLock.readLock().unlock();
@@ -292,11 +296,53 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
     }
     /**
      * consolidate the archived Index to one big optimized index and put in add
+     * @param toRemove
+     * @param add
+     */
+    private void trim(List<ZoieIndexReader<R>> toRemove)
+    {
+      log.info("begin trim old ... ");
+      long timenow = System.currentTimeMillis();
+      List<ZoieIndexReader<R>> toKeep = new LinkedList<ZoieIndexReader<R>>();
+      Calendar now = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+      now.setTimeInMillis(timenow);
+      now.add(Calendar.SECOND, -60*60*24*7);
+      Calendar threshold = now;
+      log.info("threshold " + threshold);
+      for(int i=0; i<toRemove.size(); i++)
+      {
+        SimpleFSDirectory dir = (SimpleFSDirectory) toRemove.get(i).directory();
+        String path = dir.getFile().getName();
+        Calendar archivetime = null;
+        try
+        {
+          archivetime = _dirMgrFactory.getCalendarTime(path);
+        } catch (ParseException e)
+        {
+          log.error("index directory name bad. potential corruption. Move on without trimming.", e);
+          toKeep.add(toRemove.get(i));
+          log.info("trimming: keep " + path);
+          continue;
+        }
+        if (archivetime.before(threshold))
+        {
+          log.info("trimming: remove " + path);
+        } else
+        {
+          toKeep.add(toRemove.get(i));
+          log.info("trimming: keep " + path);
+        }
+      }
+      toRemove.removeAll(toKeep);
+    }
+    /**
+     * consolidate the archived Index to one big optimized index and put in add
      * @param archived
      * @param add
      */
-    private void maintenance(List<ZoieIndexReader<R>> archived, List<ZoieIndexReader<R>> add)
+    private void consolidate(List<ZoieIndexReader<R>> archived, List<ZoieIndexReader<R>> add)
     {
+      log.info("begin consolidate ... ");
       long b4 = System.currentTimeMillis();
       SimpleFSDirectory target = (SimpleFSDirectory) archived.get(0).directory();
       log.info("into: "+target.getFile().getAbsolutePath());

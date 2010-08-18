@@ -287,7 +287,7 @@ public class IndexReaderDispenser<R extends IndexReader, V extends ZoieVersion>
       {
         _currentReader.decRef();
         int count = _currentReader.getRefCount();
-        log.info("final closeReader in dispenser and current refCount: " + count);
+        log.info("final closeReader in dispenser and current refCount: " + count + " at " + _currentReader.directory());
         if (count > 0)
         {
           log.warn("final closeReader call with reference count == " + count + " greater than 0. Potentially, " +

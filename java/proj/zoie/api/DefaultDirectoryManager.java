@@ -116,12 +116,12 @@ public class DefaultDirectoryManager<V extends ZoieVersion> implements Directory
     }
     else
     {
-      log.info("Starting with empty search index: version information not found");
+      log.info("Starting with empty search index: version information not found at " + file.getAbsolutePath());
       return null;
     }
   }
   
-  protected void saveSignature(IndexSignature<V> sig, File file) throws IOException
+  public static <V extends ZoieVersion> void saveSignature(IndexSignature<V> sig, File file) throws IOException
   {
     if (!file.exists())
     {

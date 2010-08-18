@@ -195,7 +195,6 @@ public class AsyncDataConsumer<D, V extends ZoieVersion> implements DataConsumer
         try
         {
           long waitTime = Math.min(5000, timeInMillis);
-          this.notifyAll();
           this.wait(waitTime);
         }
         catch(InterruptedException e)

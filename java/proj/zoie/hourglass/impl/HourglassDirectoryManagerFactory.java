@@ -29,26 +29,28 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
 {
   public static final Logger log = Logger.getLogger(HourglassDirectoryManagerFactory.class);
 
-  private long _indexDuration = 10000L;
-
   private final File _root;
+  private final HourGlassScheduler _scheduler;
   
   private volatile File _location;
   private volatile DirectoryManager<V> _currentDirMgr = null;
   private volatile boolean isRecentlyChanged = false;
-  private SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd-HHmmssSSS"); 
-  private volatile long _nextUpdateTime=0L;
+  private ThreadLocal<SimpleDateFormat> dateFormatter = new ThreadLocal<SimpleDateFormat>()
+  {
+    protected SimpleDateFormat initialValue()
+    {
+      return new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+    }
+  }; 
+  private volatile Calendar _nextUpdateTime = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
   private boolean init = true;
   ZoieVersionFactory<V> _zoieVersionFactory;
-  public HourglassDirectoryManagerFactory(File root, long duration, ZoieVersionFactory<V> zoieVersionFactory)
+  public HourglassDirectoryManagerFactory(File root, HourGlassScheduler scheduler, ZoieVersionFactory<V> zoieVersionFactory)
   {
     _root = root;
     _zoieVersionFactory = zoieVersionFactory;
-    if (duration > _indexDuration)
-    {
-      _indexDuration = duration;
-    }
-    log.info("starting HourglassDirectoryManagerFactory at " + root + " --- index rolling duration: " + duration +"ms");
+    _scheduler = scheduler;
+    log.info("starting HourglassDirectoryManagerFactory at " + root + " --- index rolling scheduler: " + _scheduler);
     updateDirectoryManager();
   }
   public DirectoryManager<V> getDirectoryManager()
@@ -57,11 +59,7 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
   }
   protected void setNextUpdateTime()
   {
-    Calendar now = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
-    long currentTimeMillis = System.currentTimeMillis();
-    now.setTimeInMillis(currentTimeMillis);
-    long currentPeriod = getPeriod(now.getTimeInMillis());
-    _nextUpdateTime = currentTimeMillis + currentPeriod + _indexDuration - now.getTimeInMillis();
+    _nextUpdateTime = _scheduler.getNextRoll();
   }
   /**
    * @return true if the current index accepting updates is changed.
@@ -70,18 +68,11 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
    */
   public boolean updateDirectoryManager()
   {
-    if (System.currentTimeMillis()< _nextUpdateTime) return false;
     Calendar now = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
     now.setTimeInMillis(System.currentTimeMillis());
+    if (now.before(_nextUpdateTime)) return false;
     String folderName;
-    if (init)
-    {
-      folderName = getFolderName(now);
-      init = false;
-    } else
-    {
-      folderName = getPeriodFolderName(now);
-    }
+    folderName = _scheduler.getFolderName(_nextUpdateTime);
     _location = new File(_root, folderName);
     try
     {
@@ -104,33 +95,6 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
     isRecentlyChanged = false;
   }
 
-  private long getPeriod(long time)
-  {
-    return time - (time % _indexDuration);
-  }
-  
-  /**
-   * convert a Calendar time to a folder name using GMT time string
-   * @param cal
-   * @return a String for folder name
-   */
-  private String getFolderName(Calendar cal)
-  {
-    Calendar mycal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
-    mycal.setTimeInMillis(cal.getTimeInMillis());
-    return dateFormatter.format(mycal.getTime());
-  }
-  /**
-   * convert a Calendar time to a folder name for the containing time period using GMT time string.
-   * @param cal
-   * @return a String for folder name
-   */
-  private String getPeriodFolderName(Calendar cal)
-  {
-    Calendar mycal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
-    mycal.setTimeInMillis(getPeriod(cal.getTimeInMillis()));
-    return dateFormatter.format(mycal.getTime());
-  }
   public File getRoot()
   {
     return _root;
@@ -159,7 +123,7 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
       long time = 0;
       try
       {
-        time = dateFormatter.parse(name).getTime();
+        time = dateFormatter.get().parse(name).getTime();
       } catch (ParseException e)
       {
         log.warn("potential index corruption. we skip folder: " + name, e);
@@ -195,7 +159,7 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
       long time = 0;
       try
       {
-        time = dateFormatter.parse(name).getTime();
+        time = dateFormatter.get().parse(name).getTime();
       } catch (ParseException e)
       {
         log.warn("potential index corruption. we skip folder: " + name, e);
@@ -203,8 +167,7 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
       }
       if (!file.equals(_location))
       { // don't count the current one
-        File directoryFile = new File(file, DirectoryManager.INDEX_DIRECTORY);
-        IndexSignature<V> sig = DefaultDirectoryManager.readSignature(directoryFile, _zoieVersionFactory);
+        IndexSignature<V> sig = getIndexSignature(file);
         if (sig!=null)
         {
           //if (sig.getVersion() > version) version = sig.getVersion();
@@ -222,5 +185,17 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
       }
     }
     return version;
+  }
+  public IndexSignature<V> getIndexSignature(File file)
+  {
+    File directoryFile = new File(file, DirectoryManager.INDEX_DIRECTORY);
+    IndexSignature<V> sig = DefaultDirectoryManager.readSignature(directoryFile, _zoieVersionFactory);
+    return sig;
+  }
+  
+  public void saveIndexSignature(File tgt, IndexSignature<V> sig) throws IOException
+  {
+    File tgtFile = new File(tgt, DirectoryManager.INDEX_DIRECTORY);
+    DefaultDirectoryManager.saveSignature(sig, tgtFile);
   }
 }

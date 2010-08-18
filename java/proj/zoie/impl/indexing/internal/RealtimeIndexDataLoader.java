@@ -203,7 +203,10 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D, V extends ZoieVer
     }
     else
     {
-      log.debug("batch size is 0");
+      if (log.isDebugEnabled())
+      {
+        log.debug("batch size is 0");
+      }
     }
   }
 }

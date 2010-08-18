@@ -368,6 +368,10 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
         try
         {
           r.decRef();
+          if (log.isDebugEnabled())
+          {
+            log.debug("remove time " + r.directory() + " refCount: " + r.getRefCount());
+          }
         } catch (IOException e)
         {
           log.error("IOException during swapArchives", e);
@@ -545,6 +549,13 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
       _retiree = new LinkedList<ZoieSystem<R, V>>(retiree);
       _actives = new LinkedList<ZoieSystem<R, V>>(actives);
       _decorator = decorator;
+      if (log.isDebugEnabled())
+      {
+        for(ZoieIndexReader<R> r : _archives)
+        {
+          log.debug("archive " + r.directory() + " refCount: " + r.getRefCount());
+        }
+      }
     }
     public void shutdown()
     {
@@ -557,7 +568,7 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
         {
           log.error("error decRef during shutdown", e);
         }
-        log.info("refCount at shutdown: " + r.getRefCount());
+        log.info("refCount at shutdown: " + r.getRefCount() + " " + r.directory());
       }
       for(ZoieSystem<R, V> zoie : _retiree)
       {

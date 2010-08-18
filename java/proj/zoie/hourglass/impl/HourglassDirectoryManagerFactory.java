@@ -34,11 +34,12 @@ public class HourglassDirectoryManagerFactory
   private volatile File _location;
   private volatile DirectoryManager _currentDirMgr = null;
   private volatile boolean isRecentlyChanged = false;
+  public final String dateFormatString = "yyyy-MM-dd-HH-mm-ss";
   private ThreadLocal<SimpleDateFormat> dateFormatter = new ThreadLocal<SimpleDateFormat>()
   {
     protected SimpleDateFormat initialValue()
     {
-      return new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+      return new SimpleDateFormat(dateFormatString);
     }
   }; 
   private volatile Calendar _nextUpdateTime = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
@@ -186,5 +187,20 @@ public class HourglassDirectoryManagerFactory
   {
     File tgtFile = new File(tgt, DirectoryManager.INDEX_DIRECTORY);
     DefaultDirectoryManager.saveSignature(sig, tgtFile);
+  }
+  public Calendar getCalendarTime(String date) throws ParseException
+  {
+    long time;
+    try
+    {
+      time = dateFormatter.get().parse(date).getTime();
+      Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+      cal.setTimeInMillis(time);
+      return cal;
+    } catch (ParseException e)
+    {
+      log.error("date formate should be like " + dateFormatString, e);
+      throw e;
+    }
   }
 }

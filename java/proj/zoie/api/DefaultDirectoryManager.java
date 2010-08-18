@@ -113,12 +113,12 @@ public class DefaultDirectoryManager implements DirectoryManager
     }
     else
     {
-      log.info("Starting with empty search index: version information not found");
+      log.info("Starting with empty search index: version information not found at " + file.getAbsolutePath());
       return null;
     }
   }
   
-  protected void saveSignature(IndexSignature sig, File file) throws IOException
+  public static void saveSignature(IndexSignature sig, File file) throws IOException
   {
     if (!file.exists())
     {

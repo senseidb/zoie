@@ -182,7 +182,6 @@ public class AsyncDataConsumer<V> implements DataConsumer<V>
         try
         {
           long waitTime = Math.min(5000, timeInMillis);
-          this.notifyAll();
           this.wait(waitTime);
         }
         catch(InterruptedException e)

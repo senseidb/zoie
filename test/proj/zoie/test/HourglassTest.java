@@ -36,6 +36,7 @@ import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.hourglass.api.HourglassIndexable;
 import proj.zoie.hourglass.api.HourglassIndexableInterpreter;
+import proj.zoie.hourglass.impl.HourGlassScheduler;
 import proj.zoie.hourglass.impl.Hourglass;
 import proj.zoie.hourglass.impl.HourglassDirectoryManagerFactory;
 import proj.zoie.impl.indexing.MemoryStreamDataProvider;
@@ -95,7 +96,15 @@ public class HourglassTest extends ZoieTestCase
     {
       log.error("[contextInitialized]: Exception catched: ", e);
     }
-    HourglassDirectoryManagerFactory factory = new HourglassDirectoryManagerFactory(idxDir, 10000);
+    String schedule = "07 15 20";
+    long numTestContent = 20250;
+    oneTest(idxDir, schedule, numTestContent); // test starting from empty index
+    oneTest(idxDir, schedule, numTestContent); // test index pick up
+    return;
+  }
+  private void oneTest(File idxDir, String schedule, long numTestContent) throws IOException, InterruptedException
+  {
+    HourglassDirectoryManagerFactory factory = new HourglassDirectoryManagerFactory(idxDir, new HourGlassScheduler(HourGlassScheduler.FREQUENCY.MINUTELY, schedule));
     ZoieConfig zConfig = new ZoieConfig();
     zConfig.setBatchSize(3);
     zConfig.setBatchDelay(10);
@@ -125,7 +134,6 @@ public class HourglassTest extends ZoieTestCase
     int initNumDocs = getTotalNumDocs(hourglass);
     System.out.println("initial number of DOCs: " + initNumDocs);
     
-    long numTestContent = 20250;
     long accumulatedTime = 0;
     for(int i=initNumDocs; i<initNumDocs + numTestContent; i++)
     {
@@ -176,7 +184,6 @@ public class HourglassTest extends ZoieTestCase
       System.out.println(((i-initNumDocs)*100/numTestContent) + "%");
     }
     hourglass.shutdown();
-    return;
   }
   private int getTotalNumDocs(Hourglass<IndexReader, String> hourglass)
   {

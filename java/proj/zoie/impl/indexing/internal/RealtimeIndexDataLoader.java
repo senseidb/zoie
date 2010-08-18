@@ -198,7 +198,10 @@ public class RealtimeIndexDataLoader<R extends IndexReader, V> extends BatchedIn
     }
     else
     {
-      log.debug("batch size is 0");
+      if (log.isDebugEnabled())
+      {
+        log.debug("batch size is 0");
+      }
     }
   }
 }

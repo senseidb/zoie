@@ -34,6 +34,7 @@ import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 import proj.zoie.impl.indexing.ZoieConfig;
 import proj.zoie.impl.indexing.ZoieSystem;
+import proj.zoie.impl.indexing.internal.IndexSignature;
 import proj.zoie.impl.indexing.internal.ZoieIndexDeletionPolicy;
 
 public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<ZoieIndexReader<R>>, DataConsumer<V>
@@ -230,7 +231,7 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
     private volatile Box<R, V> box;
     private volatile boolean isShutdown = false;
     private ExecutorService threadPool = Executors.newCachedThreadPool();
-    public ReaderManager(Hourglass<R, V> hourglass, HourglassDirectoryManagerFactory dirMgrFactory,
+    public ReaderManager(final Hourglass<R, V> hourglass, HourglassDirectoryManagerFactory dirMgrFactory,
         IndexReaderDecorator<R> decorator,
         List<ZoieIndexReader<R>> initArchives)
     {
@@ -250,83 +251,115 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
               Thread.sleep(1000);
             } catch (InterruptedException e)
             {
-              // TODO Auto-generated catch block
-              e.printStackTrace();
+              log.warn(e);
             }
-            
             List<ZoieIndexReader<R>> arc = new LinkedList<ZoieIndexReader<R>>(box._archives);
-            if (isShutdown) break;
-            long b4 = System.currentTimeMillis();
-            if (arc.size()>3)
-            { 
-              log.info("to consolidate");
-            } else continue;
-            SimpleFSDirectory target = (SimpleFSDirectory) arc.get(0).directory();
-            log.info("into: "+target.getFile().getAbsolutePath());
-            SimpleFSDirectory sources[] = new SimpleFSDirectory[arc.size()-1];
-            for(int i=1; i<arc.size(); i++)
-            {
-              sources[i-1] = (SimpleFSDirectory) arc.get(i).directory();
-              log.info("from: " + sources[i-1].getFile().getAbsolutePath());
-            }
-            IndexWriter idxWriter = null;
+            List<ZoieIndexReader<R>> add = new LinkedList<ZoieIndexReader<R>>();
             try
             {
-              idxWriter = new IndexWriter(target, null, false, new ZoieIndexDeletionPolicy(), MaxFieldLength.UNLIMITED);
-              idxWriter.addIndexesNoOptimize(sources);
-              idxWriter.optimize(1);
-            } catch (CorruptIndexException e)
-            {
-              // TODO Auto-generated catch block
-              e.printStackTrace();
-            } catch (LockObtainFailedException e)
-            {
-              // TODO Auto-generated catch block
-              e.printStackTrace();
-            } catch (IOException e)
-            {
-              // TODO Auto-generated catch block
-              e.printStackTrace();
+              hourglass._shutdownLock.readLock().lock();
+              if (isShutdown)
+              {
+                log.info("Already shut down. Quiting maintenance thread.");
+                break;
+              }
+              if (arc.size()>3)
+              { 
+                log.info("to consolidate");
+              } else continue;
+              maintenance(arc, add);
+              // swap the archive with consolidated one
+              swapArchives(arc, add);
             } finally
             {
-              if (idxWriter != null)
-              {
-                try
-                {
-                  idxWriter.close();
-                  // remove the originals from disk
-                  for(SimpleFSDirectory dir : sources)
-                  {
-                    FileUtil.rmDir(dir.getFile());
-                    log.info(dir.getFile() + "---" + (dir.getFile().exists()?" not deleted ":" deleted"));
-                  }
-                  IndexReader reader = IndexReader.open(target, true);
-                  ZoieMultiReader<R> zoiereader = new ZoieMultiReader<R>(reader, _decorator);
-                  List<ZoieIndexReader<R>> add = new LinkedList<ZoieIndexReader<R>>();
-                  add.add(zoiereader);
-                  long b5 = System.currentTimeMillis();
-                  swapArchives(arc, add);
-                  log.info("done consolidate in " + (System.currentTimeMillis() - b4)+"ms  blocked for " + (System.currentTimeMillis()-b5));
-                } catch (CorruptIndexException e)
-                {
-                  // TODO Auto-generated catch block
-                  e.printStackTrace();
-                } catch (IOException e)
-                {
-                  // TODO Auto-generated catch block
-                  e.printStackTrace();
-                }
-              }
+              hourglass._shutdownLock.readLock().unlock();
             }
           }
         }});
+    }
+    /**
+     * consolidate the archived Index to one big optimized index and put in add
+     * @param archived
+     * @param add
+     */
+    private void maintenance(List<ZoieIndexReader<R>> archived, List<ZoieIndexReader<R>> add)
+    {
+      long b4 = System.currentTimeMillis();
+      SimpleFSDirectory target = (SimpleFSDirectory) archived.get(0).directory();
+      log.info("into: "+target.getFile().getAbsolutePath());
+      SimpleFSDirectory sources[] = new SimpleFSDirectory[archived.size()-1];
+      IndexSignature sigs[] = new IndexSignature[archived.size()];
+      sigs[0] = _dirMgrFactory.getIndexSignature(target.getFile()); // the target index signature
+      log.info("target version: " + sigs[0].getVersion());
+      for(int i=1; i<archived.size(); i++)
+      {
+        sources[i-1] = (SimpleFSDirectory) archived.get(i).directory();
+        sigs[i] = _dirMgrFactory.getIndexSignature(sources[i-1].getFile());  // get other index signatures
+        log.info("from: " + sources[i-1].getFile().getAbsolutePath());
+      }
+      IndexWriter idxWriter = null;
+      try
+      {
+        idxWriter = new IndexWriter(target, null, false, new ZoieIndexDeletionPolicy(), MaxFieldLength.UNLIMITED);
+        idxWriter.addIndexesNoOptimize(sources);
+        idxWriter.optimize(1);
+      } catch (CorruptIndexException e)
+      {
+        log.error("index currupted during consolidation", e);
+      } catch (LockObtainFailedException e)
+      {
+        log.error("LockObtainFailedException during consolidation", e);
+      } catch (IOException e)
+      {
+        log.error("IOException during consolidation", e);
+      } finally
+      {
+        if (idxWriter != null)
+        {
+          try
+          {
+            idxWriter.close();
+            // remove the originals from disk
+            for(SimpleFSDirectory dir : sources)
+            {
+              IndexSignature sig = _dirMgrFactory.getIndexSignature(dir.getFile());
+              log.info(dir.getFile() + "---" + (dir.getFile().exists()?" not deleted ":" deleted") + " version: " + sig.getVersion());
+              FileUtil.rmDir(dir.getFile());
+              log.info(dir.getFile() + "---" + (dir.getFile().exists()?" not deleted ":" deleted"));
+            }
+            long tgtversion = 0;
+            for(int i = sigs.length - 1; i >= 0; i--)
+            { // get the largest version so far
+              if (sigs[i].getVersion() > tgtversion) tgtversion = sigs[i].getVersion();
+            }
+            // save the version to target
+            IndexSignature tgtsig = _dirMgrFactory.getIndexSignature(target.getFile());
+            tgtsig.updateVersion(tgtversion);
+            _dirMgrFactory.saveIndexSignature(target.getFile(), tgtsig);
+            log.info("saveIndexSignature to " + target.getFile().getAbsolutePath() + " at version: " + tgtsig.getVersion());
+            // open index reader for the consolidated index
+            IndexReader reader = IndexReader.open(target, true);
+            // decorate the index
+            ZoieMultiReader<R> zoiereader = new ZoieMultiReader<R>(reader, _decorator);
+            add.add(zoiereader);
+            long b5 = System.currentTimeMillis();
+            log.info("done consolidate in " + (System.currentTimeMillis() - b4)+"ms  blocked for " + (System.currentTimeMillis()-b5));
+          } catch (CorruptIndexException e)
+          {
+            log.error("index currupted during consolidation", e);
+          } catch (IOException e)
+          {
+            log.error("IOException during consolidation", e);
+          }
+        }
+      }
     }
     public synchronized void swapArchives(List<ZoieIndexReader<R>> remove, List<ZoieIndexReader<R>> add)
     {
       List<ZoieIndexReader<R>> archives = new LinkedList<ZoieIndexReader<R>>(add);
       if (!box._archives.containsAll(remove))
       {
-        log.error("potential sync issue. ");
+        log.error("swapArchives: potential sync issue. ");
       }
       archives.addAll(box._archives);
       archives.removeAll(remove);
@@ -337,8 +370,7 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
           r.decRef();
         } catch (IOException e)
         {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
+          log.error("IOException during swapArchives", e);
         }
       }
       Box<R, V> newbox = new Box<R, V>(archives, box._retiree, box._actives, _decorator);

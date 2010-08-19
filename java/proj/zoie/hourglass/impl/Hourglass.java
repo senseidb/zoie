@@ -240,7 +240,6 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
       box = new Box<R, V>(initArchives, Collections.EMPTY_LIST, Collections.EMPTY_LIST, _decorator);
       threadPool.execute(new Runnable(){
 
-        @Override
         public void run()
         {
           while(true)
@@ -357,7 +356,6 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
         retiring.add(old);
         threadPool.execute(new Runnable()
         {
-          @Override
           public void run()
           {
             retire(old);

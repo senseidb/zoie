@@ -489,8 +489,9 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
       File index = new File(getIndexDir());
       if (!index.exists())
         return -1;
-	return 1L;      
-//return index.getUsableSpace();
+
+      return 1L;      
+      //return index.getUsableSpace();
     }
 
 	  public String getDiskIndexerStatus() {

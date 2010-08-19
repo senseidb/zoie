@@ -55,10 +55,10 @@ public class ZoieSystemAdmin implements ZoieSystemAdminMBean {
  	  return _internalMBean.getDiskIndexSizeBytes();
  	}
 
-  public long getDiskFreeSpaceBytes()
-  {
-	return 0L;
-  }
+        public long getDiskFreeSpaceBytes()
+        {
+	  return 0L;
+        }
 
 	public String getDiskIndexerStatus() {
 		return _internalMBean.getDiskIndexerStatus();

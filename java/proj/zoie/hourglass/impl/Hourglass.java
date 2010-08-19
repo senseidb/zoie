@@ -134,20 +134,42 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
         }
         return rlist;
       }
-      List<ZoieIndexReader<R>> olist = list;
-      returnIndexReaders(olist);
-      list = _readerMgr.getIndexReaders();
-      for(ZoieIndexReader<R> r : list)
-      {
-        r.incRef();
-      }
-      lastupdate = System.currentTimeMillis();
+      updateCachedReaders();
       return list;
     }
     finally
     {
       _shutdownLock.readLock().unlock();
     }
+  }
+  /**
+   * not thread safe. should be properly lock. Right now we have two places to use it
+   * and locked by the shutdown lock. If it gets more complicated, we should use separate
+   * lock.
+   * @throws IOException
+   */
+  private void updateCachedReaders() throws IOException
+  {
+    List<ZoieIndexReader<R>> olist = list;
+    returnIndexReaders(olist);
+    list = _readerMgr.getIndexReaders();
+    for(ZoieIndexReader<R> r : list)
+    {
+      r.incRef();
+    }
+    lastupdate = System.currentTimeMillis();
+  }
+  /**
+   * not thread safe. should be properly lock. Right now we have two places to use it
+   * and locked by the shutdown lock. If it gets more complicated, we should use separate
+   * lock.
+   */
+  private void clearCachedReaders()
+  {
+    List<ZoieIndexReader<R>> olist = list;
+    returnIndexReaders(olist);
+    list = null;
+    lastupdate = 0;
   }
   private volatile long lastupdate=0;
   private  volatile   List<ZoieIndexReader<R>> list = new ArrayList<ZoieIndexReader<R>>();
@@ -215,6 +237,7 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
     {
       _shutdownLock.writeLock().unlock();
     }
+    clearCachedReaders();
     _readerMgr.shutdown();
     log.info("shut down complete.");
   }
@@ -264,7 +287,7 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
           {
             try
             {
-              Thread.sleep(100000);
+              Thread.sleep(60000);
             } catch (InterruptedException e)
             {
               log.warn(e);
@@ -301,14 +324,12 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
      */
     private void trim(List<ZoieIndexReader<R>> toRemove)
     {
-      log.info("begin trim old ... ");
       long timenow = System.currentTimeMillis();
       List<ZoieIndexReader<R>> toKeep = new LinkedList<ZoieIndexReader<R>>();
       Calendar now = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
       now.setTimeInMillis(timenow);
       now.add(Calendar.SECOND, -60*60*24*7);
       Calendar threshold = now;
-      log.info("threshold " + threshold);
       for(int i=0; i<toRemove.size(); i++)
       {
         SimpleFSDirectory dir = (SimpleFSDirectory) toRemove.get(i).directory();
@@ -321,7 +342,6 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
         {
           log.error("index directory name bad. potential corruption. Move on without trimming.", e);
           toKeep.add(toRemove.get(i));
-          log.info("trimming: keep " + path);
           continue;
         }
         if (archivetime.before(threshold))
@@ -330,7 +350,6 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
         } else
         {
           toKeep.add(toRemove.get(i));
-          log.info("trimming: keep " + path);
         }
       }
       toRemove.removeAll(toKeep);
@@ -414,6 +433,13 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
         }
       }
     }
+    /**
+     * The readers removed will also be decRef(). But the readers to be added will NOT get incRef(),
+     * which means we assume the newly added ones have already been incRef().
+     * remove and add should be <b>disjoint</b>
+     * @param remove the readers to be remove. This has to be disjoint from add.
+     * @param add
+     */
     public synchronized void swapArchives(List<ZoieIndexReader<R>> remove, List<ZoieIndexReader<R>> add)
     {
       List<ZoieIndexReader<R>> archives = new LinkedList<ZoieIndexReader<R>>(add);

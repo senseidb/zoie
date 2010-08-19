@@ -53,6 +53,7 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
   private final ReentrantLock _consumeLock = new ReentrantLock();
   private final ReaderManager<R, V> _readerMgr;
   private volatile long _currentVersion = 0L;
+  private long _freshness = 1000;
   public Hourglass(HourglassDirectoryManagerFactory dirMgrFactory, ZoieIndexableInterpreter<V> interpreter, IndexReaderDecorator<R> readerDecorator,ZoieConfig zoieConfig)
   {
     _zConfig = zoieConfig;
@@ -124,17 +125,23 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
         List<ZoieIndexReader<R>> list = new ArrayList<ZoieIndexReader<R>>();
         return list;// if already shutdown, return an empty list
       }
-      if (System.currentTimeMillis() - lastupdate < 900)
+      try
       {
+        cacheLock.lock();
+        if (System.currentTimeMillis() - lastupdate > _freshness)
+        {
+          updateCachedReaders();
+        }
         List<ZoieIndexReader<R>> rlist = list;
         for(ZoieIndexReader<R> r : rlist)
         {
           r.incRef();
         }
         return rlist;
+      } finally
+      {
+        cacheLock.unlock();
       }
-      updateCachedReaders();
-      return list;
     }
     finally
     {
@@ -152,10 +159,6 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
     List<ZoieIndexReader<R>> olist = list;
     returnIndexReaders(olist);
     list = _readerMgr.getIndexReaders();
-    for(ZoieIndexReader<R> r : list)
-    {
-      r.incRef();
-    }
     lastupdate = System.currentTimeMillis();
   }
   /**
@@ -172,6 +175,7 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
   }
   private volatile long lastupdate=0;
   private  volatile   List<ZoieIndexReader<R>> list = new ArrayList<ZoieIndexReader<R>>();
+  private final ReentrantLock cacheLock = new ReentrantLock();
 
   /* (non-Javadoc)
    * @see proj.zoie.api.IndexReaderFactory#returnIndexReaders(java.util.List)
@@ -553,9 +557,10 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
       log.info("retiring " + zoie.getAdminMBean().getIndexDir());
       while(true)
       {
+        long flushwait = 200000L;
         try
         {
-          zoie.flushEvents(200000L);
+          zoie.flushEvents(flushwait);
           zoie.getAdminMBean().setUseCompoundFile(true);
           zoie.getAdminMBean().optimize(1);
           break;
@@ -566,7 +571,12 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
         } catch (ZoieException e)
         {
           if (e.getMessage().indexOf("timed out")<0)
+          {
             break;
+          } else
+          {
+            log.info("retiring " + zoie.getAdminMBean().getIndexDir() + " flushing processing " + flushwait +"ms elapsed");
+          }
         }
       }
       IndexReader reader = null;
@@ -649,6 +659,30 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
       // add the active index readers
       for(ZoieSystem<R, V> zoie : _actives)
       {
+        while(true)
+        {
+          long flushwait = 200000L;
+          try
+          {
+            zoie.flushEvents(flushwait);
+            zoie.getAdminMBean().setUseCompoundFile(true);
+            zoie.getAdminMBean().optimize(1);
+            break;
+          } catch (IOException e)
+          {
+            log.error("pre-shutdown optimization " + zoie.getAdminMBean().getIndexDir() + " Should investigate. But move on now.", e);
+            break;
+          } catch (ZoieException e)
+          {
+            if (e.getMessage().indexOf("timed out")<0)
+            {
+              break;
+            } else
+            {
+              log.info("pre-shutdown optimization " + zoie.getAdminMBean().getIndexDir() + " flushing processing " + flushwait +"ms elapsed");
+            }
+          }
+        }
         zoie.shutdown();
       }
     }

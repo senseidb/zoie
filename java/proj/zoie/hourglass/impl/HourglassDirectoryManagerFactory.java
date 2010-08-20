@@ -43,8 +43,7 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
       return new SimpleDateFormat(dateFormatString);
     }
   }; 
-  private volatile Calendar _nextUpdateTime = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
-  private boolean init = true;
+  private volatile Calendar _nextUpdateTime = Calendar.getInstance();
   ZoieVersionFactory<V> _zoieVersionFactory;
   public HourglassDirectoryManagerFactory(File root, HourGlassScheduler scheduler, ZoieVersionFactory<V> zoieVersionFactory)
   {
@@ -69,7 +68,7 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
    */
   public boolean updateDirectoryManager()
   {
-    Calendar now = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+    Calendar now = Calendar.getInstance();
     now.setTimeInMillis(System.currentTimeMillis());
     if (now.before(_nextUpdateTime)) return false;
     String folderName;
@@ -205,7 +204,7 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
     try
     {
       time = dateFormatter.get().parse(date).getTime();
-      Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+      Calendar cal = Calendar.getInstance();
       cal.setTimeInMillis(time);
       return cal;
     } catch (ParseException e)

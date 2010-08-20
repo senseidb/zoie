@@ -57,6 +57,7 @@ public class HourglassDirectoryManagerFactory
   protected void setNextUpdateTime()
   {
     _nextUpdateTime = _scheduler.getNextRoll();
+    log.info("setNextUpdateTime: " + _scheduler.getFolderName(_nextUpdateTime));
   }
   /**
    * @return true if the current index accepting updates is changed.

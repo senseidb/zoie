@@ -42,7 +42,7 @@ public class HourglassDirectoryManagerFactory
       return new SimpleDateFormat(dateFormatString);
     }
   }; 
-  private volatile Calendar _nextUpdateTime = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+  private volatile Calendar _nextUpdateTime = Calendar.getInstance();
   public HourglassDirectoryManagerFactory(File root, HourGlassScheduler scheduler)
   {
     _root = root;
@@ -65,7 +65,7 @@ public class HourglassDirectoryManagerFactory
    */
   public boolean updateDirectoryManager()
   {
-    Calendar now = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+    Calendar now = Calendar.getInstance();
     now.setTimeInMillis(System.currentTimeMillis());
     if (now.before(_nextUpdateTime)) return false;
     String folderName;
@@ -194,7 +194,7 @@ public class HourglassDirectoryManagerFactory
     try
     {
       time = dateFormatter.get().parse(date).getTime();
-      Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+      Calendar cal = Calendar.getInstance();
       cal.setTimeInMillis(time);
       return cal;
     } catch (ParseException e)

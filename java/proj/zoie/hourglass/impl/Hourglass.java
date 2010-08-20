@@ -317,7 +317,7 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
     {
       long timenow = System.currentTimeMillis();
       List<ZoieIndexReader<R>> toKeep = new LinkedList<ZoieIndexReader<R>>();
-      Calendar now = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+      Calendar now = Calendar.getInstance();
       now.setTimeInMillis(timenow);
       now.add(Calendar.SECOND, -60*60*24*7);
       Calendar threshold = now;

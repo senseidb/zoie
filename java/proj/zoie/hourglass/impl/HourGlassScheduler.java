@@ -54,9 +54,9 @@ public class HourGlassScheduler
   Calendar getNextRoll()
   {
     long timenow = System.currentTimeMillis();
-    Calendar next = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    Calendar next = Calendar.getInstance();
     next.setTimeInMillis(timenow);
-    Calendar now = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    Calendar now = Calendar.getInstance();
     now.setTimeInMillis(timenow);
     switch(_freq)
     {

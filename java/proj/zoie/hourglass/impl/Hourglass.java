@@ -9,7 +9,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -55,10 +54,12 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
   private final ReaderManager<R, D,V> _readerMgr;
   private volatile V _currentVersion = null;
   private long _freshness = 1000;
+  private final HourGlassScheduler _scheduler;
   public Hourglass(HourglassDirectoryManagerFactory<V> dirMgrFactory, ZoieIndexableInterpreter<D> interpreter, IndexReaderDecorator<R> readerDecorator,ZoieConfig<V> zoieConfig)
   {
     _zConfig = zoieConfig;
     _dirMgrFactory = dirMgrFactory;
+    _scheduler = _dirMgrFactory.getScheduler();
     _dirMgrFactory.clearRecentlyChanged();
     _interpreter = interpreter;
     _decorator = readerDecorator;
@@ -282,6 +283,7 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
       _decorator = decorator;
       box = new Box<R, D, V>(initArchives, Collections.EMPTY_LIST, Collections.EMPTY_LIST, _decorator);
       threadPool.execute(new Runnable(){
+        final int trimThreshold = hourglass._scheduler.getTrimThreshold();
 
         @Override
         public void run()
@@ -305,12 +307,12 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
                 log.info("Already shut down. Quiting maintenance thread.");
                 break;
               }
-              if (archives.size()>7)
+              if (archives.size() > trimThreshold)
               { 
                 log.info("to maintain");
               } else continue;
 //              consolidate(archives, add);
-              trim(archives);
+              trim(archives, trimThreshold);
               // swap the archive with consolidated one
               swapArchives(archives, add);
             } finally
@@ -325,13 +327,26 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
      * @param toRemove
      * @param add
      */
-    private void trim(List<ZoieIndexReader<R>> toRemove)
+    private void trim(List<ZoieIndexReader<R>> toRemove, int trimThreshold)
     {
       long timenow = System.currentTimeMillis();
       List<ZoieIndexReader<R>> toKeep = new LinkedList<ZoieIndexReader<R>>();
       Calendar now = Calendar.getInstance();
       now.setTimeInMillis(timenow);
-      now.add(Calendar.SECOND, -60*60*24*7);
+      int trimUnit = 60*60*24;
+      switch(this.hg._scheduler.getFreq())
+      {
+      case MINUTELY:
+        trimUnit = 60;
+        break;
+      case HOURLY:
+        trimUnit = 60*60;
+        break;
+      case DAILY:
+        trimUnit = 60*60*24;
+        break;
+      }
+      now.add(Calendar.SECOND, - trimUnit * trimThreshold);
       Calendar threshold = now;
       for(int i=0; i<toRemove.size(); i++)
       {

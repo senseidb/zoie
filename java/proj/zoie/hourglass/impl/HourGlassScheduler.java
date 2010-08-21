@@ -3,7 +3,6 @@ package proj.zoie.hourglass.impl;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.TimeZone;
 
 import org.apache.log4j.Logger;
 
@@ -11,8 +10,9 @@ public class HourGlassScheduler
 {
   public static final Logger log = Logger.getLogger(HourGlassScheduler.class.getName());
   private String _schedule;
-  private FREQUENCY _freq;
+  private final FREQUENCY _freq;
   private int[] _params = new int[3];
+  private int _trimThreshold = Integer.MAX_VALUE;
   private static ThreadLocal<SimpleDateFormat> dateFormatter = new ThreadLocal<SimpleDateFormat>()
   {
     protected SimpleDateFormat initialValue()
@@ -36,7 +36,13 @@ public class HourGlassScheduler
     {
       _params[i] = parseParam(param[i]);
     }
-    log.info("schedule: " + Arrays.toString(_params));
+    log.info("schedule: " + Arrays.toString(_params) + " frequenty: " + _freq + " trimThreshold: not set");
+  }
+  public HourGlassScheduler(FREQUENCY freq, String schedule, int trimThreshold)
+  {
+    this(freq, schedule);
+    _trimThreshold = trimThreshold;
+    log.info("schedule: " + Arrays.toString(_params) + " frequenty: " + _freq + " trimThreshold: keep last" + _trimThreshold + " rolling periods");
   }
   private int parseParam(String param)
   {
@@ -50,6 +56,14 @@ public class HourGlassScheduler
       throw new IllegalArgumentException("Failed to instantiate HourGlassScheduler", e);
     }
     return ret;
+  }
+  public FREQUENCY getFreq()
+  {
+    return _freq;
+  }
+  public int getTrimThreshold()
+  {
+    return _trimThreshold;
   }
   Calendar getNextRoll()
   {

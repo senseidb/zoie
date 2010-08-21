@@ -9,7 +9,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -54,10 +53,12 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
   private final ReaderManager<R, V> _readerMgr;
   private volatile long _currentVersion = 0L;
   private long _freshness = 1000;
+  private final HourGlassScheduler _scheduler;
   public Hourglass(HourglassDirectoryManagerFactory dirMgrFactory, ZoieIndexableInterpreter<V> interpreter, IndexReaderDecorator<R> readerDecorator,ZoieConfig zoieConfig)
   {
     _zConfig = zoieConfig;
     _dirMgrFactory = dirMgrFactory;
+    _scheduler = _dirMgrFactory.getScheduler();
     _dirMgrFactory.clearRecentlyChanged();
     _interpreter = interpreter;
     _decorator = readerDecorator;
@@ -270,6 +271,7 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
       _decorator = decorator;
       box = new Box<R, V>(initArchives, Collections.EMPTY_LIST, Collections.EMPTY_LIST, _decorator);
       threadPool.execute(new Runnable(){
+        final int trimThreshold = hourglass._scheduler.getTrimThreshold();
 
         @Override
         public void run()
@@ -293,7 +295,7 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
                 log.info("Already shut down. Quiting maintenance thread.");
                 break;
               }
-              if (archives.size()>7)
+              if (archives.size() > trimThreshold)
               { 
                 log.info("to maintain");
               } else continue;

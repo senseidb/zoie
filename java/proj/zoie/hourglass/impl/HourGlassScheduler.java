@@ -3,7 +3,6 @@ package proj.zoie.hourglass.impl;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.TimeZone;
 
 import org.apache.log4j.Logger;
 
@@ -11,8 +10,9 @@ public class HourGlassScheduler
 {
   public static final Logger log = Logger.getLogger(HourGlassScheduler.class.getName());
   private String _schedule;
-  private FREQUENCY _freq;
+  private final FREQUENCY _freq;
   private int[] _params = new int[3];
+  private int _trimThreshold = Integer.MAX_VALUE;
   private static ThreadLocal<SimpleDateFormat> dateFormatter = new ThreadLocal<SimpleDateFormat>()
   {
     protected SimpleDateFormat initialValue()
@@ -38,6 +38,11 @@ public class HourGlassScheduler
     }
     log.info("schedule: " + Arrays.toString(_params));
   }
+  public HourGlassScheduler(FREQUENCY freq, String schedule, int trimThreshold)
+  {
+    this(freq, schedule);
+    _trimThreshold = trimThreshold;
+  }
   private int parseParam(String param)
   {
     if (param.indexOf('*')>=0) return 0;
@@ -50,6 +55,10 @@ public class HourGlassScheduler
       throw new IllegalArgumentException("Failed to instantiate HourGlassScheduler", e);
     }
     return ret;
+  }
+  public int getTrimThreshold()
+  {
+    return _trimThreshold;
   }
   Calendar getNextRoll()
   {

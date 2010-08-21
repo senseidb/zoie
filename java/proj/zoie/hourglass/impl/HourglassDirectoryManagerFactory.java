@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
-import java.util.TimeZone;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.store.Directory;
@@ -31,6 +30,10 @@ public class HourglassDirectoryManagerFactory
   private final File _root;
   private final HourGlassScheduler _scheduler;
   
+  public HourGlassScheduler getScheduler()
+  {
+    return _scheduler;
+  }
   private volatile File _location;
   private volatile DirectoryManager _currentDirMgr = null;
   private volatile boolean isRecentlyChanged = false;

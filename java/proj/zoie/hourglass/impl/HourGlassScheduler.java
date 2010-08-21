@@ -36,12 +36,13 @@ public class HourGlassScheduler
     {
       _params[i] = parseParam(param[i]);
     }
-    log.info("schedule: " + Arrays.toString(_params));
+    log.info("schedule: " + Arrays.toString(_params) + " frequenty: " + _freq + " trimThreshold: not set");
   }
   public HourGlassScheduler(FREQUENCY freq, String schedule, int trimThreshold)
   {
     this(freq, schedule);
     _trimThreshold = trimThreshold;
+    log.info("schedule: " + Arrays.toString(_params) + " frequenty: " + _freq + " trimThreshold: keep last" + _trimThreshold + " rolling periods");
   }
   private int parseParam(String param)
   {
@@ -55,6 +56,10 @@ public class HourGlassScheduler
       throw new IllegalArgumentException("Failed to instantiate HourGlassScheduler", e);
     }
     return ret;
+  }
+  public FREQUENCY getFreq()
+  {
+    return _freq;
   }
   public int getTrimThreshold()
   {

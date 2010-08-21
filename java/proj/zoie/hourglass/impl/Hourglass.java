@@ -300,7 +300,7 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
                 log.info("to maintain");
               } else continue;
 //              consolidate(archives, add);
-              trim(archives);
+              trim(archives, trimThreshold);
               // swap the archive with consolidated one
               swapArchives(archives, add);
             } finally
@@ -315,13 +315,26 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
      * @param toRemove
      * @param add
      */
-    private void trim(List<ZoieIndexReader<R>> toRemove)
+    private void trim(List<ZoieIndexReader<R>> toRemove, int trimThreshold)
     {
       long timenow = System.currentTimeMillis();
       List<ZoieIndexReader<R>> toKeep = new LinkedList<ZoieIndexReader<R>>();
       Calendar now = Calendar.getInstance();
       now.setTimeInMillis(timenow);
-      now.add(Calendar.SECOND, -60*60*24*7);
+      int trimUnit = 60*60*24;
+      switch(this.hg._scheduler.getFreq())
+      {
+      case MINUTELY:
+        trimUnit = 60;
+        break;
+      case HOURLY:
+        trimUnit = 60*60;
+        break;
+      case DAILY:
+        trimUnit = 60*60*24;
+        break;
+      }
+      now.add(Calendar.SECOND, - trimUnit * trimThreshold);
       Calendar threshold = now;
       for(int i=0; i<toRemove.size(); i++)
       {

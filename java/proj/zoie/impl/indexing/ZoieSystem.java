@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -68,6 +69,7 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 	private final BatchedIndexDataLoader<R, V> _rtdc;
 	private final DiskLuceneIndexDataLoader<R> _diskLoader;
 	private volatile boolean alreadyShutdown = false;
+  private final ReentrantReadWriteLock _shutdownLock = new ReentrantReadWriteLock();
 	
 	/**
 	 * Creates a new ZoieSystem.
@@ -277,10 +279,23 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 	
 	public void shutdown()
 	{
-		log.info("shutting down zoie...");
+	  try
+	  {
+	    _shutdownLock.writeLock().lock();
+	    if (alreadyShutdown)
+	    {
+	      log.warn("already shut/shutting down ... ignore new shutdown request");
+	      return;
+	    }	    
+	    alreadyShutdown = true;
+	  } finally
+	  {
+	    _shutdownLock.writeLock().unlock();
+	  }
+	  log.info("shutting down zoie...");
 		try
     {
-      flushEvents(200000);
+      flushEvents(Long.MAX_VALUE);
     } catch (ZoieException e)
     {
       log.error("zoie shutdown encountered ", e);
@@ -289,7 +304,6 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
     super.stop();
     _searchIdxMgr.close();
 		log.info("zoie shutdown successfully.");
-		alreadyShutdown = true;
 	}
 	public boolean alreadyShutdown()
 	{

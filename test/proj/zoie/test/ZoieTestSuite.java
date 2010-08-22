@@ -5,6 +5,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
 import junit.framework.Test;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
@@ -14,6 +17,7 @@ public class ZoieTestSuite extends TestSuite {
       "testRealtime","testRealtime2", "testAsyncDataConsumer", "testDelSet",
       "testIndexWithAnalyzer", "testUpdates", "testIndexSignature", "testDocIDMapper",
       "testUIDDocIdSet", "testExportImport","testDocIDMapperFactory", "testInRangeDocIDMapperFactory",
+      "testShutdown",
       "testThreadDelImpl",
       "testHourglassDirectoryManagerFactory"});
   public static List<Class> allClasses = Arrays.asList(new Class[]{ZoieTest.class, ZoieThreadTest.class, HourglassTest.class});

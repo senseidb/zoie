@@ -5,10 +5,17 @@ package proj.zoie.test;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.apache.log4j.jmx.HierarchyDynamicMBean;
+import org.apache.log4j.spi.LoggerRepository;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -22,7 +29,6 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.Directory;
 
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
@@ -30,8 +36,11 @@ import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.hourglass.api.HourglassIndexable;
 import proj.zoie.hourglass.api.HourglassIndexableInterpreter;
+import proj.zoie.hourglass.impl.HourGlassScheduler;
 import proj.zoie.hourglass.impl.Hourglass;
 import proj.zoie.hourglass.impl.HourglassDirectoryManagerFactory;
+import proj.zoie.hourglass.mbean.HourglassAdminMBean;
+import proj.zoie.hourglass.mbean.HourglassAdmin;
 import proj.zoie.impl.indexing.MemoryStreamDataProvider;
 import proj.zoie.impl.indexing.ZoieConfig;
 
@@ -53,7 +62,51 @@ public class HourglassTest extends ZoieTestCase
   public void testHourglassDirectoryManagerFactory() throws IOException, InterruptedException, ZoieException
   {
     File idxDir = getIdxDir();
-    HourglassDirectoryManagerFactory factory = new HourglassDirectoryManagerFactory(idxDir, 10000);
+    MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+    HierarchyDynamicMBean hdm = new HierarchyDynamicMBean();
+    String LOG4J_HIEARCHY_DEFAULT = "log4j:hiearchy=default";
+    try
+    {
+      mbeanServer.registerMBean(hdm, new ObjectName("HouseGlass:name=log4j"));
+      // Add the root logger to the Hierarchy MBean
+      hdm.addLoggerMBean(Logger.getRootLogger().getName());
+
+      // Get each logger from the Log4J Repository and add it to
+      // the Hierarchy MBean created above.
+      LoggerRepository r = LogManager.getLoggerRepository();
+
+      java.util.Enumeration loggers = r.getCurrentLoggers();
+
+      int count = 1;
+      while (loggers.hasMoreElements())
+      {
+        String name = ((Logger) loggers.nextElement()).getName();
+        if (log.isDebugEnabled())
+        {
+          log.debug("[contextInitialized]: Registering " + name);
+        }
+        hdm.addLoggerMBean(name);
+        count++;
+      }
+      if (log.isInfoEnabled())
+      {
+        log
+        .info("[contextInitialized]: " + count
+            + " log4j MBeans registered.");
+      }
+    } catch (Exception e)
+    {
+      log.error("[contextInitialized]: Exception catched: ", e);
+    }
+    String schedule = "07 15 20";
+    long numTestContent = 20250;
+    oneTest(idxDir, schedule, numTestContent); // test starting from empty index
+    oneTest(idxDir, schedule, numTestContent); // test index pick up
+    return;
+  }
+  private void oneTest(File idxDir, String schedule, long numTestContent) throws IOException, InterruptedException
+  {
+    HourglassDirectoryManagerFactory factory = new HourglassDirectoryManagerFactory(idxDir, new HourGlassScheduler(HourGlassScheduler.FREQUENCY.MINUTELY, schedule));
     ZoieConfig zConfig = new ZoieConfig();
     zConfig.setBatchSize(3);
     zConfig.setBatchDelay(10);
@@ -76,6 +129,16 @@ public class HourglassTest extends ZoieTestCase
       {
         // do nothing
       }}, zConfig);
+    HourglassAdmin mbean = new HourglassAdmin(hourglass);
+//    HourglassAdminMBean mbean = admin.getMBean();
+    MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+    try
+    {
+      mbeanServer.registerMBean(mbean, new ObjectName("HouseGlass:name=hourglass"));
+    } catch(Exception e)
+    {
+      System.out.println(e);
+    }
     MemoryStreamDataProvider<String> memoryProvider=new MemoryStreamDataProvider<String>();
     memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
     memoryProvider.setDataConsumer(hourglass);
@@ -83,7 +146,6 @@ public class HourglassTest extends ZoieTestCase
     int initNumDocs = getTotalNumDocs(hourglass);
     System.out.println("initial number of DOCs: " + initNumDocs);
     
-    long numTestContent = 20250;
     long accumulatedTime = 0;
     for(int i=initNumDocs; i<initNumDocs + numTestContent; i++)
     {
@@ -134,7 +196,6 @@ public class HourglassTest extends ZoieTestCase
       System.out.println(((i-initNumDocs)*100/numTestContent) + "%");
     }
     hourglass.shutdown();
-    return;
   }
   private int getTotalNumDocs(Hourglass<IndexReader, String> hourglass)
   {
@@ -160,10 +221,21 @@ public class HourglassTest extends ZoieTestCase
   }
   public static class TestHourglassIndexable extends HourglassIndexable
   {
+    protected static long nextUID = System.currentTimeMillis();
+    public final long UID;
     final String _str;
     public TestHourglassIndexable(String str)
     {
+      UID = getNextUID();
       _str = str;
+    }
+    public static final synchronized long getNextUID()
+    {
+      return nextUID++;
+    }
+    public final long getUID()
+    {
+      return UID;
     }
     public Document buildDocument(){
       Document doc=new Document();

@@ -13,15 +13,15 @@ public interface HourglassAdminMBean
 
   long getDiskFreeSpaceBytes();
 
-  long getCurrentDiskVersion() throws IOException;
+  String getCurrentDiskVersion() throws IOException;
 
   int getRamAIndexSize();
 
-  long getRamAVersion();
+  String getRamAVersion();
 
   int getRamBIndexSize();
 
-  long getRamBVersion();
+  String getRamBVersion();
 
   String getDiskIndexerStatus();
 

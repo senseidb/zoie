@@ -102,7 +102,7 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
   {
     return _zConfig;
   }
-  public ZoieSystem<R, V> getCurrentZoie()
+  public ZoieSystem<R, D, V> getCurrentZoie()
   {
     return _currentZoie;
   }

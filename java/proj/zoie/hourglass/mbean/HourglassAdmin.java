@@ -16,8 +16,8 @@ import proj.zoie.hourglass.impl.Hourglass;
 public class HourglassAdmin implements HourglassAdminMBean
 {
 
-  private final Hourglass<?, ?> hourglass;
-  public HourglassAdmin(Hourglass<?,?> hourglass)
+  private final Hourglass<?, ?, ?> hourglass;
+  public HourglassAdmin(Hourglass<?, ?, ?> hourglass)
   {
     this.hourglass = hourglass;
   }
@@ -54,7 +54,7 @@ public class HourglassAdmin implements HourglassAdminMBean
     }
 
     @Override
-    public long getCurrentDiskVersion() throws IOException
+    public String getCurrentDiskVersion() throws IOException
     {
       return hourglass.getCurrentZoie().getCurrentDiskVersion();
     }
@@ -171,7 +171,7 @@ public class HourglassAdmin implements HourglassAdminMBean
     }
 
     @Override
-    public long getRamAVersion()
+    public String getRamAVersion()
     {
       return hourglass.getCurrentZoie().getAdminMBean().getRamAVersion();
     }
@@ -183,7 +183,7 @@ public class HourglassAdmin implements HourglassAdminMBean
     }
 
     @Override
-    public long getRamBVersion()
+    public String getRamBVersion()
     {
       return hourglass.getCurrentZoie().getAdminMBean().getRamBVersion();
     }

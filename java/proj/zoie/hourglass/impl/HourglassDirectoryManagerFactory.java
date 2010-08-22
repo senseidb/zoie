@@ -38,8 +38,8 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
   private volatile File _location;
   private volatile DirectoryManager<V> _currentDirMgr = null;
   private volatile boolean isRecentlyChanged = false;
-  public final String dateFormatString = "yyyy-MM-dd-HH-mm-ss";
-  private ThreadLocal<SimpleDateFormat> dateFormatter = new ThreadLocal<SimpleDateFormat>()
+  public static final String dateFormatString = "yyyy-MM-dd-HH-mm-ss";
+  private static ThreadLocal<SimpleDateFormat> dateFormatter = new ThreadLocal<SimpleDateFormat>()
   {
     protected SimpleDateFormat initialValue()
     {
@@ -120,17 +120,26 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
     File[] files = _root.listFiles();
     Arrays.sort(files);
     ArrayList<Directory> list = new ArrayList<Directory>();
+    Calendar now = Calendar.getInstance();
+    long timenow = System.currentTimeMillis();
+    now.setTimeInMillis(timenow);
+    Calendar threshold = _scheduler.getTrimTime(now);
     for(File file : files)
     {
       String name = file.getName();
-      log.debug("getAllArchivedDirectories" + name + " " + (file.equals(_location)?"*":""));
-      long time = 0;
+      log.debug("getAllArchivedDirectories: " + name + " " + (file.equals(_location)?"*":""));
+      Calendar time = null;
       try
       {
-        time = dateFormatter.get().parse(name).getTime();
+        time = getCalendarTime(name);
       } catch (ParseException e)
       {
         log.warn("potential index corruption. we skip folder: " + name, e);
+        continue;
+      }
+      if (time.before(threshold))
+      {
+        log.info("getAllArchivedDirectories: skipping " + name + " for being too old");
         continue;
       }
       if (!file.equals(_location))
@@ -202,7 +211,7 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
     File tgtFile = new File(tgt, DirectoryManager.INDEX_DIRECTORY);
     DefaultDirectoryManager.saveSignature(sig, tgtFile);
   }
-  public Calendar getCalendarTime(String date) throws ParseException
+  public static Calendar getCalendarTime(String date) throws ParseException
   {
     long time;
     try

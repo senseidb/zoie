@@ -94,6 +94,7 @@ public class BatchedIndexDataLoader<R extends IndexReader,D, V extends ZoieVersi
 	    _idxMgr = idxMgr;
 	    _interpreter = interpreter;
 	    _lsnrList = lsnrList;
+      log.info("constructor: _maxBatchSize: " + _maxBatchSize + " _batchSize: " + _batchSize +" _delay: " + _delay);
 	  }
 	  
 	  protected final void fireIndexingEvent(IndexingEvent evt){
@@ -135,6 +136,7 @@ public class BatchedIndexDataLoader<R extends IndexReader,D, V extends ZoieVersi
 	  {
 	    _maxBatchSize = Math.max(maxBatchSize, _batchSize);
 	    _batchSize = Math.min(_batchSize, _maxBatchSize);
+	    log.info("setMaxBatchSize: " + _maxBatchSize);
 	  }
 	  
 	  public synchronized int getBatchSize()
@@ -145,6 +147,7 @@ public class BatchedIndexDataLoader<R extends IndexReader,D, V extends ZoieVersi
 	  public synchronized void setBatchSize(int batchSize)
 	  {
 	    _batchSize=Math.min(Math.max(1, batchSize), _maxBatchSize);
+      log.info("setBatchSize: " + _batchSize);
 	  }
 	  
 	  public synchronized long getDelay()
@@ -155,6 +158,7 @@ public class BatchedIndexDataLoader<R extends IndexReader,D, V extends ZoieVersi
 	  public synchronized void setDelay(long delay)
 	  {
 	    _delay=delay;
+	    log.info("setDelay: " + _delay);
 	  }
 	  
 	  public synchronized int getEventCount()

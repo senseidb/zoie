@@ -36,13 +36,13 @@ public class HourGlassScheduler
     {
       _params[i] = parseParam(param[i]);
     }
-    log.info("schedule: " + Arrays.toString(_params) + " frequenty: " + _freq + " trimThreshold: not set");
+    log.info("schedule: " + Arrays.toString(_params) + " frequenty: " + _freq);
   }
   public HourGlassScheduler(FREQUENCY freq, String schedule, int trimThreshold)
   {
     this(freq, schedule);
     _trimThreshold = trimThreshold;
-    log.info("schedule: " + Arrays.toString(_params) + " frequenty: " + _freq + " trimThreshold: keep last" + _trimThreshold + " rolling periods");
+    log.info("schedule: " + Arrays.toString(_params) + " frequenty: " + _freq + " trimThreshold: keep last " + _trimThreshold + " rolling periods");
   }
   private int parseParam(String param)
   {
@@ -108,6 +108,25 @@ public class HourGlassScheduler
       break;
     }
     return current;
+  }
+  public Calendar getTrimTime(Calendar now)
+  {
+    Calendar threshold = (Calendar) now.clone();
+    int trimUnit = 60*60*24;
+    switch(getFreq())
+    {
+    case MINUTELY:
+      trimUnit = 60;
+      break;
+    case HOURLY:
+      trimUnit = 60*60;
+      break;
+    case DAILY:
+      trimUnit = 60*60*24;
+      break;
+    }
+    threshold.add(Calendar.SECOND, - trimUnit * _trimThreshold);
+    return threshold;
   }
   /**
    * convert a Calendar time to a folder name using GMT time string

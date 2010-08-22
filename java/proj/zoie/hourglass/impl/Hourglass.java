@@ -97,6 +97,18 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
     return new ZoieSystem<R, V>(dirmgr, _interpreter, _decorator, _zConfig);
   }
 
+  public ZoieConfig getzConfig()
+  {
+    return _zConfig;
+  }
+  public ZoieSystem<R, V> getCurrentZoie()
+  {
+    return _currentZoie;
+  }
+  public HourglassDirectoryManagerFactory getDirMgrFactory()
+  {
+    return _dirMgrFactory;
+  }
   /* (non-Javadoc)
    * @see proj.zoie.api.IndexReaderFactory#getAnalyzer()
    */
@@ -300,7 +312,7 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
                 log.info("to maintain");
               } else continue;
 //              consolidate(archives, add);
-              trim(archives, trimThreshold);
+              trim(archives);
               // swap the archive with consolidated one
               swapArchives(archives, add);
             } finally
@@ -315,27 +327,13 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
      * @param toRemove
      * @param add
      */
-    private void trim(List<ZoieIndexReader<R>> toRemove, int trimThreshold)
+    private void trim(List<ZoieIndexReader<R>> toRemove)
     {
       long timenow = System.currentTimeMillis();
       List<ZoieIndexReader<R>> toKeep = new LinkedList<ZoieIndexReader<R>>();
       Calendar now = Calendar.getInstance();
       now.setTimeInMillis(timenow);
-      int trimUnit = 60*60*24;
-      switch(this.hg._scheduler.getFreq())
-      {
-      case MINUTELY:
-        trimUnit = 60;
-        break;
-      case HOURLY:
-        trimUnit = 60*60;
-        break;
-      case DAILY:
-        trimUnit = 60*60*24;
-        break;
-      }
-      now.add(Calendar.SECOND, - trimUnit * trimThreshold);
-      Calendar threshold = now;
+      Calendar threshold = hg._scheduler.getTrimTime(now);
       for(int i=0; i<toRemove.size(); i++)
       {
         SimpleFSDirectory dir = (SimpleFSDirectory) toRemove.get(i).directory();
@@ -343,7 +341,7 @@ public class Hourglass<R extends IndexReader, V> implements IndexReaderFactory<Z
         Calendar archivetime = null;
         try
         {
-          archivetime = _dirMgrFactory.getCalendarTime(path);
+          archivetime = HourglassDirectoryManagerFactory.getCalendarTime(path);
         } catch (ParseException e)
         {
           log.error("index directory name bad. potential corruption. Move on without trimming.", e);

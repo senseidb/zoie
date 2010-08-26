@@ -25,6 +25,9 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import javax.management.NotCompliantMBeanException;
+import javax.management.StandardMBean;
+
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -36,7 +39,7 @@ import org.apache.lucene.util.Version;
 import proj.zoie.api.DefaultDirectoryManager;
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DocIDMapperFactory;
-import proj.zoie.api.IndexReaderFactory;
+import proj.zoie.api.Zoie;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.impl.DefaultDocIDMapperFactory;
@@ -50,12 +53,15 @@ import proj.zoie.impl.indexing.internal.BatchedIndexDataLoader;
 import proj.zoie.impl.indexing.internal.DiskLuceneIndexDataLoader;
 import proj.zoie.impl.indexing.internal.RealtimeIndexDataLoader;
 import proj.zoie.impl.indexing.internal.SearchIndexManager;
+import proj.zoie.mbean.ZoieIndexingStatusAdmin;
+import proj.zoie.mbean.ZoieIndexingStatusAdminMBean;
 import proj.zoie.mbean.ZoieSystemAdminMBean;
 
 /**
  * Zoie system, main class.
  */
-public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> implements IndexReaderFactory<ZoieIndexReader<R>> {
+public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> implements Zoie<R, V>
+{
 
 	private static final Logger log = Logger.getLogger(ZoieSystem.class);
 	
@@ -664,4 +670,40 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
         return ZoieSystem.this.getMaxUID();
       }
 	}
+
+  @Override
+  public StandardMBean getStandardMBean(String name)
+  {
+    if (name.equals(ZOIEADMIN))
+    {
+      try
+      {
+        return new StandardMBean(this.getAdminMBean(), ZoieSystemAdminMBean.class);
+      } catch (NotCompliantMBeanException e)
+      {
+        log.info(e);
+        return null;
+      }
+    }
+    if (name.equals(ZOIESTATUS))
+    {
+      try
+      {
+        return new StandardMBean(new ZoieIndexingStatusAdmin(this), ZoieIndexingStatusAdminMBean.class);
+      } catch (NotCompliantMBeanException e)
+      {
+        log.info(e);
+        return null;
+      }
+    }
+    return null;
+  }
+
+  public static String ZOIEADMIN = "zoie-admin";
+  public static String ZOIESTATUS = "zoie-status";
+  @Override
+  public String[] getStandardMBeanNames()
+  {
+    return new String[]{ZOIEADMIN, ZOIESTATUS};
+  }
 }

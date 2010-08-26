@@ -15,6 +15,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import javax.management.NotCompliantMBeanException;
+import javax.management.StandardMBean;
+
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.CorruptIndexException;
@@ -25,22 +28,23 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.SimpleFSDirectory;
 
-import proj.zoie.api.DataConsumer;
 import proj.zoie.api.DirectoryManager;
-import proj.zoie.api.IndexReaderFactory;
+import proj.zoie.api.Zoie;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieMultiReader;
 import proj.zoie.api.impl.util.FileUtil;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
+import proj.zoie.hourglass.mbean.HourglassAdmin;
+import proj.zoie.hourglass.mbean.HourglassAdminMBean;
 import proj.zoie.impl.indexing.ZoieConfig;
 import proj.zoie.impl.indexing.ZoieSystem;
 import proj.zoie.impl.indexing.internal.IndexSignature;
 import proj.zoie.impl.indexing.internal.ZoieIndexDeletionPolicy;
 import proj.zoie.api.ZoieVersion;
 
-public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implements IndexReaderFactory<ZoieIndexReader<R>>, DataConsumer<D,V>
+public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implements Zoie<R, D, V>
 {
   public static final Logger log = Logger.getLogger(Hourglass.class);
   private final HourglassDirectoryManagerFactory<V> _dirMgrFactory;
@@ -716,5 +720,40 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
   public long getSizeBytes()
   {
     return _dirMgrFactory.getDiskIndexSizeBytes();
+  }
+  
+  @Override
+  public StandardMBean getStandardMBean(String name)
+  {
+    if (name.equals(HOURGLASSADMIN))
+    {
+      try
+      {
+        return new StandardMBean(new HourglassAdmin(this), HourglassAdminMBean.class);
+      } catch (NotCompliantMBeanException e)
+      {
+        log.info(e);
+        return null;
+      }
+    }
+    return null;
+  }
+
+  public static String HOURGLASSADMIN = "hourglass-admin";
+  @Override
+  public String[] getStandardMBeanNames()
+  {
+    return new String[]{HOURGLASSADMIN};
+  }
+  @Override
+  public void start()
+  {
+    // TODO Auto-generated method stub
+    log.info("starting Hourglass... already done due by auto-start");
+  }
+  @Override
+  public V getZoieVersion(String str)
+  {
+    return _currentZoie.getZoieVersion(str);
   }
 }

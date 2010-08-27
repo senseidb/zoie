@@ -17,6 +17,8 @@ package proj.zoie.impl.indexing;
  */
 import org.apache.log4j.Logger;
 
+import proj.zoie.api.ZoieHealth;
+
 /**
  * The thread handling indexing in background. Such thread reports UncaughtExceptions automatically.
  */
@@ -27,6 +29,7 @@ public class IndexingThread extends Thread
   {
     public void uncaughtException(Thread thread, Throwable t)
     {
+      ZoieHealth.setFatal();
       log.error(thread.getName() + " is abruptly terminated", t);
     }
   };

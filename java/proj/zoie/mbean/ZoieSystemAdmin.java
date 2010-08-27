@@ -212,4 +212,28 @@ public class ZoieSystemAdmin implements ZoieSystemAdminMBean
     {
       return _internalMBean.getMaxUID();
     }
+
+    @Override
+    public long getHealth()
+    {
+      return _internalMBean.getHealth();
+    }
+
+    @Override
+    public void resetHealth()
+    {
+      _internalMBean.resetHealth();
+    }
+
+    @Override
+    public long getSLA()
+    {
+      return _internalMBean.getSLA();
+    }
+
+    @Override
+    public void setSLA(long sla)
+    {
+      _internalMBean.setSLA(sla);
+    }
 }

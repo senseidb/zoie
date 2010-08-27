@@ -45,6 +45,7 @@ import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.Zoie;
 import proj.zoie.api.ZoieException;
+import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.impl.DefaultDocIDMapperFactory;
 import proj.zoie.api.impl.util.FileUtil;
@@ -83,6 +84,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
   private final DiskLuceneIndexDataLoader<R, V> _diskLoader;
   private volatile boolean alreadyShutdown = false;
   private final ReentrantReadWriteLock _shutdownLock = new ReentrantReadWriteLock();
+  private volatile long SLA = 10; // getIndexReaders should return in 10ms or a warning is logged
 
   /**
    * Creates a new ZoieSystem.
@@ -545,13 +547,18 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
    * MultiReader from these readers. When creating MultiReader, it should be
    * created with the closeSubReaders parameter set to false in order to do
    * reference counting correctly.
-   * 
    * @see proj.zoie.api.IndexReaderFactory#getIndexReaders()
-   * @see proj.zoie.impl.indexing.ZoieSystem#returnIndexReaders(List)
    */
   public List<ZoieIndexReader<R>> getIndexReaders() throws IOException
   {
-    return _searchIdxMgr.getIndexReaders();
+    long t0 = System.currentTimeMillis();
+    List<ZoieIndexReader<R>> readers = _searchIdxMgr.getIndexReaders();
+    t0 = System.currentTimeMillis() - t0;
+    if (t0 > SLA)
+    {
+      log.warn("getIndexReaders returned in more than " + SLA +"ms");
+    }
+    return readers;  
   }
 
   public int getDiskSegmentCount() throws IOException
@@ -578,11 +585,11 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
    *          The index readers to return. Should be the same as the one
    *          obtained from calling getIndexReaders()
    * 
-   * @see proj.zoie.impl.indexing.ZoieSystem#getIndexReaders()
    * @see proj.zoie.api.IndexReaderFactory#returnIndexReaders(java.util.List)
    */
   public void returnIndexReaders(List<ZoieIndexReader<R>> readers)
   {
+    long t0 = System.currentTimeMillis();
     for (ZoieIndexReader<R> r : readers)
     {
       try
@@ -593,6 +600,11 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
         log.error("error when decRef on reader ", e);
       }
     }
+    t0 = System.currentTimeMillis() - t0;
+    if (t0 > SLA)
+    {
+      log.warn("returnIndexReaders returned in more than " + SLA +"ms");
+    }  
   }
 
   public void purgeIndex() throws IOException
@@ -903,6 +915,30 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
     public long getMaxUID() throws IOException
     {
       return ZoieSystem.this.getMaxUID();
+    }
+
+    @Override
+    public long getHealth()
+    {
+      return ZoieHealth.getHealth();
+    }
+
+    @Override
+    public void resetHealth()
+    {
+      ZoieHealth.setOK();
+    }
+
+    @Override
+    public long getSLA()
+    {
+      return ZoieSystem.this.SLA;
+    }
+
+    @Override
+    public void setSLA(long sla)
+    {
+      ZoieSystem.this.SLA = sla;
     }
   }
 

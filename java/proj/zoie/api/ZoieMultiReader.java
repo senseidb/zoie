@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiZoieTermDocs;
@@ -36,6 +37,7 @@ import proj.zoie.api.indexing.IndexReaderDecorator;
 
 public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
 {
+  private static final Logger log = Logger.getLogger(ZoieMultiReader.class.getName());
 	private Map<String,ZoieSegmentReader<R>> _readerMap;
 	private ArrayList<ZoieSegmentReader<R>> _subZoieReaders;
 	private int[] _starts;
@@ -268,10 +270,14 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
 	@Override
 	public ZoieIndexReader<R> reopen(boolean openReadOnly)
 			throws CorruptIndexException, IOException {
-
+	  long t0 = System.currentTimeMillis();
 		long version = in.getVersion();
 		IndexReader inner = in.reopen(openReadOnly);
 		if (inner == in && inner.getVersion()==version){
+	    if (t0 > 1000)
+	    {
+	      log.info("reopen returns in " + t0 + "ms without change");
+	    }
 			return this;
 		}
 		
@@ -300,8 +306,13 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
 				throw new IllegalStateException("reader not insance of "+SegmentReader.class);
 			}
 		}
-		
-		return newInstance(inner, subReaderList.toArray(new IndexReader[subReaderList.size()]));
+		ZoieIndexReader<R> ret = newInstance(inner, subReaderList.toArray(new IndexReader[subReaderList.size()]));
+		t0 = System.currentTimeMillis();
+		if (t0 > 1000)
+		{
+		  log.info("reopen returns in " + t0 + "ms with change");
+		}
+		return ret;
 	}
 	
 	protected ZoieMultiReader<R> newInstance(IndexReader inner,IndexReader[] subReaders) throws IOException{

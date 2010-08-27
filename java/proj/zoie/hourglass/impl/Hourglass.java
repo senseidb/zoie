@@ -31,6 +31,7 @@ import org.apache.lucene.store.SimpleFSDirectory;
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.Zoie;
 import proj.zoie.api.ZoieException;
+import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieMultiReader;
 import proj.zoie.api.impl.util.FileUtil;
@@ -59,6 +60,7 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
   private volatile V _currentVersion = null;
   private long _freshness = 1000;
   private final HourGlassScheduler _scheduler;
+  public volatile long SLA = 10; // getIndexReaders should return in 10ms or a warning is logged
   public Hourglass(HourglassDirectoryManagerFactory<V> dirMgrFactory, ZoieIndexableInterpreter<D> interpreter, IndexReaderDecorator<R> readerDecorator,ZoieConfig<V> zoieConfig)
   {
     _zConfig = zoieConfig;
@@ -133,6 +135,7 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
    */
   public List<ZoieIndexReader<R>> getIndexReaders() throws IOException
   {
+    long t0 = System.currentTimeMillis();
     try
     {
       _shutdownLock.readLock().lock();
@@ -153,6 +156,11 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
         for(ZoieIndexReader<R> r : rlist)
         {
           r.incRef();
+        }
+        t0 = System.currentTimeMillis() - t0;
+        if (t0 > SLA)
+        {
+          log.warn("getIndexReaders returned in more than " + SLA +"ms");
         }
         return rlist;
       } finally
@@ -199,7 +207,13 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
    */
   public void returnIndexReaders(List<ZoieIndexReader<R>> readers)
   {
+    long t0 = System.currentTimeMillis();
     _currentZoie.returnIndexReaders(readers);
+    t0 = System.currentTimeMillis() - t0;
+    if (t0 > SLA)
+    {
+      log.warn("returnIndexReaders returned in more than " + SLA +"ms");
+    }
   }
 
   /* (non-Javadoc)
@@ -404,12 +418,15 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
         idxWriter.optimize(1);
       } catch (CorruptIndexException e)
       {
+        ZoieHealth.setFatal();
         log.error("index currupted during consolidation", e);
       } catch (LockObtainFailedException e)
       {
+        ZoieHealth.setFatal();
         log.error("LockObtainFailedException during consolidation", e);
       } catch (IOException e)
       {
+        ZoieHealth.setFatal();
         log.error("IOException during consolidation", e);
       } finally
       {
@@ -445,9 +462,11 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
             log.info("done consolidate in " + (System.currentTimeMillis() - b4)+"ms  blocked for " + (System.currentTimeMillis()-b5));
           } catch (CorruptIndexException e)
           {
+            ZoieHealth.setFatal();
             log.error("index currupted during consolidation", e);
           } catch (IOException e)
           {
+            ZoieHealth.setFatal();
             log.error("IOException during consolidation", e);
           }
         }

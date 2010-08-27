@@ -37,6 +37,7 @@ import org.apache.lucene.search.TopDocs;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.ZoieException;
+import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.indexing.OptimizeScheduler;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.OptimizeScheduler.OptimizeType;
@@ -110,6 +111,7 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader, V extends ZoieVers
 	          }
 	          catch(IOException ioe)
 	          {
+	            ZoieHealth.setFatal();
 	            throw new ZoieException(ioe.getMessage(),ioe);
 	          }
 	          finally
@@ -155,6 +157,7 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader, V extends ZoieVers
             }
             catch(IOException ioe)
             {
+              ZoieHealth.setFatal();
               throw new ZoieException(ioe.getMessage(),ioe);
             }
             finally

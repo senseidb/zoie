@@ -72,4 +72,18 @@ public interface HourglassAdminMBean
   long getMinUID() throws IOException;
 
   long getMaxUID() throws IOException;
+
+  /**
+   * @return the response time threshold for getIndexReaders
+   */
+  long getSLA();
+  
+  /**
+   * @param sla set the response time threshold (expected max response time) for getIndexReaders
+   */
+  void setSLA(long sla);
+  
+  long getHealth();
+  
+  void resetHealth();
 }

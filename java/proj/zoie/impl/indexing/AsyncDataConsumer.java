@@ -23,6 +23,7 @@ import org.apache.log4j.Logger;
 import proj.zoie.api.DataConsumer;
 import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.ZoieException;
+import proj.zoie.api.ZoieHealth;
 
 // hao: just for debugging
 //import proj.zoie.api.DefaultZoieVersion;
@@ -230,6 +231,7 @@ public class AsyncDataConsumer<D, V extends ZoieVersion> implements DataConsumer
       {
         if(_consumerThread == null || !_consumerThread.isAlive() || _consumerThread._stop)
         {
+          ZoieHealth.setFatal();
           throw new ZoieException("consumer thread has stopped");
         }
         try

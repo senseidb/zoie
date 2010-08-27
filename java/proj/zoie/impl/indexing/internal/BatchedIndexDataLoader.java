@@ -29,6 +29,7 @@ import org.apache.lucene.index.IndexReader;
 import proj.zoie.api.DataConsumer;
 import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.ZoieException;
+import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.indexing.AbstractZoieIndexable;
 import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.api.indexing.ZoieIndexable;
@@ -190,6 +191,7 @@ public class BatchedIndexDataLoader<R extends IndexReader,D, V extends ZoieVersi
 	        }
 	        catch (Exception e)
 	        {
+	          ZoieHealth.setFatal();
 	          log.error(e.getMessage(), e);
 	        }
 	      }
@@ -333,6 +335,7 @@ public class BatchedIndexDataLoader<R extends IndexReader,D, V extends ZoieVersi
           }
           catch (ZoieException e)
           {
+            ZoieHealth.setFatal();
             log.error(e.getMessage(),e);
           }
           finally

@@ -23,6 +23,7 @@ import org.apache.log4j.Logger;
 
 import proj.zoie.api.DataConsumer;
 import proj.zoie.api.ZoieException;
+import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 
@@ -56,7 +57,8 @@ public class DelegateIndexDataConsumer<V> implements DataConsumer<V> {
 			    indexableList.add(newEvent);
 			  }
 			  catch(Exception e){
-				log.error(e.getMessage(),e);
+		      ZoieHealth.setFatal();
+		      log.error(e.getMessage(),e);
 			  }
 		  }
 		  

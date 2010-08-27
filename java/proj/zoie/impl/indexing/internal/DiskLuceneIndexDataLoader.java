@@ -31,6 +31,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.Similarity;
 
 import proj.zoie.api.ZoieException;
+import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.indexing.OptimizeScheduler;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.OptimizeScheduler.OptimizeType;
@@ -103,6 +104,7 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
 	          }
 	          catch(IOException ioe)
 	          {
+	            ZoieHealth.setFatal();
 	            throw new ZoieException(ioe.getMessage(),ioe);
 	          }
 	          finally
@@ -147,6 +149,7 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
             }
             catch(IOException ioe)
             {
+              ZoieHealth.setFatal();
               throw new ZoieException(ioe.getMessage(),ioe);
             }
             finally

@@ -24,6 +24,7 @@ import org.apache.lucene.store.Directory;
 
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DocIDMapper;
+import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieMultiReader;
 import proj.zoie.api.indexing.IndexReaderDecorator;
@@ -274,6 +275,7 @@ public class IndexReaderDispenser<R extends IndexReader>
       }
       catch(IOException e)
       {
+        ZoieHealth.setFatal();
         log.error("problem closing reader", e);
       }
       _currentReader = null;

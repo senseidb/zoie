@@ -58,9 +58,9 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
 		_currentReader = null;
 		_mergeScheduler = new SerialMergeScheduler();
 		_mergePolicyParams = new MergePolicyParams();
-		_mergePolicyParams.setNumLargeSegments(2);
-		_mergePolicyParams.setMergeFactor(2);
-		_mergePolicyParams.setMaxSmallSegments(3);
+		_mergePolicyParams.setNumLargeSegments(3);
+		_mergePolicyParams.setMergeFactor(3);
+		_mergePolicyParams.setMaxSmallSegments(4);
 	  }
 	  
 	  public void close()

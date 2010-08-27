@@ -34,6 +34,7 @@ import org.apache.lucene.search.Similarity;
 
 import proj.zoie.api.DataConsumer;
 import proj.zoie.api.ZoieException;
+import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieSegmentReader;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
@@ -125,6 +126,7 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
               commitPropagatedDeletes();
 			}
 		} catch (IOException ioe) {
+      ZoieHealth.setFatal();
 			log.error("Problem indexing batch: " + ioe.getMessage(), ioe);
 		} finally {
 			try {
@@ -160,6 +162,7 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
       }
       catch(IOException ioe)
       {
+        ZoieHealth.setFatal();
         log.error("Problem copying segments: " + ioe.getMessage(), ioe);
         throw new ZoieException(ioe);
       }

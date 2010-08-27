@@ -26,6 +26,7 @@ import org.apache.lucene.index.IndexReader;
 
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DocIDMapperFactory;
+import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
@@ -447,6 +448,7 @@ public class SearchIndexManager<R extends IndexReader>{
 		  }
 		  catch(IOException e)
 		  {
+	      ZoieHealth.setFatal();
 		    log.error(e.getMessage(),e);
 		    if(diskIndexReader != null) diskIndexReader.close();
 		    throw e;

@@ -29,6 +29,7 @@ import org.apache.lucene.search.Similarity;
 
 import proj.zoie.api.DataConsumer;
 import proj.zoie.api.ZoieException;
+import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
@@ -90,6 +91,7 @@ public class RealtimeIndexDataLoader<R extends IndexReader, V> extends BatchedIn
         }
         catch (Exception e)
         {
+          ZoieHealth.setFatal();
           log.error(e.getMessage(), e);
         }
       }
@@ -106,6 +108,7 @@ public class RealtimeIndexDataLoader<R extends IndexReader, V> extends BatchedIn
           // check if load manager thread is alive
           if(_loadMgrThread == null || !_loadMgrThread.isAlive())
           {
+            ZoieHealth.setFatal();
             throw new ZoieException("load manager has stopped");
           }
           
@@ -173,6 +176,7 @@ public class RealtimeIndexDataLoader<R extends IndexReader, V> extends BatchedIn
       }
       catch (ZoieException e)
       {
+        ZoieHealth.setFatal();
         log.error(e.getMessage(),e);
       }
       finally

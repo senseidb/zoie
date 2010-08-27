@@ -31,6 +31,7 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 
 import proj.zoie.api.DirectoryManager;
+import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.impl.ZoieMergePolicy;
 import proj.zoie.api.impl.ZoieMergePolicy.MergePolicyParams;
@@ -146,6 +147,7 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
         markDeletes(delDocs); // re-mark deletes
         commitDeletes();
       } catch (IOException e) {
+        ZoieHealth.setFatal();
         log.error(e.getMessage(),e);
       }
     }

@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.Date;
 
 import proj.zoie.api.ZoieException;
+import proj.zoie.api.ZoieHealth;
 import proj.zoie.hourglass.impl.Hourglass;
 
 /**
@@ -225,5 +226,29 @@ public class HourglassAdmin implements HourglassAdminMBean
     {
       hourglass.getzConfig().setMaxBatchSize(maxBatchSize);
       hourglass.getCurrentZoie().getAdminMBean().setMaxBatchSize(maxBatchSize);
+    }
+
+    @Override
+    public long getHealth()
+    {
+      return ZoieHealth.getHealth();
+    }
+
+    @Override
+    public void resetHealth()
+    {
+      ZoieHealth.setOK();
+    }
+
+    @Override
+    public long getSLA()
+    {
+      return hourglass.SLA;
+    }
+
+    @Override
+    public void setSLA(long sla)
+    {
+      hourglass.SLA = sla;
     }
 }

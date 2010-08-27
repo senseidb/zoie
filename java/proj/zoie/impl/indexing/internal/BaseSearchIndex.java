@@ -34,6 +34,7 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 
 import proj.zoie.api.DocIDMapper;
+import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 
@@ -204,6 +205,7 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
 	          }
 	          catch(IOException ioe)
 	          {
+	            ZoieHealth.setFatal();
 	            log.error(ioe.getMessage(),ioe);
 	          }
 	        }
@@ -246,6 +248,7 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
           }
           catch(Exception e)
           {
+            ZoieHealth.setFatal();
             log.error(e.getMessage(), e);
           }
           _indexWriter = null;

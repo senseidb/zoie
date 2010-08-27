@@ -41,6 +41,7 @@ import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.Zoie;
 import proj.zoie.api.ZoieException;
+import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.impl.DefaultDocIDMapperFactory;
 import proj.zoie.api.impl.util.FileUtil;
@@ -64,7 +65,6 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 {
 
 	private static final Logger log = Logger.getLogger(ZoieSystem.class);
-	
 	private final DirectoryManager _dirMgr;
 	private final boolean _realtimeIndexing;
 	private final SearchIndexManager<R> _searchIdxMgr;
@@ -76,6 +76,7 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 	private final DiskLuceneIndexDataLoader<R> _diskLoader;
 	private volatile boolean alreadyShutdown = false;
   private final ReentrantReadWriteLock _shutdownLock = new ReentrantReadWriteLock();
+  private volatile long SLA = 10; // getIndexReaders should return in 10ms or a warning is logged
 	
 	/**
 	 * Creates a new ZoieSystem.
@@ -354,7 +355,14 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 	 */
 	public List<ZoieIndexReader<R>> getIndexReaders() throws IOException
 	{
-	  return _searchIdxMgr.getIndexReaders();
+	  long t0 = System.currentTimeMillis();
+	  List<ZoieIndexReader<R>> readers = _searchIdxMgr.getIndexReaders();
+	  t0 = System.currentTimeMillis() - t0;
+	  if (t0 > SLA)
+	  {
+	    log.warn("getIndexReaders returned in more than " + SLA +"ms");
+	  }
+	  return readers;
 	}
 	
 	public int getDiskSegmentCount() throws IOException{
@@ -380,6 +388,7 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 	 */
 	public void returnIndexReaders(List<ZoieIndexReader<R>> readers)
 	{
+    long t0 = System.currentTimeMillis();
 	  for(ZoieIndexReader<R> r : readers)
 	  {
 	    try
@@ -390,6 +399,11 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
         log.error("error when decRef on reader ", e);
       }
 	  }
+    t0 = System.currentTimeMillis() - t0;
+    if (t0 > SLA)
+    {
+      log.warn("returnIndexReaders returned in more than " + SLA +"ms");
+    }
 	}
 	
 	public void purgeIndex() throws IOException
@@ -668,6 +682,30 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
       public long getMaxUID() throws IOException
       {
         return ZoieSystem.this.getMaxUID();
+      }
+
+      @Override
+      public long getHealth()
+      {
+        return ZoieHealth.getHealth();
+      }
+
+      @Override
+      public void resetHealth()
+      {
+        ZoieHealth.setOK();
+      }
+
+      @Override
+      public long getSLA()
+      {
+        return ZoieSystem.this.SLA;
+      }
+
+      @Override
+      public void setSLA(long sla)
+      {
+        ZoieSystem.this.SLA = sla;
       }
 	}
 

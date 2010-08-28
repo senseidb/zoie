@@ -274,6 +274,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
 		long version = in.getVersion();
 		IndexReader inner = in.reopen(openReadOnly);
 		if (inner == in && inner.getVersion()==version){
+	    t0 = System.currentTimeMillis() - t0;
 	    if (t0 > 1000)
 	    {
 	      log.info("reopen returns in " + t0 + "ms without change");
@@ -313,7 +314,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
 			}
 		}
 		ZoieIndexReader<R> ret = newInstance(inner, subReaderList.toArray(new IndexReader[subReaderList.size()]));
-		t0 = System.currentTimeMillis();
+		t0 = System.currentTimeMillis() - t0;
 		if (t0 > 1000)
 		{
 		  log.info("reopen returns in " + t0 + "ms with change");

@@ -277,6 +277,12 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
 	    if (t0 > 1000)
 	    {
 	      log.info("reopen returns in " + t0 + "ms without change");
+	    } else
+	    {
+	      if (log.isDebugEnabled())
+	      {
+	        log.debug("reopen returns in " + t0 + "ms without change");
+	      }
 	    }
 			return this;
 		}
@@ -311,7 +317,13 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
 		if (t0 > 1000)
 		{
 		  log.info("reopen returns in " + t0 + "ms with change");
-		}
+		} else
+    {
+      if (log.isDebugEnabled())
+      {
+        log.debug("reopen returns in " + t0 + "ms with change");
+      }
+    }
 		return ret;
 	}
 	

@@ -556,7 +556,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
     t0 = System.currentTimeMillis() - t0;
     if (t0 > SLA)
     {
-      log.warn("getIndexReaders returned in more than " + SLA +"ms");
+      log.warn("getIndexReaders returned in " + t0 + "ms more than " + SLA +"ms");
     }
     return readers;  
   }
@@ -603,8 +603,8 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
     t0 = System.currentTimeMillis() - t0;
     if (t0 > SLA)
     {
-      log.warn("returnIndexReaders returned in more than " + SLA +"ms");
-    }  
+      log.warn("getIndexReaders returned in " + t0 + "ms more than " + SLA +"ms");
+    }
   }
 
   public void purgeIndex() throws IOException

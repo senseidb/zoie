@@ -368,6 +368,9 @@ public class Hourglass<R extends IndexReader, V> implements Zoie<R, V>
         if (archivetime.before(threshold))
         {
           log.info("trimming: remove " + path);
+          log.info(dir.getFile() + " -before--" + (dir.getFile().exists()?" not deleted ":" deleted"));
+          FileUtil.rmDir(dir.getFile());
+          log.info(dir.getFile() + " -after--" + (dir.getFile().exists()?" not deleted ":" deleted"));
         } else
         {
           toKeep.add(toRemove.get(i));

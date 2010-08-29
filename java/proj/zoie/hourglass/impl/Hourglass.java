@@ -159,7 +159,7 @@ public class Hourglass<R extends IndexReader, V> implements Zoie<R, V>
         t0 = System.currentTimeMillis() - t0;
         if (t0 > SLA)
         {
-          log.warn("getIndexReaders returned in more than " + SLA +"ms");
+          log.warn("getIndexReaders returned in " + t0 + "ms more than " + SLA +"ms");
         }
         return rlist;
       } finally
@@ -211,7 +211,7 @@ public class Hourglass<R extends IndexReader, V> implements Zoie<R, V>
     t0 = System.currentTimeMillis() - t0;
     if (t0 > SLA)
     {
-      log.warn("returnIndexReaders returned in more than " + SLA +"ms");
+      log.warn("returnIndexReaders returned in "  + t0 + "ms more than " + SLA +"ms");
     }
   }
 

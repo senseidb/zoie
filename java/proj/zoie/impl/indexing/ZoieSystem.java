@@ -402,7 +402,7 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
     t0 = System.currentTimeMillis() - t0;
     if (t0 > SLA)
     {
-      log.warn("returnIndexReaders returned in"  + t0 + "ms more than " + SLA +"ms");
+      log.warn("returnIndexReaders returned in "  + t0 + "ms more than " + SLA +"ms");
     }
 	}
 	

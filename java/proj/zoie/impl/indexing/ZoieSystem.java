@@ -603,7 +603,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
     t0 = System.currentTimeMillis() - t0;
     if (t0 > SLA)
     {
-      log.warn("getIndexReaders returned in " + t0 + "ms more than " + SLA +"ms");
+      log.warn("returnIndexReaders returned in "  + t0 + "ms more than " + SLA +"ms");
     }
   }
 

@@ -76,7 +76,7 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 	private final DiskLuceneIndexDataLoader<R> _diskLoader;
 	private volatile boolean alreadyShutdown = false;
   private final ReentrantReadWriteLock _shutdownLock = new ReentrantReadWriteLock();
-  private volatile long SLA = 10; // getIndexReaders should return in 10ms or a warning is logged
+  private volatile long SLA = 4; // getIndexReaders should return in 4ms or a warning is logged
 	
 	/**
 	 * Creates a new ZoieSystem.

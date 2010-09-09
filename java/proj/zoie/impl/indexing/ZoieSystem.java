@@ -453,7 +453,8 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
    */
   public String getCurrentDiskVersion() throws IOException
   {
-    return _dirMgr.getVersion().encodeToString();
+    V diskv = _dirMgr.getVersion();
+    return diskv==null?"-1":diskv.encodeToString();
   }
 
   public Analyzer getAnalyzer()
@@ -786,7 +787,8 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
      */
     public String getRamAVersion()
     {
-      return ZoieSystem.this._searchIdxMgr.getRamAVersion().encodeToString();
+      V ramav = ZoieSystem.this._searchIdxMgr.getRamAVersion();
+      return ramav==null?"-1":ramav.encodeToString();
     }
 
     public int getRamBIndexSize()
@@ -800,7 +802,8 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
      */
     public String getRamBVersion()
     {
-      return ZoieSystem.this._searchIdxMgr.getRamBVersion().encodeToString();
+      V rambv = ZoieSystem.this._searchIdxMgr.getRamBVersion();
+      return rambv==null?"-1":rambv.encodeToString();
     }
 
     public void optimize(int numSegs) throws IOException

@@ -242,13 +242,13 @@
         	</junitreport>
 	</target>
 
-<target name="run-perf" depends="dist">
-	<ant antfile="build.xml" dir="perf" target="run-perf" />
-</target>
+    <target name="run-perf" depends="dist">
+	  <ant antfile="build.xml" dir="perf" target="run-perf" />
+    </target>
 
-<target name="perf-test" depends="dist">
-	<ant antfile="build.xml" dir="test-perf" target="dist" />
-</target>
+    <target name="perf-test" depends="dist">
+	  <ant antfile="build.xml" dir="test-perf" target="dist" />
+    </target>
 
 <target name="luke" depends="dist">
 	<ant antfile="build.xml" dir="contrib/luke" target="run" />

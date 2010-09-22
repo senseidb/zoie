@@ -10,9 +10,23 @@
 	<classpathentry exported="true" kind="lib" path="lib/master/spring-webmvc.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/master/spring.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/test/junit.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/master/lucene-core.jar" sourcepath="/Users/xgu/Desktop/lucene-2.9.1-src.zip"/>
+	<classpathentry exported="true" kind="lib" path="lib/master/lucene-core.jar"/>
+
+	<classpathentry exported="true" kind="lib" path="lib/tools/lukeall-0.9.9.jar"/>
+	<classpathentry kind="lib" path="lib/jetty/mx4j.jar"/>
+	<classpathentry kind="lib" path="lib/solr/solr-core.jar" />
+	<classpathentry kind="lib" path="lib/solr/solr-solrj.jar"/>
+	<classpathentry kind="lib" path="lib/jetty/jetty-naming.jar"/>
+	<classpathentry kind="lib" path="lib/jetty/jetty-util.jar"/>
+	<classpathentry kind="lib" path="lib/jetty/jetty.jar"/>
+	<classpathentry kind="lib" path="lib/admin/gwt-dev.jar"/>
+	<classpathentry kind="lib" path="lib/admin/gwt-servlet.jar"/>
+	<classpathentry kind="lib" path="lib/admin/gwt-user.jar"/>
+	<classpathentry kind="lib" path="lib/admin/gwt-visualization.jar"/>
 	<classpathentry kind="lib" path="test-perf/ext-libraries/performance-1.2.0.jar"/>
 	<classpathentry kind="lib" path="test-perf/ext-libraries/jfreechart-0.9.21.jar"/>
 	<classpathentry kind="lib" path="test-perf/ext-libraries/iText.zip"/>
+	<classpathentry kind="lib" path="lib/master/geronimo-jms_1.1_spec.jar"/>
+	<classpathentry kind="lib" path="lib/test/mockito-all.jar"/>
 	<classpathentry kind="output" path="output"/>
 </classpath>

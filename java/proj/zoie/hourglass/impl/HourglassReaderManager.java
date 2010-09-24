@@ -229,16 +229,10 @@ public class HourglassReaderManager<R extends IndexReader, V>
     archives.removeAll(remove);
     for(ZoieIndexReader<R> r : remove)
     {
-      try
+      r.decZoieRef();
+      if (log.isDebugEnabled())
       {
-        r.decRef();
-        if (log.isDebugEnabled())
-        {
-          log.debug("remove time " + r.directory() + " refCount: " + r.getRefCount());
-        }
-      } catch (IOException e)
-      {
-        log.error("IOException during swapArchives", e);
+        log.debug("remove time " + r.directory() + " refCount: " + r.getRefCount());
       }
     }
     Box<R, V> newbox = new Box<R, V>(archives, box._retiree, box._actives, _decorator);
@@ -324,7 +318,7 @@ public class HourglassReaderManager<R extends IndexReader, V>
     // add the archived index readers
     for(ZoieIndexReader<R> r : box._archives)
     {
-      r.incRef();
+      r.incZoieRef();
       list.add(r);
     }
     // add the retiring index readers

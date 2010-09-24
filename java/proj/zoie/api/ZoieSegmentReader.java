@@ -116,6 +116,32 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 		}
 	}
 	
+  /**
+   * make exact shallow copy for duplication. (So we don't redecorate the decorated reader.)
+   * @param copyFrom
+   * @param innerReader
+   * @throws IOException
+   */
+  ZoieSegmentReader(ZoieSegmentReader<R> copyFrom, IndexReader innerReader) throws IOException
+  {
+    super(innerReader, copyFrom._decorator);
+    _uidArray = copyFrom._uidArray;
+    _maxUID = copyFrom._maxUID;
+    _minUID = copyFrom._minUID;
+    _noDedup = copyFrom._noDedup;
+    _docIDMapper = copyFrom._docIDMapper;
+    _delDocIdSet = copyFrom._delDocIdSet;
+    _currentDelDocIds = copyFrom._currentDelDocIds;
+
+    if (copyFrom._decorator == null)
+    {
+      _decoratedReader = null;
+    } else
+    {
+      _decoratedReader = copyFrom._decoratedReader;
+    }
+  }
+
 	@Override
 	public void markDeletes(LongSet delDocs, LongSet deletedUIDs)
 	{
@@ -146,7 +172,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 	
 	public void setDelDocIds()
 	{
-	  _delDocIds.set(_currentDelDocIds);
+	  _delDocIds = _currentDelDocIds;
 	  if (_decorator!=null && _decoratedReader!=null)
 	    _decorator.setDeleteSet(_decoratedReader, new ArrayDocIdSet(_currentDelDocIds));
 	}
@@ -226,7 +252,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 	{
 	  if(!_noDedup)
 	  {
-		int[] delSet = _delDocIds.get();
+		int[] delSet = _delDocIds;//.get();
 	    if(delSet != null && Arrays.binarySearch(delSet, docid) >= 0) return true;
 	  }
 	  return in.isDeleted(docid);
@@ -238,7 +264,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 		 TermDocs td = in.termDocs(term);
 		 if(_noDedup) return td;
 		  
-		 int[] delDocIds = _delDocIds.get();
+		 int[] delDocIds = _delDocIds;//.get();
 		 if(td == null || delDocIds == null || delDocIds.length == 0) return td;
 	     return new ZoieSegmentTermDocs(td, new ArrayDocIdSet(delDocIds));
 	}
@@ -250,7 +276,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 	  TermDocs td = in.termDocs();
 	  if(_noDedup) return td;
 	  
-	  int[] delDocIds = _delDocIds.get();
+	  int[] delDocIds = _delDocIds;//.get();
 	  if(td == null || delDocIds == null || delDocIds.length == 0) return td;
       
       return new ZoieSegmentTermDocs(td, new ArrayDocIdSet(delDocIds));
@@ -262,7 +288,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 		  TermPositions tp = in.termPositions(term);
 	      if(_noDedup) return tp;
 	      
-	      int[] delDocIds = _delDocIds.get();
+	      int[] delDocIds = _delDocIds;//.get();
 	      if(tp == null || delDocIds == null || delDocIds.length == 0) return tp;
 	      
 	      return new ZoieSegmentTermPositions(tp, new ArrayDocIdSet(delDocIds));
@@ -275,7 +301,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 	  TermPositions tp = in.termPositions();
       if(_noDedup) return tp;
       
-      int[] delDocIds = _delDocIds.get();
+      int[] delDocIds = _delDocIds;//.get();
       if(tp == null || delDocIds == null || delDocIds.length == 0) return tp;
       
       return new ZoieSegmentTermPositions(tp, new ArrayDocIdSet(delDocIds));
@@ -299,4 +325,17 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 	public void decRef() throws IOException {
 		// not synchronized, since it doesn't do anything anyway
 	}
+
+	/**
+   * makes exact shallow copy of a given ZoieMultiReader
+   * @param <R>
+   * @param source
+   * @return
+   * @throws IOException
+   */
+  @Override
+  public ZoieSegmentReader<R> copy() throws IOException
+  {
+    return new ZoieSegmentReader<R>(this, this.in);
+  }
 }

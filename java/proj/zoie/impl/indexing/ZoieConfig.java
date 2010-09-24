@@ -41,6 +41,7 @@ public class ZoieConfig
   long batchDelay;
   boolean rtIndexing = true;
   int maxBatchSize;
+  long _freshness = 10000;
 
   /**
    * Default constructor. Set the size of batch and batch delay to default value
@@ -122,5 +123,15 @@ public class ZoieConfig
 
   public void setMaxBatchSize(int maxBatchSize) {
 	this.maxBatchSize = maxBatchSize;
+  }
+
+  public long getFreshness()
+  {
+    return _freshness;
+  }
+
+  public void setFreshness(long freshness)
+  {
+    _freshness = freshness;
   }
 }

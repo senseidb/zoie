@@ -235,4 +235,16 @@ public class ZoieSystemAdmin implements ZoieSystemAdminMBean {
     {
       _internalMBean.setSLA(sla);
     }
+
+    @Override
+    public long getFreshness()
+    {
+      return _internalMBean.getFreshness();
+    }
+
+    @Override
+    public void setFreshness(long freshness)
+    {
+      _internalMBean.setFreshness(freshness);
+    }
 }

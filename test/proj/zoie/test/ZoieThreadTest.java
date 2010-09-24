@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.apache.log4j.Logger;
@@ -101,6 +102,7 @@ public class ZoieThreadTest extends ZoieTestCase
                 System.out.println(sb.toString());
                 log.info(sb.toString());
               }
+              Thread.sleep(20);
             }
             catch(Exception ex)
             {
@@ -188,7 +190,7 @@ public class ZoieThreadTest extends ZoieTestCase
     memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
     memoryProvider.setDataConsumer(idxSystem);
     memoryProvider.start();
-    ExecutorService threadPool = ZoieExecutors.newCachedThreadPool();
+    ExecutorService threadPool = Executors.newCachedThreadPool();
     try
     {
       idxSystem.setBatchSize(10);

@@ -120,4 +120,8 @@ public interface ZoieSystemAdminMBean
   long getHealth();
   
   void resetHealth();
+  
+  public long getFreshness();
+  
+  public void setFreshness(long freshness);
 }

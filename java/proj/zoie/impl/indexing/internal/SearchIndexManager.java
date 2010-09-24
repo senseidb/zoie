@@ -88,7 +88,7 @@ public class SearchIndexManager<R extends IndexReader>{
         Mem<R> mem = new Mem<R>(memIndexA, null, memIndexA, null, diskIndexReader);
         if (diskIndexReader != null)
         {
-          diskIndexReader.incRef();
+          diskIndexReader.incZoieRef();
         }
         _mem = mem;
 	  }
@@ -232,7 +232,7 @@ public class SearchIndexManager<R extends IndexReader>{
 	          reader = memIndexB.openIndexReader();            
 	          if (reader != null)
 	          {
-	            reader.incRef();
+	            reader = reader.copy();
 	            reader.setDelDocIds();
 	            readers.add(reader);
 	          }
@@ -243,7 +243,7 @@ public class SearchIndexManager<R extends IndexReader>{
 	          reader = memIndexA.openIndexReader();
 	          if (reader != null)
 	          {
-	            reader.incRef();
+              reader = reader.copy();
 	            reader.setDelDocIds();
 	            readers.add(reader);
 	          }
@@ -254,7 +254,7 @@ public class SearchIndexManager<R extends IndexReader>{
 	          reader = mem.get_diskIndexReader();
 	          if (reader != null)
 	          {
-	            reader.incRef();
+              reader = reader.copy();
 	            reader.setDelDocIds();
 	            readers.add(reader);
 	          }
@@ -262,6 +262,20 @@ public class SearchIndexManager<R extends IndexReader>{
 	      }
 	    }
 	    return readers;
+	  }
+
+	  public void returnIndexReaders(List<ZoieIndexReader<R>> readers)
+	  {
+	    for(ZoieIndexReader<R> r : readers)
+	    {
+//	      try
+//	      {
+	        r.decZoieRef();//.decRef();
+//	      } catch (IOException e)
+//	      {
+//	        log.error("error when decRef on reader ", e);
+//	      }
+	    }
 	  }
 	  
 	  public synchronized void setDiskIndexerStatus(Status status)
@@ -341,15 +355,15 @@ public class SearchIndexManager<R extends IndexReader>{
 	    }
 	    if (mem.get_diskIndexReader()!=null)
 	    {
-	      try
-	      {
-	        mem.get_diskIndexReader().decRef();
+//	      try
+//	      {
+	        mem.get_diskIndexReader().decZoieRef();//.decRef();
             _diskIndex.close();
-          }
-	      catch (IOException e)
-          {
-	        log.error("error closing remaining diskReader pooled in mem: " + e);
-          }
+//          }
+//	      catch (IOException e)
+//          {
+//	        log.error("error closing remaining diskReader pooled in mem: " + e);
+//          }
 	    }
 	  }
 
@@ -480,16 +494,15 @@ public class SearchIndexManager<R extends IndexReader>{
       {
         if (oldDiskReader != null)
         {
-          try
-          {
-            oldDiskReader.decRef();
-          } catch (IOException e)
-          {
-            log.error("swaping old and new disk reader failure: " + e);
-            e.printStackTrace();
-          }
+//          try
+//          {
+            oldDiskReader.decZoieRef();
+//          } catch (IOException e)
+//          {
+//            log.error("swaping old and new disk reader failure: " + e);
+//          }
         }
-        diskIndexReader.incRef();
+        diskIndexReader.incZoieRef();
         _mem = mem;
       }
     }

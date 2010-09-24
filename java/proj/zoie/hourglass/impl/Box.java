@@ -47,13 +47,7 @@ public class Box<R extends IndexReader, V>
   {
     for (ZoieIndexReader<R> r : _archives)
     {
-      try
-      {
-        r.decRef();
-      } catch (IOException e)
-      {
-        log.error("error decRef during shutdown", e);
-      }
+      r.decZoieRef();
       log.info("refCount at shutdown: " + r.getRefCount() + " " + r.directory());
     }
     for (ZoieSystem<R, V> zoie : _retiree)

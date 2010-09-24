@@ -167,25 +167,29 @@ public class HourglassDirectoryManagerFactory
     {
       String name = file.getName();
       log.debug("getAllArchivedDirectories" + name + " " + (file.equals(_location)?"*":""));
-      long time = 0;
+      long ctime = 0;
       try
       {
-        time = dateFormatter.get().parse(name).getTime();
+        long time = dateFormatter.get().parse(name).getTime();
+        if (!file.equals(_location))
+        { // don't count the current one
+          IndexSignature sig = getIndexSignature(file);
+          if (sig!=null)
+          {
+            if (time > ctime)
+            {
+              version = sig.getVersion();
+              ctime = time;
+            }
+          } else
+          {
+            log.error("potential index corruption: indexSignature not in " + _location);
+          }
+        }
       } catch (ParseException e)
       {
         log.warn("potential index corruption. we skip folder: " + name, e);
         continue;
-      }
-      if (!file.equals(_location))
-      { // don't count the current one
-        IndexSignature sig = getIndexSignature(file);
-        if (sig!=null)
-        {
-          if (sig.getVersion() > version) version = sig.getVersion();
-        } else
-        {
-          log.error("potential index corruption: indexSignature not in " + _location);
-        }
       }
     }
     return version;

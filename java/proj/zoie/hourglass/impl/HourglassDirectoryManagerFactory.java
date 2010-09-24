@@ -183,6 +183,7 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
               if (time > ctime)
               {
                 version = sig.getVersion();
+                ctime = time;
               }
             }
           } else

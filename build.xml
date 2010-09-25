@@ -95,6 +95,8 @@
 		<delete dir="${logs}" />
 		<delete dir="${build.test}" />
 		<ant antfile="build.xml" dir="example" target="clean" />
+		<ant antfile="build.xml" dir="contrib/server" target="clean" />
+		<ant antfile="build.xml" dir="contrib/solr" target="clean" />
 		<ant antfile="build.xml" dir="zoie-admin" target="clean" />
 		<ant antfile="build.xml" dir="perf" target="clean" />
 	</target>
@@ -142,8 +144,12 @@
 		<ant antfile="build.xml" dir="perf" target="dist" />
 	</target>
 
-	<target name="zoie-server" description="--> build server">
+	<target name="zoie-server" description="--> build server" depends="dist">
 		<ant antfile="build.xml" dir="contrib/server" target="dist" />
+	</target>
+	
+	<target name="zoie-solr" description="--> build solr plugin" depends="dist">
+		<ant antfile="build.xml" dir="contrib/solr" target="dist" inheritAll="false"/>
 	</target>
 
 	<target name="run-server" depends="zoie-server" description="--> run server">

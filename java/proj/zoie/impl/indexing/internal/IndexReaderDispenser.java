@@ -232,7 +232,7 @@ public class IndexReaderDispenser<R extends IndexReader, V extends ZoieVersion>
       // all the clients release their hold on it, the reader will be closed
       // automatically.
       log.info("swap disk reader and release old one from system");
-      if (oldReader !=null) oldReader.decRef();
+      if (oldReader !=null) ((ZoieIndexReader)oldReader).decZoieRef();//.decRef();
     }
     return reader;
   }

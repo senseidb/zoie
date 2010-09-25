@@ -124,6 +124,7 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
     long timenow = System.currentTimeMillis();
     now.setTimeInMillis(timenow);
     Calendar threshold = _scheduler.getTrimTime(now);
+    log.info("getAllArchivedDirectories loading time threshold: " + _scheduler.getFolderName(threshold));
     for(File file : files)
     {
       String name = file.getName();

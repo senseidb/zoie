@@ -109,10 +109,11 @@ public class HourglassTest extends ZoieTestCase
   private void oneTest(File idxDir, String schedule, long numTestContent) throws IOException, InterruptedException
   {
     DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-    HourglassDirectoryManagerFactory<DefaultZoieVersion> factory = new HourglassDirectoryManagerFactory<DefaultZoieVersion>(idxDir, new HourGlassScheduler(HourGlassScheduler.FREQUENCY.MINUTELY, schedule), defaultZoieVersionFactory);
+    HourglassDirectoryManagerFactory<DefaultZoieVersion> factory = new HourglassDirectoryManagerFactory<DefaultZoieVersion>(idxDir, new HourGlassScheduler(HourGlassScheduler.FREQUENCY.MINUTELY, schedule, 100), defaultZoieVersionFactory);
     ZoieConfig<DefaultZoieVersion> zConfig = new ZoieConfig<DefaultZoieVersion>(defaultZoieVersionFactory);
     zConfig.setBatchSize(3);
     zConfig.setBatchDelay(10);
+    zConfig.setFreshness(10);
     Hourglass<IndexReader, String,DefaultZoieVersion> hourglass = new Hourglass<IndexReader, String,DefaultZoieVersion>(factory, new HourglassTestInterpreter(), new IndexReaderDecorator<IndexReader>(){
 
       public IndexReader decorate(ZoieIndexReader<IndexReader> indexReader)

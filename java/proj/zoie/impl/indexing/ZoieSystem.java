@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Queue;
@@ -84,7 +85,8 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
   private final DiskLuceneIndexDataLoader<R, V> _diskLoader;
   private volatile boolean alreadyShutdown = false;
   private final ReentrantReadWriteLock _shutdownLock = new ReentrantReadWriteLock();
-  private volatile long SLA = 4; // getIndexReaders should return in 4ms or a warning is logged
+  private volatile long SLA = 3; // getIndexReaders should return in 4ms or a warning is logged
+  private long _freshness = 10000; // how fresh the IndexReaders should be
 
   /**
    * Creates a new ZoieSystem.
@@ -143,6 +145,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
         .getSimilarity(), zoieConfig.getBatchSize(),
         zoieConfig.getBatchDelay(), zoieConfig.isRtIndexing(), zoieConfig
         .getMaxBatchSize(), zoieConfig.getZoieVersionFactory());
+    _freshness = zoieConfig.getFreshness();
   }
 
   /**
@@ -168,6 +171,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
         zoieConfig.getSimilarity(), zoieConfig.getBatchSize(), zoieConfig
         .getBatchDelay(), zoieConfig.isRtIndexing(), zoieConfig
         .getMaxBatchSize(), zoieConfig.getZoieVersionFactory());
+    _freshness = zoieConfig.getFreshness();
   }
 
   /**
@@ -376,6 +380,8 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
     }
     super.setDataConsumer(_rtdc);
     super.setBatchSize(100); // realtime batch size
+    _maintenance = newMaintenanceThread();
+    _maintenance.setDaemon(true);
   }
 
   public static <D, V extends ZoieVersion> ZoieSystem<IndexReader, D, V> buildDefaultInstance(
@@ -472,6 +478,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
     log.info("starting zoie...");
     _rtdc.start();
     super.start();
+    _maintenance.start();
     log.info("zoie started...");
   }
 
@@ -486,6 +493,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
         return;
       }     
       alreadyShutdown = true;
+      _freshness=30000;
     } finally
     {
       _shutdownLock.writeLock().unlock();
@@ -523,6 +531,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
   {
     super.flushEvents(timeout);
     _rtdc.flushEvents(timeout);
+    refreshCache(timeout);
   }
 
   /**
@@ -553,13 +562,19 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
   public List<ZoieIndexReader<R>> getIndexReaders() throws IOException
   {
     long t0 = System.currentTimeMillis();
-    List<ZoieIndexReader<R>> readers = _searchIdxMgr.getIndexReaders();
+    cachedreadersLock.readLock().lock();
+    List<ZoieIndexReader<R>> readers = cachedreaders; //_searchIdxMgr.getIndexReaders();
+    for(ZoieIndexReader<R> r : readers)
+    {
+        r.incZoieRef();
+    }
+    cachedreadersLock.readLock().unlock();
     t0 = System.currentTimeMillis() - t0;
     if (t0 > SLA)
     {
       log.warn("getIndexReaders returned in " + t0 + "ms more than " + SLA +"ms");
     }
-    return readers;  
+    return readers;
   }
 
   public int getDiskSegmentCount() throws IOException
@@ -591,16 +606,10 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
   public void returnIndexReaders(List<ZoieIndexReader<R>> readers)
   {
     long t0 = System.currentTimeMillis();
-    for (ZoieIndexReader<R> r : readers)
-    {
-      try
-      {
-        r.decRef();
-      } catch (IOException e)
-      {
-        log.error("error when decRef on reader ", e);
-      }
-    }
+    if (readers == null || readers.size()==0) return;
+    returningIndexReaderQueueLock.readLock().lock();
+    returningIndexReaderQueue.add(readers);
+    returningIndexReaderQueueLock.readLock().unlock();
     t0 = System.currentTimeMillis() - t0;
     if (t0 > SLA)
     {
@@ -943,6 +952,18 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
     {
       ZoieSystem.this.SLA = sla;
     }
+
+    @Override
+    public long getFreshness()
+    {
+      return ZoieSystem.this._freshness;
+    }
+
+    @Override
+    public void setFreshness(long freshness)
+    {
+      ZoieSystem.this._freshness = freshness;
+    }
   }
 
   @Override
@@ -979,5 +1000,106 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
   public String[] getStandardMBeanNames()
   {
     return new String[]{ZOIEADMIN, ZOIESTATUS};
+  }
+
+  public void syncWthVersion(long timeInMillis, V version) throws ZoieException
+  {
+    super.syncWthVersion(timeInMillis, version);
+    refreshCache(timeInMillis);
+  }
+
+  private void refreshCache(long timeout) throws ZoieException
+  {
+    long begintime = System.currentTimeMillis();
+    while(cachedreaderTimestamp <= begintime)
+    {
+      synchronized(cachemonitor)
+      {
+        cachemonitor.notifyAll();
+        long elapsed = System.currentTimeMillis() - begintime;
+        if (elapsed > timeout)
+        {
+          log.debug("refreshCached reader timeout in " + elapsed + "ms");
+          throw new ZoieException("refreshCached reader timeout in " + elapsed + "ms");
+        }
+        long timetowait = Math.min(timeout - elapsed, 200);
+        try
+        {
+          cachemonitor.wait(timetowait);
+        } catch (InterruptedException e)
+        {
+          log.warn("refreshCache", e);
+        }
+      }
+    }
+  }
+  private final Thread _maintenance;
+  private volatile List<ZoieIndexReader<R>> cachedreaders = new ArrayList<ZoieIndexReader<R>>(0);
+  private volatile long cachedreaderTimestamp = 0;
+  private final ReentrantReadWriteLock cachedreadersLock = new ReentrantReadWriteLock();
+  private volatile ConcurrentLinkedQueue<List<ZoieIndexReader<R>>> returningIndexReaderQueue = new ConcurrentLinkedQueue<List<ZoieIndexReader<R>>>();
+  private final ReentrantReadWriteLock returningIndexReaderQueueLock = new ReentrantReadWriteLock();
+  private final Object cachemonitor = new Object(); 
+  
+  private Thread newMaintenanceThread()
+  {
+    return new Thread("zoie-indexReader-maintenance"){
+      @Override
+      public void run()
+      {
+        while(true)
+        {
+          try
+          {
+            synchronized(cachemonitor)
+            {
+              cachemonitor.wait(_freshness);
+            }
+          } catch (InterruptedException e)
+          {
+            Thread.interrupted(); // clear interrupted state
+          }
+          List<ZoieIndexReader<R>> newreaders = null;
+          if (alreadyShutdown)
+          {
+            newreaders = new ArrayList<ZoieIndexReader<R>>();
+            // clean up and quit
+          } else
+          {
+            try
+            {
+              newreaders = _searchIdxMgr.getIndexReaders();
+            } catch (IOException e)
+            {
+              log.info("zoie-indexReader-maintenance", e);
+              newreaders = new ArrayList<ZoieIndexReader<R>>();
+            }
+          }
+          List<ZoieIndexReader<R>> oldreaders = cachedreaders;
+          cachedreadersLock.writeLock().lock();
+          cachedreaders = newreaders;
+          cachedreadersLock.writeLock().unlock();
+          cachedreaderTimestamp = System.currentTimeMillis();
+          synchronized(cachemonitor)
+          {
+            cachemonitor.notifyAll();
+          }
+          // return the old cached reader
+          returnIndexReaders(oldreaders);
+          // process the returing index reader queue
+          returningIndexReaderQueueLock.writeLock().lock();
+          ConcurrentLinkedQueue<List<ZoieIndexReader<R>>> oldreturningIndexReaderQueue = returningIndexReaderQueue;
+          returningIndexReaderQueue = new ConcurrentLinkedQueue<List<ZoieIndexReader<R>>>();
+          returningIndexReaderQueueLock.writeLock().unlock();
+          for(List<ZoieIndexReader<R>> readers : oldreturningIndexReaderQueue)
+          {
+            for(ZoieIndexReader<R> r : readers)
+            {
+              r.decZoieRef();
+            }
+          }
+        }
+      }
+    };
   }
 }

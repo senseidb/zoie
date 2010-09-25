@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.log4j.Logger;
 import org.apache.lucene.index.FilterIndexReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
@@ -34,15 +36,40 @@ import proj.zoie.api.impl.DefaultIndexReaderMerger;
 import proj.zoie.api.impl.ZoieReaderContext.ContextAccessor;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
-public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndexReader {
+public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndexReader
+{
+  private static final Logger log = Logger.getLogger(ZoieIndexReader.class);
 	public static final long DELETED_UID = Long.MIN_VALUE;
-	
+	private AtomicLong zoieRefCounter = new AtomicLong(1);
+	public void incZoieRef()
+	{
+	  zoieRefCounter.incrementAndGet();
+	}
+	public void decZoieRef()
+	{
+	  long refCount = zoieRefCounter.decrementAndGet();
+	  if (refCount < 0)
+	  {
+	    log.warn("refCount should never be lower than 0");
+	  }
+	  if (refCount == 0)
+	  {
+	    try
+      {
+        in.decRef();
+      } catch (IOException e)
+      {
+        log.error("decZoieRef", e);
+      }
+	  }
+	}
 	/**
 	 * The delete set is per reader, which is why it is tied to an instance of zoieindexreader
 	 * and it is not static as in the general case for thread local.
 	 * It is threadlocal because we share the underlying reader among different thread.
 	 */
-	protected ContextAccessor<int[]> _delDocIds;
+//	protected ContextAccessor<int[]> _delDocIds;
+	protected int[] _delDocIds;
 	protected long _minUID;
 	protected long _maxUID;
 	protected boolean _noDedup = false;
@@ -177,7 +204,7 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndex
 	{
 		super(in);
 		_decorator = decorator;
-		_delDocIds = new ContextAccessor<int[]>(this, "delset");// new InheritableThreadLocal<int[]>();
+		_delDocIds = null;//new ContextAccessor<int[]>(this, "delset");// new InheritableThreadLocal<int[]>();
 		_minUID=Long.MAX_VALUE;
 		_maxUID=Long.MIN_VALUE;
 	}
@@ -196,7 +223,7 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndex
 	{
 	  if(!_noDedup)
 	  {
-		int[] delSet = _delDocIds.get();
+		int[] delSet = _delDocIds;
 	    if(delSet != null && delSet.length > 0) return true;
 	  }
 	  return in.hasDeletions();
@@ -206,7 +233,7 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndex
 	
 	public boolean hasDuplicates()
 	{
-		int[] delSet = _delDocIds.get();
+		int[] delSet = _delDocIds;//.get();
 		return (delSet!=null && delSet.length > 0);
 	}
 
@@ -215,7 +242,7 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndex
 	
 	public boolean isDuplicate(int docid)
 	{
-	  int[] delSet = _delDocIds.get();
+	  int[] delSet = _delDocIds;//.get();
 	  return delSet!=null && Arrays.binarySearch(delSet, docid) >= 0;
 	}
 	
@@ -226,7 +253,7 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndex
 	
 	public int[] getDelDocIds()
 	{
-	  return _delDocIds.get();
+	  return _delDocIds;//.get();
 	}
 	
 	public long getMinUID()
@@ -263,4 +290,10 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndex
 	@Override
 	abstract public TermPositions termPositions() throws IOException;
 	
+  /**
+   * makes exact shallow copy of a given ZoieMultiReader
+   * @return a shallow copy of a given ZoieMultiReader
+   * @throws IOException
+   */
+  public abstract ZoieIndexReader<R> copy() throws IOException;
 }

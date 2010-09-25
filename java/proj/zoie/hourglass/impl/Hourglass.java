@@ -57,6 +57,7 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
     _currentVersion = _dirMgrFactory.getArchivedVersion();
     _currentZoie = _readerMgr.retireAndNew(null);
     _currentZoie.start();
+    _freshness = zoieConfig.getFreshness();
     log.info("start Hourglass at version: " + _currentVersion);
   }
   protected List<ZoieIndexReader<R>> loadArchives()
@@ -139,7 +140,7 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
         List<ZoieIndexReader<R>> rlist = list;
         for(ZoieIndexReader<R> r : rlist)
         {
-          r.incRef();
+          r.incZoieRef();
         }
         t0 = System.currentTimeMillis() - t0;
         if (t0 > SLA)

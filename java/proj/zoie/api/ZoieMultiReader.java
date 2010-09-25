@@ -328,7 +328,32 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
 		return ret;
 	}
 	
-	protected ZoieMultiReader<R> newInstance(IndexReader inner,IndexReader[] subReaders) throws IOException{
-		return new ZoieMultiReader<R>(inner, subReaders ,_decorator);
-	}
+  protected ZoieMultiReader<R> newInstance(IndexReader inner,IndexReader[] subReaders) throws IOException{
+    return new ZoieMultiReader<R>(inner, subReaders ,_decorator);
+  }
+
+  /**
+   * makes exact shallow copy of a given ZoieMultiReader
+   * @param <R>
+   * @param source
+   * @return
+   * @throws IOException
+   */
+  @Override
+  public ZoieMultiReader<R> copy() throws IOException
+  {
+    ArrayList<ZoieSegmentReader<R>> sourceZoieSubReaders = this._subZoieReaders;
+    ArrayList<ZoieSegmentReader<R>> zoieSubReaders = new ArrayList<ZoieSegmentReader<R>>(this._subZoieReaders.size());
+    for(ZoieSegmentReader<R> r : sourceZoieSubReaders)
+    {
+      zoieSubReaders.add(r.copy());
+    }
+    this.in.incRef();
+    ZoieMultiReader<R> ret = this.newInstance(this.in, zoieSubReaders.toArray(new IndexReader[zoieSubReaders.size()]));
+    ret._docIDMapper = this._docIDMapper;
+    ret._minUID = this._minUID;
+    ret._maxUID = this._maxUID;
+    ret._noDedup = this._noDedup;
+    return ret;
+  }
 }

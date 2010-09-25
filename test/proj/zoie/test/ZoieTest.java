@@ -470,6 +470,7 @@ public class ZoieTest extends ZoieTestCase
     File idxDir = getIdxDir();
     DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
     final ZoieSystem<IndexReader,String,DefaultZoieVersion> idxSystem = createZoie(idxDir,true, 100,defaultZoieVersionFactory);
+    idxSystem.getAdminMBean().setFreshness(50);
     idxSystem.start();
     final String query = "zoie";
     int numThreads = 5;
@@ -522,6 +523,7 @@ public class ZoieTest extends ZoieTestCase
                 System.out.println(sb.toString());
                 log.info(sb.toString());
               }
+              Thread.sleep(20);
             }
             catch(Exception ex)
             {
@@ -1108,6 +1110,7 @@ public class ZoieTest extends ZoieTestCase
       exportFile = new RandomAccessFile(new File(getTmpDir(), "zoie_export.dat"), "r");
       channel = exportFile.getChannel();
       idxSystem.importSnapshot(channel);
+      idxSystem.flushEvents(10000);
       channel.close();
       exportFile.close();
 

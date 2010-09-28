@@ -520,6 +520,13 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
   public void refreshDiskReader() throws IOException
   {
     _searchIdxMgr.refreshDiskReader();
+    try
+    {
+      refreshCache(20000L);
+    } catch (ZoieException e)
+    {
+      log.warn("refreshDiskReader refreshCache timeout in 20000ms");
+    }
   }
 
   /**

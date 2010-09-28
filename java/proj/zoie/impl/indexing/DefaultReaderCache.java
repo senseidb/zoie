@@ -9,9 +9,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.log4j.Logger;
 import org.apache.lucene.index.IndexReader;
 
+import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
-import proj.zoie.impl.indexing.internal.SearchIndexManager;
 
 public class DefaultReaderCache<R extends IndexReader> extends AbstractReaderCache<R>
 {
@@ -25,11 +25,11 @@ public class DefaultReaderCache<R extends IndexReader> extends AbstractReaderCac
   private final ReentrantReadWriteLock returningIndexReaderQueueLock = new ReentrantReadWriteLock();
   private final Object cachemonitor = new Object();
   private long _freshness = 10000L;
-  private final SearchIndexManager<R, ?> _searchIdxMgr;
+  private final IndexReaderFactory<ZoieIndexReader<R>> _readerfactory;
 
-  public DefaultReaderCache(SearchIndexManager<R, ?> searchIndexMgr)
+  public DefaultReaderCache(IndexReaderFactory<ZoieIndexReader<R>> readerfactory)
   {
-    _searchIdxMgr = searchIndexMgr;
+    _readerfactory = readerfactory;
     _maintenance = newMaintenanceThread();
     _maintenance.setDaemon(true);
   }
@@ -135,7 +135,7 @@ public class DefaultReaderCache<R extends IndexReader> extends AbstractReaderCac
           {
             try
             {
-              newreaders = _searchIdxMgr.getIndexReaders();
+              newreaders = _readerfactory.getIndexReaders();
             } catch (IOException e)
             {
               log.info("zoie-indexReader-maintenance", e);
@@ -173,8 +173,8 @@ public class DefaultReaderCache<R extends IndexReader> extends AbstractReaderCac
   public static ReaderCacheFactory FACTORY = new ReaderCacheFactory(){
 
     @Override
-    public <R extends IndexReader> AbstractReaderCache<R> newInstance(SearchIndexManager<R, ?> searchIndexMgr)
+    public <R extends IndexReader> AbstractReaderCache<R> newInstance(IndexReaderFactory<ZoieIndexReader<R>> readerfactory)
     {
-      return new DefaultReaderCache<R>(searchIndexMgr);
+      return new DefaultReaderCache<R>(readerfactory);
     }};
 }

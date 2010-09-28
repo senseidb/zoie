@@ -8,6 +8,7 @@ import org.apache.lucene.util.Version;
 
 import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.impl.DefaultDocIDMapperFactory;
+import proj.zoie.impl.indexing.AbstractReaderCache.ReaderCacheFactory;
 
 /**
  * Configuration parameters for building a ZoieSystem.
@@ -42,6 +43,7 @@ public class ZoieConfig
   boolean rtIndexing = true;
   int maxBatchSize;
   long _freshness = 10000;
+  ReaderCacheFactory readercachefactory = null;
 
   /**
    * Default constructor. Set the size of batch and batch delay to default value
@@ -133,5 +135,19 @@ public class ZoieConfig
   public void setFreshness(long freshness)
   {
     _freshness = freshness;
+  }
+
+  /**
+   * @return the ReaderCacheFactory in this ZoieConfig. If the value is null, return the DefaultReaderCache Factory.
+   */
+  public ReaderCacheFactory getReadercachefactory()
+  {
+    if (readercachefactory == null) return DefaultReaderCache.FACTORY;
+    return readercachefactory;
+  }
+
+  public void setReadercachefactory(ReaderCacheFactory readercachefactory)
+  {
+    this.readercachefactory = readercachefactory;
   }
 }

@@ -55,6 +55,7 @@ import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.api.indexing.OptimizeScheduler;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
+import proj.zoie.impl.indexing.AbstractReaderCache.ReaderCacheFactory;
 import proj.zoie.impl.indexing.internal.BatchedIndexDataLoader;
 import proj.zoie.impl.indexing.internal.DiskLuceneIndexDataLoader;
 import proj.zoie.impl.indexing.internal.RealtimeIndexDataLoader;
@@ -86,7 +87,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
   private volatile boolean alreadyShutdown = false;
   private final ReentrantReadWriteLock _shutdownLock = new ReentrantReadWriteLock();
   private volatile long SLA = 3; // getIndexReaders should return in 4ms or a warning is logged
-  private long _freshness = 10000; // how fresh the IndexReaders should be
+  private final AbstractReaderCache<R> readercache;
 
   /**
    * Creates a new ZoieSystem.
@@ -144,8 +145,8 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
         .getDocidMapperFactory(), zoieConfig.getAnalyzer(), zoieConfig
         .getSimilarity(), zoieConfig.getBatchSize(),
         zoieConfig.getBatchDelay(), zoieConfig.isRtIndexing(), zoieConfig
-        .getMaxBatchSize(), zoieConfig.getZoieVersionFactory());
-    _freshness = zoieConfig.getFreshness();
+        .getMaxBatchSize(), zoieConfig.getZoieVersionFactory(), zoieConfig.getReadercachefactory());
+    readercache.setFreshness(zoieConfig.getFreshness());
   }
 
   /**
@@ -170,8 +171,8 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
         zoieConfig.getDocidMapperFactory(), zoieConfig.getAnalyzer(),
         zoieConfig.getSimilarity(), zoieConfig.getBatchSize(), zoieConfig
         .getBatchDelay(), zoieConfig.isRtIndexing(), zoieConfig
-        .getMaxBatchSize(), zoieConfig.getZoieVersionFactory());
-    _freshness = zoieConfig.getFreshness();
+        .getMaxBatchSize(), zoieConfig.getZoieVersionFactory(), zoieConfig.getReadercachefactory());
+    readercache.setFreshness(zoieConfig.getFreshness());
   }
 
   /**
@@ -326,6 +327,47 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
       boolean rtIndexing, int maxBatchSize,
       ZoieVersionFactory<V> zoieVersionFactory)
   {
+    this(dirMgr, interpreter, indexReaderDecorator, docidMapperFactory, analyzer, similarity, batchSize, batchDelay, rtIndexing, maxBatchSize, zoieVersionFactory, DefaultReaderCache.FACTORY);
+  }
+  /**
+   * Creates a new ZoieSystem.
+   * 
+   * @param dirMgr
+   *          Directory manager, mandatory.
+   * @param interpreter
+   *          data interpreter, mandatory.
+   * @param indexReaderDecorator
+   *          index reader decorator,optional. If not specified,
+   *          {@link proj.zoie.impl.indexing.DefaultIndexReaderDecorator} is
+   *          used.
+   * @param docIdMapperFactory
+   *          custom docid mapper factory
+   * @param analyzer
+   *          Default analyzer, optional. If not specified,
+   *          {@link org.apache.lucene.analysis.StandardAnalyzer} is used.
+   * @param similarity
+   *          Default similarity, optional. If not specified,
+   *          {@link org.apache.lucene.search.DefaultSimilarity} is used.
+   * @param batchSize
+   *          desired number of indexing events to hold in buffer before
+   *          indexing. If we already have this many, we hold back the data
+   *          provider.
+   * @param batchDelay
+   *          How long to wait before flushing to disk.
+   * @param rtIndexing
+   *          Ensure real-time.
+   * @param maxBatchSize
+   *          maximum batch size
+   * @param ReaderCacheFactory
+   */
+  public ZoieSystem(DirectoryManager<V> dirMgr,
+      ZoieIndexableInterpreter<D> interpreter,
+      IndexReaderDecorator<R> indexReaderDecorator,
+      DocIDMapperFactory docidMapperFactory, Analyzer analyzer,
+      Similarity similarity, int batchSize, long batchDelay,
+      boolean rtIndexing, int maxBatchSize,
+      ZoieVersionFactory<V> zoieVersionFactory, ReaderCacheFactory readercachefactory)
+  {
     if (dirMgr == null)
       throw new IllegalArgumentException("null directory manager.");
     _dirMgr = dirMgr;
@@ -380,8 +422,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
     }
     super.setDataConsumer(_rtdc);
     super.setBatchSize(100); // realtime batch size
-    _maintenance = newMaintenanceThread();
-    _maintenance.setDaemon(true);
+    readercache = readercachefactory.newInstance(_searchIdxMgr);
   }
 
   public static <D, V extends ZoieVersion> ZoieSystem<IndexReader, D, V> buildDefaultInstance(
@@ -478,7 +519,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
     log.info("starting zoie...");
     _rtdc.start();
     super.start();
-    _maintenance.start();
+    readercache.start();
     log.info("zoie started...");
   }
 
@@ -493,7 +534,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
         return;
       }     
       alreadyShutdown = true;
-      _freshness=30000;
+      readercache.shutdown();
     } finally
     {
       _shutdownLock.writeLock().unlock();
@@ -522,7 +563,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
     _searchIdxMgr.refreshDiskReader();
     try
     {
-      refreshCache(20000L);
+      readercache.refreshCache(20000L);
     } catch (ZoieException e)
     {
       log.warn("refreshDiskReader refreshCache timeout in 20000ms");
@@ -538,7 +579,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
   {
     super.flushEvents(timeout);
     _rtdc.flushEvents(timeout);
-    refreshCache(timeout);
+    readercache.refreshCache(timeout);
   }
 
   /**
@@ -549,7 +590,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
   public void flushEventsToMemoryIndex(long timeout) throws ZoieException
   {
     super.flushEvents(timeout);
-    refreshCache(timeout);
+    readercache.refreshCache(timeout);
   }
 
   public boolean isReadltimeIndexing()
@@ -570,13 +611,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
   public List<ZoieIndexReader<R>> getIndexReaders() throws IOException
   {
     long t0 = System.currentTimeMillis();
-    cachedreadersLock.readLock().lock();
-    List<ZoieIndexReader<R>> readers = cachedreaders; //_searchIdxMgr.getIndexReaders();
-    for(ZoieIndexReader<R> r : readers)
-    {
-        r.incZoieRef();
-    }
-    cachedreadersLock.readLock().unlock();
+    List<ZoieIndexReader<R>> readers = readercache.getIndexReaders();
     t0 = System.currentTimeMillis() - t0;
     if (t0 > SLA)
     {
@@ -615,9 +650,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
   {
     long t0 = System.currentTimeMillis();
     if (readers == null || readers.size()==0) return;
-    returningIndexReaderQueueLock.readLock().lock();
-    returningIndexReaderQueue.add(readers);
-    returningIndexReaderQueueLock.readLock().unlock();
+    readercache.returnIndexReaders(readers);
     t0 = System.currentTimeMillis() - t0;
     if (t0 > SLA)
     {
@@ -636,7 +669,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
     _searchIdxMgr.purgeIndex();
     try
     {
-      refreshCache(20000L);
+      readercache.refreshCache(20000L);
     } catch (ZoieException e)
     {
       log.error("refreshCache in purgeIndex", e);
@@ -971,13 +1004,13 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
     @Override
     public long getFreshness()
     {
-      return ZoieSystem.this._freshness;
+      return ZoieSystem.this.readercache.getFreshness();
     }
 
     @Override
     public void setFreshness(long freshness)
     {
-      ZoieSystem.this._freshness = freshness;
+      ZoieSystem.this.readercache.setFreshness(freshness);
     }
   }
 
@@ -1020,101 +1053,6 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
   public void syncWthVersion(long timeInMillis, V version) throws ZoieException
   {
     super.syncWthVersion(timeInMillis, version);
-    refreshCache(timeInMillis);
-  }
-
-  private void refreshCache(long timeout) throws ZoieException
-  {
-    long begintime = System.currentTimeMillis();
-    while(cachedreaderTimestamp <= begintime)
-    {
-      synchronized(cachemonitor)
-      {
-        cachemonitor.notifyAll();
-        long elapsed = System.currentTimeMillis() - begintime;
-        if (elapsed > timeout)
-        {
-          log.debug("refreshCached reader timeout in " + elapsed + "ms");
-          throw new ZoieException("refreshCached reader timeout in " + elapsed + "ms");
-        }
-        long timetowait = Math.min(timeout - elapsed, 200);
-        try
-        {
-          cachemonitor.wait(timetowait);
-        } catch (InterruptedException e)
-        {
-          log.warn("refreshCache", e);
-        }
-      }
-    }
-  }
-  private final Thread _maintenance;
-  private volatile List<ZoieIndexReader<R>> cachedreaders = new ArrayList<ZoieIndexReader<R>>(0);
-  private volatile long cachedreaderTimestamp = 0;
-  private final ReentrantReadWriteLock cachedreadersLock = new ReentrantReadWriteLock();
-  private volatile ConcurrentLinkedQueue<List<ZoieIndexReader<R>>> returningIndexReaderQueue = new ConcurrentLinkedQueue<List<ZoieIndexReader<R>>>();
-  private final ReentrantReadWriteLock returningIndexReaderQueueLock = new ReentrantReadWriteLock();
-  private final Object cachemonitor = new Object(); 
-  
-  private Thread newMaintenanceThread()
-  {
-    return new Thread("zoie-indexReader-maintenance"){
-      @Override
-      public void run()
-      {
-        while(true)
-        {
-          try
-          {
-            synchronized(cachemonitor)
-            {
-              cachemonitor.wait(_freshness);
-            }
-          } catch (InterruptedException e)
-          {
-            Thread.interrupted(); // clear interrupted state
-          }
-          List<ZoieIndexReader<R>> newreaders = null;
-          if (alreadyShutdown)
-          {
-            newreaders = new ArrayList<ZoieIndexReader<R>>();
-            // clean up and quit
-          } else
-          {
-            try
-            {
-              newreaders = _searchIdxMgr.getIndexReaders();
-            } catch (IOException e)
-            {
-              log.info("zoie-indexReader-maintenance", e);
-              newreaders = new ArrayList<ZoieIndexReader<R>>();
-            }
-          }
-          List<ZoieIndexReader<R>> oldreaders = cachedreaders;
-          cachedreadersLock.writeLock().lock();
-          cachedreaders = newreaders;
-          cachedreadersLock.writeLock().unlock();
-          cachedreaderTimestamp = System.currentTimeMillis();
-          synchronized(cachemonitor)
-          {
-            cachemonitor.notifyAll();
-          }
-          // return the old cached reader
-          returnIndexReaders(oldreaders);
-          // process the returing index reader queue
-          returningIndexReaderQueueLock.writeLock().lock();
-          ConcurrentLinkedQueue<List<ZoieIndexReader<R>>> oldreturningIndexReaderQueue = returningIndexReaderQueue;
-          returningIndexReaderQueue = new ConcurrentLinkedQueue<List<ZoieIndexReader<R>>>();
-          returningIndexReaderQueueLock.writeLock().unlock();
-          for(List<ZoieIndexReader<R>> readers : oldreturningIndexReaderQueue)
-          {
-            for(ZoieIndexReader<R> r : readers)
-            {
-              r.decZoieRef();
-            }
-          }
-        }
-      }
-    };
+    readercache.refreshCache(timeInMillis);
   }
 }

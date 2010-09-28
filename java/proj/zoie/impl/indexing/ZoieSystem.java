@@ -347,6 +347,7 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
     public void flushEventsToMemoryIndex(long timeout) throws ZoieException
     {
       super.flushEvents(timeout);
+      refreshCache(timeout);
     }
     
 	public boolean isReadltimeIndexing()
@@ -425,6 +426,13 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 	  {
 	  }
 	  _searchIdxMgr.purgeIndex();
+    try
+    {
+      refreshCache(20000L);
+    } catch (ZoieException e)
+    {
+      log.error("refreshCache in purgeIndex", e);
+    }
 	}
 
 	public int getCurrentMemBatchSize()

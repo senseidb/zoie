@@ -117,7 +117,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 	}
 	
   /**
-   * make exact shallow copy for duplication. (So we don't redecorate the decorated reader.)
+   * make exact shallow copy for duplication. The decorated reader is also shallow copied.
    * @param copyFrom
    * @param innerReader
    * @throws IOException
@@ -138,7 +138,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
       _decoratedReader = null;
     } else
     {
-      _decoratedReader = copyFrom._decoratedReader;
+      _decoratedReader = copyFrom._decorator.redecorate(copyFrom._decoratedReader, this, this.getDelDocIds()!=null&&this.getDelDocIds().length>0);
     }
   }
 

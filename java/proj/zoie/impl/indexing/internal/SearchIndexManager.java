@@ -22,15 +22,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.log4j.Logger;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DocIDMapperFactory;
+import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
-public class SearchIndexManager<R extends IndexReader>{
+public class SearchIndexManager<R extends IndexReader> implements IndexReaderFactory<ZoieIndexReader<R>>{
     private static final Logger log = Logger.getLogger(SearchIndexManager.class);
     
     public static enum Status
@@ -549,5 +551,11 @@ public class SearchIndexManager<R extends IndexReader>{
     {
       return _diskIndexReader;
     }
+  }
+
+  @Override
+  public Analyzer getAnalyzer()
+  {
+    throw new UnsupportedOperationException();
   }
 }

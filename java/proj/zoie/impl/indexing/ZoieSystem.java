@@ -542,6 +542,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
   public void flushEventsToMemoryIndex(long timeout) throws ZoieException
   {
     super.flushEvents(timeout);
+    refreshCache(timeout);
   }
 
   public boolean isReadltimeIndexing()
@@ -626,6 +627,13 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
     {
     }
     _searchIdxMgr.purgeIndex();
+    try
+    {
+      refreshCache(20000L);
+    } catch (ZoieException e)
+    {
+      log.error("refreshCache in purgeIndex", e);
+    }
   }
 
   public int getCurrentMemBatchSize()

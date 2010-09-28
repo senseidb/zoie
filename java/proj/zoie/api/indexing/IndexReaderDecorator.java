@@ -37,8 +37,10 @@ public interface IndexReaderDecorator<R extends IndexReader>
 	R decorate(ZoieIndexReader<R> indexReader) throws IOException;
 	
 	/**
-	 * This is called when the actual underlysing reader was not changed, but a new reference was created. Normally only the internal
-	 * reference to the source reader needs to be set.
+	 * This is called when the actual underlying reader was not changed, but a new reference was created.
+	 * Generally, the decorated reader should be at least shallow copied due to reuse of the decorated reader.
+	 * If we dont copy the decorated reader and change the inner reader, it would create a race condition and
+	 * cause data inconsistency.
 	 * @param decorated Previously decoreated reader
 	 * @param copy a new copy of the source reader
 	 * @param withDeletes indicator for whether this segment contained new deletes

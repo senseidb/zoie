@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Queue;
@@ -615,7 +614,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
     t0 = System.currentTimeMillis() - t0;
     if (t0 > SLA)
     {
-      log.warn("getIndexReaders returned in " + t0 + "ms more than " + SLA +"ms");
+      log.warn("getIndexReaders returned in " + t0 + "ms more than " + SLA +"ms using" + readercache);
     }
     return readers;
   }
@@ -654,7 +653,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
     t0 = System.currentTimeMillis() - t0;
     if (t0 > SLA)
     {
-      log.warn("returnIndexReaders returned in "  + t0 + "ms more than " + SLA +"ms");
+      log.warn("returnIndexReaders returned in "  + t0 + "ms more than " + SLA +"ms using " + readercache);
     }
   }
 

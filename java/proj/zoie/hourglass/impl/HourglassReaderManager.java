@@ -266,7 +266,7 @@ public class HourglassReaderManager<R extends IndexReader, V>
    * @param zoie
    * @param reader the IndexReader opened on the index the give zoie had written to.
    */
-  public synchronized void archive(ZoieSystem<R, V> zoie, IndexReader reader)
+  public synchronized void archive(ZoieSystem<R, V> zoie, ZoieMultiReader<R> reader)
   {
     List<ZoieIndexReader<R>> _archives = new LinkedList<ZoieIndexReader<R>>(box._archives);
     List<ZoieSystem<R, V>> actives = new LinkedList<ZoieSystem<R, V>>(box._actives);
@@ -274,14 +274,7 @@ public class HourglassReaderManager<R extends IndexReader, V>
     retiring.remove(zoie);
     if (reader != null)
     {
-      try
-      {
-        ZoieMultiReader<R> zoiereader = new ZoieMultiReader<R>(reader, _decorator);
-        _archives.add(zoiereader);
-      } catch (IOException e)
-      {
-        log.error(e);
-      }
+      _archives.add(reader);
     }
     Box<R, V> newbox = new Box<R, V>(_archives, retiring, actives, _decorator);
     box = newbox;
@@ -372,7 +365,15 @@ public class HourglassReaderManager<R extends IndexReader, V>
     {
       log.error("retiring " + zoie.getAdminMBean().getIndexDir() + " Should investigate. But move on now.", e);
     }
-    archive(zoie, reader);
+    ZoieMultiReader<R> zoiereader = null;
+    try
+    {
+      zoiereader = new ZoieMultiReader<R>(reader, _decorator);
+    } catch (IOException e)
+    {
+      log.error(e);
+    }
+    archive(zoie, zoiereader);
     log.info("retired " + zoie.getAdminMBean().getIndexDir() + " in " + (System.currentTimeMillis()-t0)+"ms");
     log.info("Disk Index Size Total Now: " + (hg.getSizeBytes()/1024L) + "KB");
     zoie.shutdown();

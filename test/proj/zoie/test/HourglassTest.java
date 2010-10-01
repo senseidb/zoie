@@ -39,7 +39,6 @@ import proj.zoie.hourglass.api.HourglassIndexableInterpreter;
 import proj.zoie.hourglass.impl.HourGlassScheduler;
 import proj.zoie.hourglass.impl.Hourglass;
 import proj.zoie.hourglass.impl.HourglassDirectoryManagerFactory;
-import proj.zoie.hourglass.mbean.HourglassAdminMBean;
 import proj.zoie.hourglass.mbean.HourglassAdmin;
 import proj.zoie.impl.indexing.MemoryStreamDataProvider;
 import proj.zoie.impl.indexing.ZoieConfig;
@@ -200,6 +199,14 @@ public class HourglassTest extends ZoieTestCase
         readers = null;
       }
       System.out.println(((i-initNumDocs)*100/numTestContent) + "%");
+    }
+    try
+    {
+      mbeanServer.unregisterMBean(new ObjectName("HouseGlass:name=hourglass"));
+    } catch (Exception e)
+    {
+      e.printStackTrace();
+      log.error(e);
     }
     hourglass.shutdown();
   }

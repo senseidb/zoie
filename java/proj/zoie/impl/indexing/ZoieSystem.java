@@ -422,27 +422,22 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
     super.setDataConsumer(_rtdc);
     super.setBatchSize(100); // realtime batch size
     readercache = readercachefactory.newInstance(_searchIdxMgr);
+    log.info("using readerCache: " + readercache);
   }
 
-  public static <D, V extends ZoieVersion> ZoieSystem<IndexReader, D, V> buildDefaultInstance(
-      File idxDir, ZoieIndexableInterpreter<D> interpreter, int batchSize,
-      long batchDelay, boolean realtime,
-      ZoieVersionFactory<V> zoieVersionFactory)
-      {
-    return buildDefaultInstance(idxDir, interpreter, new StandardAnalyzer(
-        Version.LUCENE_CURRENT), new DefaultSimilarity(), batchSize,
-        batchDelay, realtime, zoieVersionFactory);
-      }
+  public static <D, V extends ZoieVersion> ZoieSystem<IndexReader, D, V> buildDefaultInstance(File idxDir, ZoieIndexableInterpreter<D> interpreter,
+      int batchSize, long batchDelay, boolean realtime, ZoieVersionFactory<V> zoieVersionFactory)
+  {
+    return buildDefaultInstance(idxDir, interpreter, new StandardAnalyzer(Version.LUCENE_CURRENT), new DefaultSimilarity(), batchSize, batchDelay, realtime,
+        zoieVersionFactory);
+  }
 
-  public static <D, V extends ZoieVersion> ZoieSystem<IndexReader, D, V> buildDefaultInstance(
-      File idxDir, ZoieIndexableInterpreter<D> interpreter, Analyzer analyzer,
-      Similarity similarity, int batchSize, long batchDelay, boolean realtime,
-      ZoieVersionFactory<V> zoieVersionFactory)
-      {
-    return new ZoieSystem<IndexReader, D, V>(idxDir, interpreter,
-        new DefaultIndexReaderDecorator(), analyzer, similarity, batchSize,
-        batchDelay, realtime, zoieVersionFactory);
-      }
+  public static <D, V extends ZoieVersion> ZoieSystem<IndexReader, D, V> buildDefaultInstance(File idxDir, ZoieIndexableInterpreter<D> interpreter,
+      Analyzer analyzer, Similarity similarity, int batchSize, long batchDelay, boolean realtime, ZoieVersionFactory<V> zoieVersionFactory)
+  {
+    return new ZoieSystem<IndexReader, D, V>(idxDir, interpreter, new DefaultIndexReaderDecorator(), analyzer, similarity, batchSize, batchDelay, realtime,
+        zoieVersionFactory);
+  }
 
   public void addIndexingEventListener(IndexingEventListener<V> lsnr)
   {

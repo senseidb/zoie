@@ -246,6 +246,7 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
       super.setDataConsumer(_rtdc);
       super.setBatchSize(100); // realtime batch size
       readercache = readercachefactory.newInstance(_searchIdxMgr);
+      log.info("using readerCache: " + readercache);
     }
 
     public static <V> ZoieSystem<IndexReader,V> buildDefaultInstance(File idxDir,ZoieIndexableInterpreter<V> interpreter,int batchSize,long batchDelay,boolean realtime){

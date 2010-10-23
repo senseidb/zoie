@@ -392,6 +392,40 @@ public class ZoieTest extends ZoieTestCase
       memoryProvider.stop();
     }
   }
+  
+  public void testStreamDataProviderFlush() throws ZoieException
+  {
+    MockDataLoader<Integer, DefaultZoieVersion> consumer=new MockDataLoader<Integer, DefaultZoieVersion>();
+    MemoryStreamDataProvider<Integer, DefaultZoieVersion> memoryProvider=new MemoryStreamDataProvider<Integer, DefaultZoieVersion>();
+    memoryProvider.setBatchSize(100);
+    memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
+    memoryProvider.setDataConsumer(consumer);
+    memoryProvider.start();
+    try
+    {
+      int count=10;
+
+      List<DataEvent<Integer,DefaultZoieVersion>> list=new ArrayList<DataEvent<Integer,DefaultZoieVersion>>(count);
+      DefaultZoieVersion zvt = null;
+      for (int i=0;i<count;++i)
+      {
+        zvt = new DefaultZoieVersion();
+        zvt.setVersionId(i);
+        //list.add(new DataEvent<Integer,DefaultZoieVersion>(i,i));
+        list.add(new DataEvent<Integer,DefaultZoieVersion>(i,zvt));
+      }
+      memoryProvider.addEvents(list);
+
+      memoryProvider.flush();
+      
+      int num=consumer.getCount();
+      assertEquals(num, count);   
+    }
+    finally
+    {
+      memoryProvider.stop();
+    }
+  }
 
   public void testAsyncDataConsumer() throws ZoieException
   {

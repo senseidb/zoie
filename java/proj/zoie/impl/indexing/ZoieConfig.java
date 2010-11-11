@@ -8,7 +8,8 @@ import org.apache.lucene.util.Version;
 
 import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.impl.DefaultDocIDMapperFactory;
-import proj.zoie.impl.indexing.AbstractReaderCache.ReaderCacheFactory;
+import proj.zoie.impl.indexing.internal.DefaultRAMIndexFactory;
+import proj.zoie.impl.indexing.internal.RAMIndexFactory;
 
 /**
  * Configuration parameters for building a ZoieSystem.
@@ -44,6 +45,7 @@ public class ZoieConfig
   int maxBatchSize;
   long _freshness = 10000;
   ReaderCacheFactory readercachefactory = null;
+  RAMIndexFactory ramIndexFactory = null;
 
   /**
    * Default constructor. Set the size of batch and batch delay to default value
@@ -150,4 +152,19 @@ public class ZoieConfig
   {
     this.readercachefactory = readercachefactory;
   }
+
+  /**
+   * @return the RAMIndexFactory in this ZoieConfig. If the value is null, return the DefaultRAMIndexFactory Factory.
+   */
+  public RAMIndexFactory getRamIndexFactory()
+  {
+    if (ramIndexFactory == null) return new DefaultRAMIndexFactory();
+    return ramIndexFactory;
+  }
+
+  public void setRamIndexFactory(RAMIndexFactory ramIndexFactory)
+  {
+    this.ramIndexFactory = ramIndexFactory;
+  }
+
 }

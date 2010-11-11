@@ -53,17 +53,17 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
 	   * for disk IndexReader
 	   */
 	  private final Object _memLock = new Object();
-
+	  private final RAMIndexFactory<R> _ramIndexFactory;
 	  
 	  /**
 	   * @param location 
 	   * @param indexReaderDecorator
 	   */
-	  public SearchIndexManager(DirectoryManager dirMgr,IndexReaderDecorator<R> indexReaderDecorator,DocIDMapperFactory docIDMapperFactory)
+	  public SearchIndexManager(DirectoryManager dirMgr,IndexReaderDecorator<R> indexReaderDecorator,DocIDMapperFactory docIDMapperFactory, RAMIndexFactory<R> ramIndexFactory)
 	  {
 	    _dirMgr = dirMgr;
 	    _docIDMapperFactory = docIDMapperFactory;
-	    
+	    _ramIndexFactory = ramIndexFactory;
 	    if (indexReaderDecorator!=null)
 	    {
 	      _indexReaderDecorator=indexReaderDecorator;
@@ -86,7 +86,7 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
           return;
         }
         long version = _diskIndex.getVersion();
-        RAMSearchIndex<R> memIndexA = new RAMSearchIndex<R>(version, _indexReaderDecorator,this);
+        RAMSearchIndex<R> memIndexA = _ramIndexFactory.newInstance(version, _indexReaderDecorator,this);
         Mem<R> mem = new Mem<R>(memIndexA, null, memIndexA, null, diskIndexReader);
         if (diskIndexReader != null)
         {
@@ -231,7 +231,7 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
 
 	        if (memIndexB != null)                           // load memory index B
 	        {
-	          reader = memIndexB.openIndexReader();            
+	          reader = memIndexB.openIndexReader();
 	          if (reader != null)
 	          {
 	            reader = reader.copy();
@@ -299,7 +299,7 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
 	        RAMSearchIndex<R> memIndexA = oldMem.get_memIndexA();
 	        if(memIndexA != null) memIndexA.closeIndexWriter();
 
-	        RAMSearchIndex<R> memIndexB = new RAMSearchIndex<R>(version, _indexReaderDecorator,this);
+	        RAMSearchIndex<R> memIndexB = _ramIndexFactory.newInstance(version, _indexReaderDecorator,this);
 	        Mem<R> mem = new Mem<R>(memIndexA, memIndexB, memIndexB, memIndexA, oldMem.get_diskIndexReader());
 	        _mem = mem;
 	        log.info("Current writable index is B, new B created");
@@ -320,6 +320,7 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
 	        }
 	        Mem<R> oldMem = _mem;
 	        Mem<R> mem = new Mem<R>(oldMem.get_memIndexB(), null, oldMem.get_memIndexB(), null, diskIndexReader);
+	        if (oldMem.get_memIndexA()!=null){oldMem.get_memIndexA().close();}
 	        lockAndSwapMem(diskIndexReader, oldMem.get_diskIndexReader(), mem);
 	        log.info("Current writable index is A, B is flushed");
 	      }
@@ -445,7 +446,9 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
     _diskIndex.closeIndexWriter();
     _dirMgr.purge();
     _diskIndex.refresh();
-    RAMSearchIndex<R> memIndexA = new RAMSearchIndex<R>(_diskIndex.getVersion(), _indexReaderDecorator, this);
+    if (_mem.get_memIndexA()!=null){_mem.get_memIndexA().close();}
+    if (_mem.get_memIndexB()!=null){_mem.get_memIndexB().close();}
+    RAMSearchIndex<R> memIndexA = _ramIndexFactory.newInstance(_diskIndex.getVersion(), _indexReaderDecorator, this);
     Mem<R> mem = new Mem<R>(memIndexA, null, memIndexA, null, null);
     _mem = mem;
 

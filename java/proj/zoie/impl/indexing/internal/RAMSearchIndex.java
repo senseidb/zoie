@@ -18,6 +18,7 @@ package proj.zoie.impl.indexing.internal;
 
 import it.unimi.dsi.fastutil.longs.LongSet;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
@@ -27,20 +28,22 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.search.Similarity;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
 
 import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieMultiReader;
 import proj.zoie.api.impl.ZoieMergePolicy;
 import proj.zoie.api.impl.ZoieMergePolicy.MergePolicyParams;
+import proj.zoie.api.impl.util.FileUtil;
 import proj.zoie.api.impl.util.IndexUtil;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
 public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
 {
 	  private long         _version;
-	  private final RAMDirectory _directory;
+	  private final Directory _directory;
+	  private final File _backingdir;
 	  private final IndexReaderDecorator<R> _decorator;
 	  
 	  // a consistent pair of reader and deleted set
@@ -50,9 +53,11 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
 	  
 	  public static final Logger log = Logger.getLogger(RAMSearchIndex.class);
 
-	  public RAMSearchIndex(long version, IndexReaderDecorator<R> decorator,SearchIndexManager<R> idxMgr){
-		super(idxMgr, false);
-		_directory = new RAMDirectory();
+	  public RAMSearchIndex(long version, IndexReaderDecorator<R> decorator,SearchIndexManager<R> idxMgr, Directory ramIdxDir, File backingdir)
+	  {
+		super(idxMgr, true);
+		_directory = ramIdxDir;
+		_backingdir = backingdir;
 		_version = version;
 		_decorator = decorator;
 		_currentReader = null;
@@ -66,9 +71,20 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
 	  public void close()
 	  {
 	    super.close();
+	    if (_currentReader!=null)
+	    {
+	      _currentReader.decZoieRef();
+	    }
 	    if (_directory!=null)
 	    {
-	      _directory.close();
+	      try
+        {
+          _directory.close();
+          FileUtil.rmDir(_backingdir);
+        } catch (IOException e)
+        {
+          log.error(e);
+        }
 	    }
 	  }
 	  
@@ -195,7 +211,12 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
 	        }
 	      }
 	      
-	      _currentReader = reader;
+	      if (_currentReader != reader)
+	      {
+	        ZoieIndexReader<R> oldReader = _currentReader;
+	        _currentReader = reader;
+          if (oldReader !=null) ((ZoieIndexReader)oldReader).decZoieRef();//.decRef();
+	      }
 	      LongSet delDocs = _delDocs;
           clearDeletes();
           markDeletes(delDocs); // re-mark deletes

@@ -7,5 +7,6 @@
       <artifact name="zoie-dataprovider-mysql" type="jar" ext="jar" conf="master" />
     </publications>
     <dependencies>
+      <dependency org="mysql" name="mysql-connector-java" rev="5.1.13" conf="master"/>
     </dependencies>
 </ivy-module>

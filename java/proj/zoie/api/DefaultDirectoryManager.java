@@ -231,6 +231,7 @@ public class DefaultDirectoryManager implements DirectoryManager
     FileChannel fc = null;
     try
     {
+      log.info("transferFromChannelToFile for " + fileName +  " with " +  dataLen + " bytes");
       raf = new RandomAccessFile(file, "rw");
       fc = raf.getChannel();
 
@@ -261,9 +262,10 @@ public class DefaultDirectoryManager implements DirectoryManager
     FileChannel fc = null;
     try
     {
-      raf = new RandomAccessFile(file, "rw");
+      raf = new RandomAccessFile(file, "r");
       fc = raf.getChannel();
       long dataLen = fc.size();
+      log.info("transferFromFileToChannel for " + fileName +  " of " +  dataLen + " bytes");
       amount += ChannelUtil.writeLong(channel, dataLen);
 
       long position = 0;

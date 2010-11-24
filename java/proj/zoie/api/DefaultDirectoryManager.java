@@ -233,7 +233,13 @@ public class DefaultDirectoryManager implements DirectoryManager
     {
       raf = new RandomAccessFile(file, "rw");
       fc = raf.getChannel();
-      return (fc.transferFrom(channel, 0, dataLen) == dataLen);
+
+      long position = 0;
+      do
+      {
+        position += fc.transferFrom(channel, position, dataLen - position);
+      } while (position < dataLen);
+      return true;
     }
     finally
     {
@@ -259,7 +265,14 @@ public class DefaultDirectoryManager implements DirectoryManager
       fc = raf.getChannel();
       long dataLen = fc.size();
       amount += ChannelUtil.writeLong(channel, dataLen);
-      amount += fc.transferTo(0, dataLen, channel);
+
+      long position = 0;
+      do
+      {
+        position += fc.transferTo(position, dataLen - position, channel);
+      } while (position < dataLen);
+      
+      amount += position;
     }
     finally
     {

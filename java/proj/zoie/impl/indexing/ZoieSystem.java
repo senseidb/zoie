@@ -244,7 +244,6 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
         _rtdc = new BatchedIndexDataLoader<R, V>(_diskLoader, batchSize, Math.max(batchSize, maxBatchSize), batchDelay, _searchIdxMgr, _interpreter, _lsnrList);
       }
       super.setDataConsumer(_rtdc);
-      super.setBatchSize(100); // realtime batch size
       readercache = readercachefactory.newInstance(_searchIdxMgr);
       log.info("using readerCache: " + readercache);
     }
@@ -325,6 +324,12 @@ public class ZoieSystem<R extends IndexReader,V> extends AsyncDataConsumer<V> im
 	  } finally
 	  {
 	    _shutdownLock.writeLock().unlock();
+	  }
+	  OptimizeScheduler scheduler = _diskLoader.getOptimizeScheduler();
+	  if (scheduler != null)
+	  {
+	    log.info("shutting down zoie's OptimizeScheduler ...");
+	    scheduler.shutdown();
 	  }
 	  log.info("shutting down zoie...");
 		try

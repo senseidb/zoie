@@ -48,7 +48,7 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader, V extends ZoieVers
 	private long _lastTimeOptimized;
 	private static final Logger log = Logger.getLogger(DiskLuceneIndexDataLoader.class);
 	private Object _optimizeMonitor;
-	private OptimizeScheduler _optScheduler;
+	private volatile OptimizeScheduler _optScheduler;
 	
 	public DiskLuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R,V> idxMgr) {
 		super(analyzer, similarity, idxMgr);

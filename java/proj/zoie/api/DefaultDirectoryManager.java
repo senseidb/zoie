@@ -235,9 +235,16 @@ public class DefaultDirectoryManager<V extends ZoieVersion> implements Directory
     FileChannel fc = null;
     try
     {
+      log.info("transferFromChannelToFile for " + fileName +  " with " +  dataLen + " bytes");
       raf = new RandomAccessFile(file, "rw");
       fc = raf.getChannel();
-      return (fc.transferFrom(channel, 0, dataLen) == dataLen);
+
+      long position = 0;
+      do
+      {
+        position += fc.transferFrom(channel, position, dataLen - position);
+      } while (position < dataLen);
+      return true;
     }
     finally
     {
@@ -259,11 +266,19 @@ public class DefaultDirectoryManager<V extends ZoieVersion> implements Directory
     FileChannel fc = null;
     try
     {
-      raf = new RandomAccessFile(file, "rw");
+      raf = new RandomAccessFile(file, "r");
       fc = raf.getChannel();
       long dataLen = fc.size();
+      log.info("transferFromFileToChannel for " + fileName +  " of " +  dataLen + " bytes");
       amount += ChannelUtil.writeLong(channel, dataLen);
-      amount += fc.transferTo(0, dataLen, channel);
+
+      long position = 0;
+      do
+      {
+        position += fc.transferTo(position, dataLen - position, channel);
+      } while (position < dataLen);
+      
+      amount += position;
     }
     finally
     {

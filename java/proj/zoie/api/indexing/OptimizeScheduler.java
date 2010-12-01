@@ -23,4 +23,5 @@ public abstract class OptimizeScheduler {
   
   abstract public OptimizeType getScheduledOptimizeType();
   abstract public void finished();
+  abstract public void shutdown();
 }

@@ -420,7 +420,6 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
           _interpreter, _lsnrList);
     }
     super.setDataConsumer(_rtdc);
-    super.setBatchSize(100); // realtime batch size
     readercache = readercachefactory.newInstance(_searchIdxMgr);
     log.info("using readerCache: " + readercache);
   }
@@ -532,6 +531,12 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
     } finally
     {
       _shutdownLock.writeLock().unlock();
+    }
+    OptimizeScheduler scheduler = _diskLoader.getOptimizeScheduler();
+    if (scheduler != null)
+    {
+      log.info("shutting down zoie's OptimizeScheduler ...");
+      scheduler.shutdown();
     }
     log.info("shutting down zoie...");
     try

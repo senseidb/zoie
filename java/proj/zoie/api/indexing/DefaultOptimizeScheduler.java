@@ -110,5 +110,12 @@ public class DefaultOptimizeScheduler extends OptimizeScheduler {
     public void finished() {
       _optimizeScheduled = false;
     }
+
+    @Override
+    public void shutdown()
+    {
+      _optimizeTimer.cancel();
+      _optimizeTimer.purge();
+    }
 }
 

@@ -12,7 +12,7 @@ public class ChannelUtil
     ByteBuffer buf = ByteBuffer.allocate(4);
     buf.putInt(val);
     buf.rewind();
-    return channel.write(buf);
+    return writeByteBuffer(channel, buf, 4);
   }
   
   public static long writeLong(WritableByteChannel channel, long val) throws IOException
@@ -20,20 +20,39 @@ public class ChannelUtil
     ByteBuffer buf = ByteBuffer.allocate(8);
     buf.putLong(val);
     buf.rewind();
-    return channel.write(buf);
+    return writeByteBuffer(channel, buf, 8);
+  }
+
+  /**
+   * Writes bytes from buf to the channel until at least bytesToWrite number of bytes are written.
+   * @param channel the destination channel
+   * @param buf the source buffer
+   * @param t the number of bytes to write
+   * @return the number of bytes written
+   * @throws IOException
+   */
+  private static int writeByteBuffer(WritableByteChannel channel, ByteBuffer buf, int bytesToWrite) throws IOException
+  {
+    int t = bytesToWrite; // remaining bytes to write
+    while(t>0)
+    {
+      t -= channel.write(buf);
+    }
+    return bytesToWrite - t;
   }
   
   public static long writeString(WritableByteChannel channel, String val) throws IOException
   {
     int len = val.length();
-    ByteBuffer buf = ByteBuffer.allocate(4 + 2 * len);
+    int size;
+    ByteBuffer buf = ByteBuffer.allocate(size = 4 + 2 * len);
     buf.putInt(len);
     for(int i = 0; i < len; i++)
     {
       buf.putChar(val.charAt(i));
     }
     buf.rewind();
-    return channel.write(buf);
+    return writeByteBuffer(channel, buf, size);
   }
   
   public static int readInt(ReadableByteChannel channel) throws IOException
@@ -85,7 +104,7 @@ public class ChannelUtil
     {
       int cnt = channel.read(buf);
       if(cnt < 0) return false;
-      if(buf.limit() == buf.capacity()) break;
+      if(buf.position() == buf.capacity()) break;// fill to capacity
     }
     return true;
   }

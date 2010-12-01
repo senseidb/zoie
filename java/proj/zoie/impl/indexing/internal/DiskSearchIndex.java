@@ -19,7 +19,6 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
-import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -209,7 +208,7 @@ public class DiskSearchIndex<R extends IndexReader, V extends ZoieVersion> exten
   protected IndexReader openIndexReaderForDelete() throws IOException {
     Directory directory = _dirMgr.getDirectory(true);
     if (IndexReader.indexExists(directory)){		
-      return IndexReader.open(directory,false);
+      return IndexReader.open(directory, _deletionPolicy, false);
     }
     else{
       return null;

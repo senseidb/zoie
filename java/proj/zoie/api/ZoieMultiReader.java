@@ -215,10 +215,17 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
           return mid;
         lo = mid + 1;
       } else
-      { // found a match
+      {
+        // scan to last match
+        while (mid + 1 < numSubReaders && starts[mid + 1] == midValue)
+        {
+          mid++;
+        }
+
         return mid;
       }
     }
+
     return hi;
   }
 

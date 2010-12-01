@@ -208,6 +208,7 @@ public class HourglassTest extends ZoieTestCase
       e.printStackTrace();
       log.error(e);
     }
+    memoryProvider.stop();
     hourglass.shutdown();
   }
   private int getTotalNumDocs(Hourglass<IndexReader, String,DefaultZoieVersion> hourglass)

@@ -306,7 +306,7 @@ public abstract class StreamDataProvider<D, V extends ZoieVersion> implements Da
         {
           while (_currentVersion == null || _currentVersion.compareTo(version) < 0)
           {
-            if (now > due)
+            if (now >= due)
             {
               throw new ZoieException("sync timed out");
             }
@@ -369,6 +369,11 @@ public abstract class StreamDataProvider<D, V extends ZoieVersion> implements Da
           {
             synchronized (this)
             {
+              if (_flushing && (_batch.size() > 0))
+              {
+                flush();
+                _currentVersion = version;
+              }
               this.notifyAll();
               try
               {

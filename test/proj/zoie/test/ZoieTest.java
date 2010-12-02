@@ -1075,7 +1075,7 @@ public class ZoieTest extends ZoieTestCase
   {
     File idxDir=getIdxDir();
     DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-    ZoieSystem<IndexReader,String,DefaultZoieVersion> idxSystem=createZoie(idxDir,true,defaultZoieVersionFactory);
+    final ZoieSystem<IndexReader,String,DefaultZoieVersion> idxSystem=createZoie(idxDir,true,defaultZoieVersionFactory);
     idxSystem.start();
 
     DirectoryManager dirMgr = new DefaultDirectoryManager(idxDir,defaultZoieVersionFactory);

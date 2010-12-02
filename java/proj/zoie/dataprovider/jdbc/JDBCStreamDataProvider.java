@@ -46,7 +46,7 @@ public class JDBCStreamDataProvider<T, V extends ZoieVersion> extends StreamData
     DataEvent<T,V> event = null;
     try
     {
-      while(!_res.next())
+      if(!_res.next())
       {
         try{
           _res.close();
@@ -61,9 +61,11 @@ public class JDBCStreamDataProvider<T, V extends ZoieVersion> extends StreamData
         }
         _stmt = _stmtBuilder.buildStatment(_conn, _version);
         _res = _stmt.executeQuery();
+      } else
+      {
+        event = _stmtBuilder.buildDataEvent(_res);
+        _version = event.getVersion();
       }
-      event = _stmtBuilder.buildDataEvent(_res);
-      _version = event.getVersion();
     } 
     catch (SQLException sqle)
     {

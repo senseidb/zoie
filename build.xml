@@ -154,14 +154,13 @@
 			<jvmarg value="-server" />
 			<jvmarg value="-Xms512m" />
 			<jvmarg value="-Xmx1g" />
+                        <jvmarg value="-XX:NewSize=1m" />
 			<jvmarg value="-Xloggc:${logs}/gc.log" />
 			<jvmarg value="-XX:+PrintGCTimeStamps" />
 			<jvmarg value="-XX:+PrintGCDetails" />
-			<jvmarg value="-XX:+AggressiveHeap" />
-			<jvmarg value="-XX:+UseAdaptiveSizePolicy" />
-			<!--jvmarg value="-XX:+UseConcMarkSweepGC" /-->
-			<!--jvmarg value="-XX:MaxTenuringThreshold=10" /-->
-			<!--jvmarg value="-XX:+UseParallelGC" /-->
+			<jvmarg value="-XX:+UseConcMarkSweepGC" />
+                        <jvmarg value="-XX:+UseParNewGC" />
+			<jvmarg value="-XX:MaxTenuringThreshold=10" />
 			<jvmarg value="-XX:NewRatio=1" />
 			<jvmarg value="-XX:SurvivorRatio=2" />
 			<jvmarg value="-Dcom.sun.management.jmxremote" />

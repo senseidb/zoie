@@ -11,7 +11,7 @@ public class MockDataLoader<V> implements DataConsumer<V> {
 	private static final Logger log = Logger.getLogger(MockDataLoader.class);
 	
 	private long _delay;
-	private int _count;
+	private volatile int _count;
 	private V _lastConsumed;
 	private int _numCalls = 0;
 	private int _numEvents = 0;

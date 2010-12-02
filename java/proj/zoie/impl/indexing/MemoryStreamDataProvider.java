@@ -1,4 +1,5 @@
 package proj.zoie.impl.indexing;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,133 +22,127 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import proj.zoie.api.ZoieException;
 import proj.zoie.api.DataConsumer.DataEvent;
 
-public class MemoryStreamDataProvider<V> extends StreamDataProvider<V> {
+public class MemoryStreamDataProvider<V> extends StreamDataProvider<V>
+{
 
-	  private List<DataEvent<V>> _list;
-	  private int _count;
-	  private boolean _stop;
-	  
-	  // private static final double DEFAULT_ITERS_PER_SECOND=100.0;
-	  private static final Logger log = Logger.getLogger(MemoryStreamDataProvider.class);
-	  
-	  public MemoryStreamDataProvider()
-	  {
-	    super();
-	    _list= new LinkedList<DataEvent<V>>();
-	    _count=0;
-	    _stop=false;
-	  }
-	  
-	  @Override
-	  public void reset()
-	  {
-	    synchronized(this)
-	    {
-	      _list.clear();
-	      this.notifyAll();
-	    }
-	  }
-	  
-	  public void flush()
-	  {
-        synchronized(this)
-        {
-          while(!_list.isEmpty() && !_stop)
-          {
-            this.notifyAll();			
-            try
-            {
-              this.wait();
-            }
-            catch(InterruptedException e)
-            {
-              log.warn(e.getMessage());
-            }
-          }    	    	
-	    } 
-	  }
-	  
-      public void addEvents(List<DataEvent<V>> list)
+  private List<DataEvent<V>> _list;
+  private int _count;
+  private volatile long _maxVersion = 0;
+  private boolean _stop;
+
+  // private static final double DEFAULT_ITERS_PER_SECOND=100.0;
+  private static final Logger log = Logger.getLogger(MemoryStreamDataProvider.class);
+
+  public MemoryStreamDataProvider()
+  {
+    super();
+    _list = new LinkedList<DataEvent<V>>();
+    _count = 0;
+    _stop = false;
+  }
+
+  @Override
+  public void reset()
+  {
+    synchronized (this)
+    {
+      _list.clear();
+      this.notifyAll();
+    }
+  }
+
+  /**
+   * flush to the max version that has been added. We only guarantee whatever
+   * was already added. If more events are added after the beginning of this
+   * call, they may or may not be flushed at the return of this call. This
+   * method is not supposed to be called too often.
+   */
+  public void flush()
+  {
+    try
+    {
+      long maxVersion = _maxVersion;
+      log.info("flushing version: " + maxVersion);
+      super.syncWithVersion(3600000, maxVersion);
+      log.info("flushing version: " + maxVersion + " done");
+    } catch (ZoieException e)
+    {
+      log.error("flush timeout", e);
+    }
+  }
+
+  public void addEvents(List<DataEvent<V>> list)
+  {
+    if (list != null && !list.isEmpty())
+    {
+      Iterator<DataEvent<V>> iter = list.iterator();
+      synchronized (this)
       {
-        if (list!=null && !list.isEmpty())
+        while (iter.hasNext())
         {
-          Iterator<DataEvent<V>> iter=list.iterator();
-          synchronized(this)
-          {
-            while(iter.hasNext())
-            {
-              DataEvent<V> obj=iter.next();
-              _count++;
-              _list.add(obj);
-            }
-            this.notifyAll();
-          }
+          DataEvent<V> obj = iter.next();
+          _maxVersion = Math.max(_maxVersion, obj.getVersion());
+          _count++;
+          _list.add(obj);
         }
+        this.notifyAll();
       }
+    }
+  }
 
-      public void addEvent(DataEvent<V> event)
+  public void addEvent(DataEvent<V> event)
+  {
+    if (event != null)
+    {
+      synchronized (this)
       {
-        if (event!=null)
-        {
-          synchronized(this)
-          {
-            _count++;
-            _list.add(event);
-            this.notifyAll();
-          }
-        }
+        _maxVersion = Math.max(_maxVersion, event.getVersion());
+        _count++;
+        _list.add(event);
+        this.notifyAll();
       }
-	  
-	  @Override
-	  public DataEvent<V> next()
-	  {
-		DataEvent<V> obj=null;
-        synchronized(this)
-        {
-          while(_list.isEmpty() && !_stop)
-          {
-            try 
-            {
-              this.wait();
-            }
-            catch (InterruptedException e) 
-            {
-              log.warn(e.getMessage());
-            }
-          }
-          if (!_list.isEmpty())
-          {
-            obj=_list.remove(0);
-            this.notifyAll();
-          }
-        }
-	    return obj;
-	  }
-	  
-	  public int getCount()
-	  {
-	    synchronized(this)
-	    {
-	      return _count;
-        }
-	  }
+    }
+  }
 
-	  @Override
-	  public void stop()
-	  {
-	    try
-	    {
-	      synchronized(this)
-	      {
-	        _stop=true;
-	        this.notifyAll();
-	      }
-	    }
-	    finally
-	    {
-	      super.stop();
-	    }
-	  }
+  @Override
+  public DataEvent<V> next()
+  {
+    DataEvent<V> obj = null;
+    synchronized (this)
+    {
+      if (!_list.isEmpty())
+      {
+        obj = _list.remove(0);
+        this.notifyAll();
+      }
+    }
+    return obj;
+  }
+
+  public int getCount()
+  {
+    synchronized (this)
+    {
+      return _count;
+    }
+  }
+
+  @Override
+  public void stop()
+  {
+    try
+    {
+      synchronized (this)
+      {
+        _stop = true;
+        this.notifyAll();
+      }
+    } finally
+    {
+      super.stop();
+    }
+  }
 }

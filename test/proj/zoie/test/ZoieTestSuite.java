@@ -19,6 +19,7 @@ public class ZoieTestSuite extends TestSuite {
       "testUIDDocIdSet", "testExportImport","testDocIDMapperFactory", "testInRangeDocIDMapperFactory",
       "testShutdown",
       "testThreadDelImpl",
+      "testStreamDataProviderFlush",
       "testHourglassDirectoryManagerFactory"
       });
   public static List<Class> allClasses = Arrays.asList(new Class[]{ZoieTest.class, ZoieThreadTest.class, HourglassTest.class});

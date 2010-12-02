@@ -45,7 +45,7 @@ public class JDBCStreamDataProvider<T> extends StreamDataProvider<T> {
     DataEvent<T> event = null;
     try
     {
-      while(!_res.next())
+      if(!_res.next())
       {
         try{
           _res.close();
@@ -60,9 +60,11 @@ public class JDBCStreamDataProvider<T> extends StreamDataProvider<T> {
         }
         _stmt = _stmtBuilder.buildStatment(_conn, _version);
         _res = _stmt.executeQuery();
+      } else
+      {
+        event = _stmtBuilder.buildDataEvent(_res);
+        _version = event.getVersion();
       }
-      event = _stmtBuilder.buildDataEvent(_res);
-      _version = event.getVersion();
     } 
     catch (SQLException sqle)
     {

@@ -311,6 +311,40 @@ public class ZoieTest extends ZoieTestCase
     }
   }
 
+  public void testStreamDataProviderFlush() throws ZoieException
+  {
+    MockDataLoader<Integer> consumer=new MockDataLoader<Integer>();
+    MemoryStreamDataProvider<Integer> memoryProvider=new MemoryStreamDataProvider<Integer>();
+    memoryProvider.setBatchSize(100);
+    memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
+    memoryProvider.setDataConsumer(consumer);
+    memoryProvider.start();
+    try
+    {
+      int count=10;
+
+      List<DataEvent<Integer>> list=new ArrayList<DataEvent<Integer>>(count);
+      long zvt = 0;
+      for (int i=0;i<count;++i)
+      {
+        zvt = i;
+        //list.add(new DataEvent<Integer,DefaultZoieVersion>(i,i));
+        list.add(new DataEvent<Integer>(zvt,i));
+      }
+      memoryProvider.addEvents(list);
+
+      memoryProvider.flush();
+
+      int num=consumer.getCount();
+      System.out.println("assert");
+      assertEquals(num, count);
+    }
+    finally
+    {
+      memoryProvider.stop();
+    }
+  }
+
   public void testAsyncDataConsumer() throws ZoieException
   {
     final long[] delays = { 0L, 10L, 100L, 1000L };
@@ -919,7 +953,7 @@ public class ZoieTest extends ZoieTestCase
   public void testExportImport() throws ZoieException, IOException
   {
     File idxDir=getIdxDir();
-    ZoieSystem<IndexReader,String> idxSystem=createZoie(idxDir,true);
+    final ZoieSystem<IndexReader,String> idxSystem=createZoie(idxDir,true);
     idxSystem.start();
 
     DirectoryManager dirMgr = new DefaultDirectoryManager(idxDir);

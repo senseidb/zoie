@@ -310,7 +310,7 @@ public abstract class StreamDataProvider<V> implements DataProvider<V>, DataProv
         {
           while (_currentVersion < version)
           {
-            if (now > due)
+            if (now >= due)
             {
               throw new ZoieException("sync timed out");
             }
@@ -373,6 +373,11 @@ public abstract class StreamDataProvider<V> implements DataProvider<V>, DataProv
           {
             synchronized (this)
             {
+              if (_flushing && (_batch.size() > 0))
+              {
+                flush();
+                _currentVersion = version;
+              }
               this.notifyAll();
               try
               {

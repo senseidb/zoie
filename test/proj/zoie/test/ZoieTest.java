@@ -384,7 +384,23 @@ public class ZoieTest extends ZoieTestCase
           }
           memoryProvider.addEvents(list);
 
-          asyncConsumer.syncWthVersion(timeout, (long)(count-1));
+          boolean done = false;
+          long start = System.currentTimeMillis();
+          while(!done)
+          {
+            try
+            {
+              asyncConsumer.syncWthVersion(timeout, (long)(count-1));
+              done = true;
+            } catch (ZoieException e)
+            {
+              if (!e.getMessage().contains("sync timed out"))
+                throw e;
+              else
+                System.out.println("sync time out could be legit for slow systems. Elapsed time: " + (System.currentTimeMillis() - start) + "ms");
+              if (System.currentTimeMillis() - start > 600000L) throw e;
+            }
+          }
           int num=mockLoader.getCount();
           assertEquals("batchSize="+batchSize, num, count);
           assertTrue("batch not working", (mockLoader.getMaxBatch() > 1 || mockLoader.getMaxBatch() == batchSize));

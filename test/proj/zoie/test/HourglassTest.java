@@ -45,19 +45,22 @@ import proj.zoie.impl.indexing.ZoieConfig;
 
 /**
  * @author "Xiaoyang Gu<xgu@linkedin.com>"
- *
+ * 
  */
 public class HourglassTest extends ZoieTestCase
 {
   static Logger log = Logger.getLogger(HourglassTest.class);
+
   public HourglassTest()
   {
-    
+
   }
+
   public HourglassTest(String name)
   {
     super(name);
   }
+
   public void testHourglassDirectoryManagerFactory() throws IOException, InterruptedException, ZoieException
   {
     File idxDir = getIdxDir();
@@ -89,79 +92,82 @@ public class HourglassTest extends ZoieTestCase
       }
       if (log.isInfoEnabled())
       {
-        log
-        .info("[contextInitialized]: " + count
-            + " log4j MBeans registered.");
+        log.info("[contextInitialized]: " + count + " log4j MBeans registered.");
       }
     } catch (Exception e)
     {
       log.error("[contextInitialized]: Exception catched: ", e);
     }
     String schedule = "07 15 20";
-    long numTestContent = 20250;
+    long numTestContent = 10250;
     oneTest(idxDir, schedule, numTestContent); // test starting from empty index
     oneTest(idxDir, schedule, numTestContent); // test index pick up
     return;
   }
+
   private void oneTest(File idxDir, String schedule, long numTestContent) throws IOException, InterruptedException
   {
-    HourglassDirectoryManagerFactory factory = new HourglassDirectoryManagerFactory(idxDir, new HourGlassScheduler(HourGlassScheduler.FREQUENCY.MINUTELY, schedule, 100));
+    HourglassDirectoryManagerFactory factory = new HourglassDirectoryManagerFactory(idxDir, new HourGlassScheduler(
+        HourGlassScheduler.FREQUENCY.MINUTELY, schedule, 100));
     ZoieConfig zConfig = new ZoieConfig();
     zConfig.setBatchSize(3);
     zConfig.setBatchDelay(10);
     zConfig.setFreshness(10);
-    Hourglass<IndexReader, String> hourglass = new Hourglass<IndexReader, String>(factory, new HourglassTestInterpreter(), new IndexReaderDecorator<IndexReader>(){
+    Hourglass<IndexReader, String> hourglass = new Hourglass<IndexReader, String>(factory, new HourglassTestInterpreter(),
+        new IndexReaderDecorator<IndexReader>()
+        {
 
-      public IndexReader decorate(ZoieIndexReader<IndexReader> indexReader)
-          throws IOException
-      {
-        return indexReader;
-      }
+          public IndexReader decorate(ZoieIndexReader<IndexReader> indexReader) throws IOException
+          {
+            return indexReader;
+          }
 
-      public IndexReader redecorate(IndexReader decorated,
-          ZoieIndexReader<IndexReader> copy, boolean withDeletes) throws IOException
-      {
-        // TODO Auto-generated method stub
-        return decorated;
-      }
+          public IndexReader redecorate(IndexReader decorated, ZoieIndexReader<IndexReader> copy, boolean withDeletes)
+              throws IOException
+          {
+            // TODO Auto-generated method stub
+            return decorated;
+          }
 
-      public void setDeleteSet(IndexReader reader, DocIdSet docIds)
-      {
-        // do nothing
-      }}, zConfig);
+          public void setDeleteSet(IndexReader reader, DocIdSet docIds)
+          {
+            // do nothing
+          }
+        }, zConfig);
     HourglassAdmin mbean = new HourglassAdmin(hourglass);
-//    HourglassAdminMBean mbean = admin.getMBean();
+    // HourglassAdminMBean mbean = admin.getMBean();
     MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
     try
     {
       mbeanServer.registerMBean(mbean, new ObjectName("HouseGlass:name=hourglass"));
-    } catch(Exception e)
+    } catch (Exception e)
     {
       System.out.println(e);
     }
-    MemoryStreamDataProvider<String> memoryProvider=new MemoryStreamDataProvider<String>();
+    MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>();
     memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
     memoryProvider.setDataConsumer(hourglass);
     memoryProvider.start();
     int initNumDocs = getTotalNumDocs(hourglass);
     System.out.println("initial number of DOCs: " + initNumDocs);
-    
+
     long accumulatedTime = 0;
-    for(int i=initNumDocs; i<initNumDocs + numTestContent; i++)
+    for (int i = initNumDocs; i < initNumDocs + numTestContent; i++)
     {
-      List<DataEvent<String>> list=new ArrayList<DataEvent<String>>(2);
-      list.add(new DataEvent<String>(i,"" +i));
+      List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(2);
+      list.add(new DataEvent<String>(i, "" + i));
       memoryProvider.addEvents(list);
-      if (i%113 !=0) continue;
+      if (i % 113 != 0)
+        continue;
       long flushtime = System.currentTimeMillis();
       int numDoc = -1;
-      List<ZoieIndexReader<IndexReader>> readers=null;
+      List<ZoieIndexReader<IndexReader>> readers = null;
       IndexReader reader = null;
       Searcher searcher = null;
       int oldNum = -1;
-      while(numDoc < i + 1)
+      while (numDoc < i + 1)
       {
-        if (reader!=null && readers!=null)
+        if (reader != null && readers != null)
         {
           searcher.close();
           searcher = null;
@@ -169,21 +175,22 @@ public class HourglassTest extends ZoieTestCase
           hourglass.returnIndexReaders(readers);
         }
         readers = hourglass.getIndexReaders();
-        reader = new MultiReader(readers.toArray(new IndexReader[0]),false);
+        reader = new MultiReader(readers.toArray(new IndexReader[0]), false);
         searcher = new IndexSearcher(reader);
         TopDocs hitsall = searcher.search(new MatchAllDocsQuery(), 10);
         numDoc = hitsall.totalHits;
-        if (numDoc!=oldNum)System.out.println("numDoc: " + numDoc);
+        if (numDoc != oldNum)
+          System.out.println("numDoc: " + numDoc);
         oldNum = numDoc;
         Thread.sleep(30);
       }
       accumulatedTime += (System.currentTimeMillis() - flushtime);
-      TopDocs hits = searcher.search(new TermQuery(new Term("contents",""+i)), 10);
+      TopDocs hits = searcher.search(new TermQuery(new Term("contents", "" + i)), 10);
       TopDocs hitsall = searcher.search(new MatchAllDocsQuery(), 10);
       try
       {
         assertEquals("one hit for " + i, 1, hits.totalHits);
-        assertEquals("MatchAllDocsHit ", i+1, hitsall.totalHits);
+        assertEquals("MatchAllDocsHit ", i + 1, hitsall.totalHits);
       } finally
       {
         searcher.close();
@@ -193,7 +200,7 @@ public class HourglassTest extends ZoieTestCase
         hourglass.returnIndexReaders(readers);
         readers = null;
       }
-      System.out.println(((i-initNumDocs)*100/numTestContent) + "%");
+      System.out.println(((i - initNumDocs) * 100 / numTestContent) + "%");
     }
     try
     {
@@ -206,6 +213,7 @@ public class HourglassTest extends ZoieTestCase
     memoryProvider.stop();
     hourglass.shutdown();
   }
+
   private int getTotalNumDocs(Hourglass<IndexReader, String> hourglass)
   {
     int numDocs = 0;
@@ -213,7 +221,7 @@ public class HourglassTest extends ZoieTestCase
     try
     {
       readers = hourglass.getIndexReaders();
-      for(ZoieIndexReader<IndexReader> reader : readers)
+      for (ZoieIndexReader<IndexReader> reader : readers)
       {
         numDocs += reader.numDocs();
       }
@@ -228,47 +236,54 @@ public class HourglassTest extends ZoieTestCase
     }
     return numDocs;
   }
+
   public static class TestHourglassIndexable extends HourglassIndexable
   {
     protected static long nextUID = System.currentTimeMillis();
     public final long UID;
     final String _str;
+
     public TestHourglassIndexable(String str)
     {
       UID = getNextUID();
       _str = str;
     }
+
     public static final synchronized long getNextUID()
     {
       return nextUID++;
     }
+
     public final long getUID()
     {
       return UID;
     }
-    public Document buildDocument(){
-      Document doc=new Document();
-      doc.add(new Field("contents",_str,Store.YES,Index.ANALYZED));
+
+    public Document buildDocument()
+    {
+      Document doc = new Document();
+      doc.add(new Field("contents", _str, Store.YES, Index.ANALYZED));
       try
       {
         Thread.sleep(25); // slow down indexing process
-      }
-      catch (InterruptedException e)
+      } catch (InterruptedException e)
       {
       }
       return doc;
     }
-    
-    public IndexingReq[] buildIndexingReqs(){
-      return new IndexingReq[]{new IndexingReq(buildDocument(),null)};
+
+    public IndexingReq[] buildIndexingReqs()
+    {
+      return new IndexingReq[] { new IndexingReq(buildDocument(), null) };
     }
-    
+
     public boolean isSkip()
     {
       return false;
     }
-    
+
   }
+
   public static class HourglassTestInterpreter implements HourglassIndexableInterpreter<String>
   {
 
@@ -277,6 +292,6 @@ public class HourglassTest extends ZoieTestCase
       log.info("converting " + src);
       return new TestHourglassIndexable(src);
     }
-    
+
   }
 }

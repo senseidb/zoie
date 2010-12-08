@@ -80,7 +80,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
 	      try
         {
           _directory.close();
-          FileUtil.rmDir(_backingdir);
+          if (_backingdir != null) FileUtil.rmDir(_backingdir);
         } catch (IOException e)
         {
           log.error(e);

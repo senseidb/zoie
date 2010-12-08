@@ -100,7 +100,7 @@ public class HourglassTest extends ZoieTestCase
       log.error("[contextInitialized]: Exception catched: ", e);
     }
     String schedule = "07 15 20";
-    long numTestContent = 20250;
+    long numTestContent = 10250;
     oneTest(idxDir, schedule, numTestContent); // test starting from empty index
     oneTest(idxDir, schedule, numTestContent); // test index pick up
     return;

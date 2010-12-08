@@ -57,19 +57,18 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
 	   * for disk IndexReader
 	   */
 	  private final Object _memLock = new Object();
-
+	  private final RAMIndexFactory<R, V> _ramIndexFactory;
 	  
 	  /**
 	   * @param location 
 	   * @param indexReaderDecorator
 	   */
-	  public SearchIndexManager(DirectoryManager<V> dirMgr,IndexReaderDecorator<R> indexReaderDecorator,DocIDMapperFactory docIDMapperFactory, ZoieVersionFactory<V> zoieVersionFactory)
+	  public SearchIndexManager(DirectoryManager<V> dirMgr,IndexReaderDecorator<R> indexReaderDecorator,DocIDMapperFactory docIDMapperFactory, ZoieVersionFactory<V> zoieVersionFactory, RAMIndexFactory<R, V> ramIndexFactory)
 	  {
 	    _dirMgr = dirMgr;
 	    _docIDMapperFactory = docIDMapperFactory;
 	    _zoieVersionFactory = zoieVersionFactory;
-	    //dirMgr.setVersionFactory(_zoieVersionFactory);
-	    
+	    _ramIndexFactory = ramIndexFactory;
 	    if (indexReaderDecorator!=null)
 	    {
 	      _indexReaderDecorator=indexReaderDecorator;
@@ -92,7 +91,7 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
           return;
         }
         V version = _diskIndex.getVersion();
-        RAMSearchIndex<R,V> memIndexA = new RAMSearchIndex<R,V>(version, _indexReaderDecorator,this);
+        RAMSearchIndex<R,V> memIndexA = _ramIndexFactory.newInstance(version, _indexReaderDecorator,this);
         Mem<R,V> mem = new Mem<R,V>(memIndexA, null, memIndexA, null, diskIndexReader);
         if (diskIndexReader != null)
         {
@@ -108,10 +107,6 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
 	  public ZoieVersionFactory<V> getZoieVersionFactory(){
       return _zoieVersionFactory;
     }
-//	  public File getDiskIndexLocation()
-//	  {
-//	    return _dirMgr;
-//	  }
 	  
     public int getDiskSegmentCount() throws IOException
     {
@@ -240,7 +235,7 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
 
 	        if (memIndexB != null)                           // load memory index B
 	        {
-	          reader = memIndexB.openIndexReader();            
+	          reader = memIndexB.openIndexReader();
 	          if (reader != null)
 	          {
 	            reader = reader.copy();
@@ -307,7 +302,7 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
 	        RAMSearchIndex<R,V> memIndexA = oldMem.get_memIndexA();
 	        if(memIndexA != null) memIndexA.closeIndexWriter();
 
-	        RAMSearchIndex<R,V> memIndexB = new RAMSearchIndex<R,V>(version, _indexReaderDecorator,this);
+	        RAMSearchIndex<R,V> memIndexB = _ramIndexFactory.newInstance(version, _indexReaderDecorator,this);
 	        Mem<R,V> mem = new Mem<R,V>(memIndexA, memIndexB, memIndexB, memIndexA, oldMem.get_diskIndexReader());
 	        _mem = mem;
 	        log.info("Current writable index is B, new B created");
@@ -328,6 +323,7 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
 	        }
 	        Mem<R,V> oldMem = _mem;
 	        Mem<R,V> mem = new Mem<R,V>(oldMem.get_memIndexB(), null, oldMem.get_memIndexB(), null, diskIndexReader);
+	        if (oldMem.get_memIndexA()!=null){oldMem.get_memIndexA().close();}
 	        lockAndSwapMem(diskIndexReader, oldMem.get_diskIndexReader(), mem);
 	        log.info("Current writable index is A, B is flushed");
 	      }
@@ -453,7 +449,9 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
     _diskIndex.closeIndexWriter();
     _dirMgr.purge();
     _diskIndex.refresh();
-    RAMSearchIndex<R,V> memIndexA = new RAMSearchIndex<R,V>(_diskIndex.getVersion(), _indexReaderDecorator, this);
+    if (_mem.get_memIndexA()!=null){_mem.get_memIndexA().close();}
+    if (_mem.get_memIndexB()!=null){_mem.get_memIndexB().close();}
+    RAMSearchIndex<R,V> memIndexA = _ramIndexFactory.newInstance(_diskIndex.getVersion(), _indexReaderDecorator, this);
     Mem<R,V> mem = new Mem<R,V>(memIndexA, null, memIndexA, null, null);
     _mem = mem;
 

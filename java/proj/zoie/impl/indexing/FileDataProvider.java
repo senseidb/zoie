@@ -28,7 +28,7 @@ import proj.zoie.api.DataConsumer.DataEvent;
 public class FileDataProvider extends StreamDataProvider<File, DefaultZoieVersion> implements ZoieVersionFactory<DefaultZoieVersion>
 {
 	private final File _dir;
-	private DefaultZoieVersion _currentVersion;
+	private DefaultZoieVersion _currentVersion = new DefaultZoieVersion();
 	private Stack<Iterator<File>> _stack;
 	private Iterator<File> _currentIterator;
 	private boolean _looping;

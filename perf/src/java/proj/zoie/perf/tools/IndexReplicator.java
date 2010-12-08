@@ -12,6 +12,7 @@ import org.apache.lucene.util.Version;
 
 import proj.zoie.api.DefaultDirectoryManager;
 import proj.zoie.api.DirectoryManager;
+import proj.zoie.api.DefaultZoieVersion.DefaultZoieVersionFactory;
 
 public class IndexReplicator {
 
@@ -26,7 +27,7 @@ public class IndexReplicator {
 		System.out.println("target index: "+targetIndex.getAbsolutePath());
 		System.out.println("num replications: "+numReplicas);
 		IndexReader reader = null;
-		DirectoryManager srcDirMgr = new DefaultDirectoryManager(srcIndex);
+		DirectoryManager srcDirMgr = new DefaultDirectoryManager(srcIndex, new DefaultZoieVersionFactory());
 		try
 		{
 			Directory dir = srcDirMgr.getDirectory();
@@ -45,7 +46,7 @@ public class IndexReplicator {
 			}
 			reader = null;
 		}
-		DirectoryManager targetDirMgr = new DefaultDirectoryManager(targetIndex);
+		DirectoryManager targetDirMgr = new DefaultDirectoryManager(targetIndex, new DefaultZoieVersionFactory());
 
 		Directory targetDir = targetDirMgr.getDirectory(true);
 		

@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-        <classpathentry kind="src" path="java"/>
-        <classpathentry kind="src" path="test"/>
-        <classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-        <classpathentry exported="true" kind="lib" path="lib/master/commons-logging.jar"/>
-        <classpathentry exported="true" kind="lib" path="lib/master/fastutil.jar"/>
-        <classpathentry exported="true" kind="lib" path="lib/master/log4j.jar"/>
-        <classpathentry exported="true" kind="lib" path="lib/master/lucene-highlighter.jar"/>
-        <classpathentry exported="true" kind="lib" path="lib/master/spring-webmvc.jar"/>
-        <classpathentry exported="true" kind="lib" path="lib/master/spring.jar"/>
-        <classpathentry exported="true" kind="lib" path="lib/test/junit.jar"/>
-        <classpathentry exported="true" kind="lib" path="lib/master/lucene-core.jar"/>
-        <classpathentry kind="output" path="output"/>
+	<classpathentry kind="src" path="java"/>
+	<classpathentry kind="src" path="test"/>
+	<classpathentry kind="src" path="perf/src/java"/>
+	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry exported="true" kind="lib" path="lib/master/commons-logging.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/master/fastutil.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/master/log4j.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/master/lucene-highlighter.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/master/spring-webmvc.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/master/spring.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/test/junit.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/master/lucene-core.jar"/>
+	<classpathentry kind="output" path="output"/>
 </classpath>

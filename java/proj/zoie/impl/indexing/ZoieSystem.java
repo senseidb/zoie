@@ -49,6 +49,7 @@ import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.impl.DefaultDocIDMapperFactory;
 import proj.zoie.api.impl.util.FileUtil;
+import proj.zoie.api.impl.util.SearchUtil;
 import proj.zoie.api.indexing.DefaultOptimizeScheduler;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.api.indexing.IndexingEventListener;
@@ -1011,7 +1012,19 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
     {
       ZoieSystem.this.readercache.setFreshness(freshness);
     }
-  }
+
+    @Override
+    public String search(String field, String query)
+    {
+      return SearchUtil.search(ZoieSystem.this, field, query);
+    }
+
+    @Override
+    public String getDocument(long UID)
+    {
+      return SearchUtil.getDocument(ZoieSystem.this, UID);
+    }
+	}
 
   @Override
   public StandardMBean getStandardMBean(String name)

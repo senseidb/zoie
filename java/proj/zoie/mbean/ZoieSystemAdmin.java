@@ -248,4 +248,16 @@ public class ZoieSystemAdmin implements ZoieSystemAdminMBean
     {
       _internalMBean.setFreshness(freshness);
     }
+
+    @Override
+    public String search(String field, String query)
+    {
+      return _internalMBean.search(field, query);
+    }
+
+    @Override
+    public String getDocument(long UID)
+    {
+      return _internalMBean.getDocument(UID);
+    }
 }

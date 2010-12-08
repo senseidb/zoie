@@ -117,6 +117,9 @@ public interface ZoieSystemAdminMBean
    */
   void setSLA(long sla);
   
+  /**
+   * @return heahth of the system. Non-zero value means the system need immediate attention and the logs need to be checked.
+   */
   long getHealth();
   
   void resetHealth();
@@ -124,4 +127,14 @@ public interface ZoieSystemAdminMBean
   public long getFreshness();
   
   public void setFreshness(long freshness);
+  
+  /**
+   * @return a String representation of the search result given the string representations of query arguments.
+   */
+  public String search(String field, String query);
+
+  /**
+   * @return the a String representation of the Document(s) referred to by the given UID
+   */
+  public String getDocument(long UID);
 }

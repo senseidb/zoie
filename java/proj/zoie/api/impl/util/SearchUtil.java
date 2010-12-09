@@ -1,6 +1,7 @@
 package proj.zoie.api.impl.util;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -36,6 +37,7 @@ public class SearchUtil
    */
   public static String search(Zoie zoie, String field, String query)
   {
+    DecimalFormat formatter = new DecimalFormat("00000000000000000000");
     List<ZoieIndexReader<?>> readers = null;
     IndexSearcher searcher = null;
     QueryParser parser = null;
@@ -67,6 +69,7 @@ public class SearchUtil
         {
           Collection fieldnames = reader.getFieldNames(FieldOption.ALL);
           String fieldnamess = Arrays.toString(fieldnames.toArray());
+          retstr += "fields: " + fieldnamess + "\n";
           searcher = new IndexSearcher(reader);
           TopDocs hits = searcher.search(q, 10);
           String docs = "";
@@ -77,10 +80,10 @@ public class SearchUtil
             Explanation exp = searcher.explain(q, docid);
             Document doc = reader.document(docid);
             long uid = reader.getUID(docid);
-            docs = docs + "UID: " + uid + "\ndocid(in reader): " + docid + "\nscore: " + score + "\n\n";
-            docstr = docstr + "UID: " + uid + "\ndocid(in reader): " + docid + "\nscore: " + score + "\n" + doc + "\n" + exp + "\n\n";
+            docs = docs + "UID: " + formatter.format(uid) + "\ndocid(in reader): " + formatter.format(docid) + "\nscore: " + score + "\n\n";
+            docstr = docstr + "UID: " + formatter.format(uid) + "\ndocid(in reader): " + formatter.format(docid) + "\nscore: " + score + "\n" + doc + "\n" + exp + "\n\n";
           }
-          retstr += hits.totalHits + " hits returned\n" + fieldnamess + "\n" + docs + "\n";
+          retstr += hits.totalHits + " hits returned\n" + docs + "\n";
         } finally
         {
           if (searcher != null)
@@ -114,7 +117,8 @@ public class SearchUtil
   public static String getDocument(Zoie zoie, long UID)
   {
     List<ZoieIndexReader<?>> readers = null;
-    String retstr = "UID: " + UID + "\n";
+    DecimalFormat formatter = new DecimalFormat("00000000000000000000");
+    String retstr = "UID: " + formatter.format(UID) + "\n";
     try
     {
       readers = zoie.getIndexReaders();
@@ -125,7 +129,7 @@ public class SearchUtil
         ZoieIndexReader reader = readers.get(readerid);
         DocIDMapper idmapper = reader.getDocIDMaper();
         int docid = idmapper.getDocID(UID);
-        retstr += "docid(in reader): " + docid + "\n";
+        retstr += "docid(in reader): " + formatter.format(docid) + "\n";
         if (docid == DocIDMapper.NOT_FOUND)
         {
           retstr += "not found in this reader\n";

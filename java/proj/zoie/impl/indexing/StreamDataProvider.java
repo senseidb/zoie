@@ -298,6 +298,7 @@ public abstract class StreamDataProvider<D, V extends ZoieVersion> implements Da
 
     public void syncWthVersion(long timeInMillis, V version) throws ZoieException
     {
+      if (version == null) return;
       long now = System.currentTimeMillis();
       long due = now + timeInMillis;
       synchronized (this)

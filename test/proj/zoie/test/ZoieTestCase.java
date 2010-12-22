@@ -2,7 +2,11 @@ package proj.zoie.test;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.Properties;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -25,6 +29,29 @@ import proj.zoie.api.ZoieVersionFactory;
 public class ZoieTestCase extends TestCase
 {
   static Logger log = Logger.getLogger(ZoieTestCase.class);
+  static MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+  public void registerMBean(Object standardmbean, String mbeanname)
+  {
+    try
+    {
+      mbeanServer.registerMBean(standardmbean, new ObjectName("Zoie:name=" + mbeanname));
+    } catch (Exception e)
+    {
+      log.warn(e);
+    }
+  }
+
+  public void unregisterMBean(String mbeanname)
+  {
+    try
+    {
+      mbeanServer.unregisterMBean(new ObjectName("Zoie:name=" + mbeanname));
+    } catch (Exception e)
+    {
+      log.warn(e);
+    }
+  }
+
   ZoieTestCase()
   {
     super();
@@ -101,6 +128,13 @@ public class ZoieTestCase extends TestCase
     return createZoie(idxDir, realtime, 20,zoieVersionFactory);
   }
   
+  /**
+   * @param idxDir
+   * @param realtime
+   * @param delay delay for interpreter (simulating a slow interpreter)
+   * @param zoieVersionFactory
+   * @return
+   */
   protected static ZoieSystem<IndexReader,String, DefaultZoieVersion> createZoie(File idxDir,boolean realtime, long delay, ZoieVersionFactory<DefaultZoieVersion> zoieVersionFactory)
   {
     return createZoie(idxDir,realtime,delay,null,null,zoieVersionFactory);
@@ -108,13 +142,22 @@ public class ZoieTestCase extends TestCase
 
   protected static ZoieSystem<IndexReader,String, DefaultZoieVersion> createZoie(File idxDir,boolean realtime,DocIDMapperFactory docidMapperFactory,ZoieVersionFactory<DefaultZoieVersion> zoieVersionFactory)
   {
-    return createZoie(idxDir, realtime, 20,null,docidMapperFactory, zoieVersionFactory);
+    return createZoie(idxDir, realtime, 2,null,docidMapperFactory, zoieVersionFactory);
   }
 
+  /**
+   * @param idxDir
+   * @param realtime
+   * @param delay delay for interpreter (simulating a slow interpreter)
+   * @param analyzer
+   * @param docidMapperFactory
+   * @param zoieVersionFactory
+   * @return
+   */
   protected static ZoieSystem<IndexReader,String, DefaultZoieVersion> createZoie(File idxDir,boolean realtime, long delay,Analyzer analyzer,DocIDMapperFactory docidMapperFactory, ZoieVersionFactory<DefaultZoieVersion> zoieVersionFactory)
   {
     ZoieSystem<IndexReader,String,DefaultZoieVersion> idxSystem=new ZoieSystem<IndexReader, String, DefaultZoieVersion>(idxDir,new TestDataInterpreter(delay,analyzer),
-        new TestIndexReaderDecorator(),docidMapperFactory, null,null,50,100,realtime,zoieVersionFactory);
+        new TestIndexReaderDecorator(),docidMapperFactory, null,null,50,2000,realtime,zoieVersionFactory);
     return idxSystem;
   }
 
@@ -135,11 +178,10 @@ public class ZoieTestCase extends TestCase
     }
   }
 
-
   protected static ZoieSystem<IndexReader,String,DefaultZoieVersion> createInRangeZoie(File idxDir,boolean realtime, InRangeDocIDMapperFactory docidMapperFactory, ZoieVersionFactory<DefaultZoieVersion> zoieVersionFactory)
   {
     ZoieSystem<IndexReader,String,DefaultZoieVersion> idxSystem=new ZoieSystem<IndexReader, String,DefaultZoieVersion>(idxDir,new TestInRangeDataInterpreter(20,null),
-        new TestIndexReaderDecorator(),docidMapperFactory,null,null,50,100,realtime,zoieVersionFactory);
+        new TestIndexReaderDecorator(),docidMapperFactory,null,null,50,2000,realtime,zoieVersionFactory);
     return idxSystem;
   } 
   protected static boolean deleteDirectory(File path) {
@@ -158,7 +200,7 @@ public class ZoieTestCase extends TestCase
   }
 
   
-  protected class QueryThread extends Thread
+  protected static class QueryThread extends Thread
   {
     public volatile boolean stop = false;
     public volatile boolean mismatch = false;

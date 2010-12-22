@@ -2,7 +2,11 @@ package proj.zoie.test;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.Properties;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -21,6 +25,29 @@ import junit.framework.TestCase;
 public class ZoieTestCase extends TestCase
 {
   static Logger log = Logger.getLogger(ZoieTestCase.class);
+  static MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+  public void registerMBean(Object standardmbean, String mbeanname)
+  {
+    try
+    {
+      mbeanServer.registerMBean(standardmbean, new ObjectName("Zoie:name=" + mbeanname));
+    } catch (Exception e)
+    {
+      log.warn(e);
+    }
+  }
+
+  public void unregisterMBean(String mbeanname)
+  {
+    try
+    {
+      mbeanServer.unregisterMBean(new ObjectName("Zoie:name=" + mbeanname));
+    } catch (Exception e)
+    {
+      log.warn(e);
+    }
+  }
+
   ZoieTestCase()
   {
     super();
@@ -94,12 +121,12 @@ public class ZoieTestCase extends TestCase
 
   protected static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime)
   {
-    return createZoie(idxDir, realtime, 20);
+    return createZoie(idxDir, realtime, 2);
   }
 
   protected static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime,DocIDMapperFactory docidMapperFactory)
   {
-    return createZoie(idxDir, realtime, 20,null,docidMapperFactory);
+    return createZoie(idxDir, realtime, 2,null,docidMapperFactory);
   }
 
   protected static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime, long delay)
@@ -126,7 +153,7 @@ public class ZoieTestCase extends TestCase
   protected static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime, long delay,Analyzer analyzer,DocIDMapperFactory docidMapperFactory)
   {
     ZoieSystem<IndexReader,String> idxSystem=new ZoieSystem<IndexReader, String>(idxDir,new TestDataInterpreter(delay,analyzer),
-        new TestIndexReaderDecorator(),docidMapperFactory,null,null,50,100,realtime);
+        new TestIndexReaderDecorator(),docidMapperFactory,null,null,50,2000,realtime);
     return idxSystem;
   }
 

@@ -16,6 +16,7 @@ public class ZoieTestSuite extends TestSuite {
       "testUIDDocIdSet", "testExportImport","testDocIDMapperFactory", "testInRangeDocIDMapperFactory",
       "testShutdown",
       "testThreadDelImpl",
+      "testDelBigSet",
       "testStreamDataProviderFlush",
       "testHourglassDirectoryManagerFactory"
       });

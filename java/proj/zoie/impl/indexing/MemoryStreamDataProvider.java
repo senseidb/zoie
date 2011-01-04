@@ -66,9 +66,13 @@ public class MemoryStreamDataProvider<D, V extends ZoieVersion> extends StreamDa
     try
     {
       V maxVersion = _maxVersion;
-      log.info("flushing version: " + maxVersion);
+      if (log.isDebugEnabled()){
+        log.debug("flushing version: " + maxVersion);
+      }
       super.syncWithVersion(3600000, maxVersion);
-      log.info("flushing version: " + maxVersion + " done");
+      if (log.isDebugEnabled()){
+        log.info("flushing version: " + maxVersion + " done");
+      }
     } catch (ZoieException e)
     {
       log.error("flush timeout", e);

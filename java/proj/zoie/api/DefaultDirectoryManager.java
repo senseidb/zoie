@@ -9,10 +9,12 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.Date;
-import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.SimpleFSDirectory;
 
 import proj.zoie.api.impl.util.ChannelUtil;
@@ -24,12 +26,19 @@ public class DefaultDirectoryManager implements DirectoryManager
   public static final Logger log = Logger.getLogger(DefaultDirectoryManager.class);
 
   private File _location;
+  private final DIRECTORY_MODE _mode;
   
   public DefaultDirectoryManager(File location)
   {
     if (location==null) throw new IllegalArgumentException("null index directory.");
-
     _location = location;
+    _mode = DIRECTORY_MODE.SIMPLE;
+  }
+  public DefaultDirectoryManager(File location, DIRECTORY_MODE mode)
+  {
+    if (location==null) throw new IllegalArgumentException("null index directory.");
+    _location = location;
+    _mode = mode;
   }
   
   public File getLocation()
@@ -37,11 +46,6 @@ public class DefaultDirectoryManager implements DirectoryManager
     return _location;
   }
   
-  public List<Directory> getAllArchivedDirectories()
-  {
-    throw new UnsupportedOperationException();
-  }
-
   public Directory getDirectory() throws IOException
   {
     return getDirectory(false);
@@ -78,7 +82,21 @@ public class DefaultDirectoryManager implements DirectoryManager
       }
     }
     
-    return new SimpleFSDirectory(_location);
+    FSDirectory dir = null;
+    switch(_mode)
+    {
+    case SIMPLE:
+      dir = new SimpleFSDirectory(_location);
+      break;
+    case NIO:
+      dir = new NIOFSDirectory(_location);
+      break;
+    case MMAP:
+      dir = new MMapDirectory(_location);
+      break;
+    }
+    log.info("created Directory: " + dir);
+    return dir;
   }
   
   public static IndexSignature readSignature(File file)

@@ -16,7 +16,6 @@ package proj.zoie.impl.indexing.internal;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.index.IndexReader;

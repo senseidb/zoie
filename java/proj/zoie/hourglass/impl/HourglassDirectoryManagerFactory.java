@@ -12,10 +12,14 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.SimpleFSDirectory;
 
 import proj.zoie.api.DefaultDirectoryManager;
 import proj.zoie.api.DirectoryManager;
+import proj.zoie.api.DirectoryManager.DIRECTORY_MODE;
 import proj.zoie.api.impl.util.FileUtil;
 import proj.zoie.impl.indexing.internal.IndexSignature;
 
@@ -38,6 +42,7 @@ public class HourglassDirectoryManagerFactory
   private volatile DirectoryManager _currentDirMgr = null;
   private volatile boolean isRecentlyChanged = false;
   public static final String dateFormatString = "yyyy-MM-dd-HH-mm-ss";
+  private final DIRECTORY_MODE _mode; 
   private static ThreadLocal<SimpleDateFormat> dateFormatter = new ThreadLocal<SimpleDateFormat>()
   {
     protected SimpleDateFormat initialValue()
@@ -50,12 +55,38 @@ public class HourglassDirectoryManagerFactory
   {
     _root = root;
     _scheduler = scheduler;
-    log.info("starting HourglassDirectoryManagerFactory at " + root + " --- index rolling scheduler: " + _scheduler);
+    _mode = DIRECTORY_MODE.SIMPLE;
+    log.info("starting HourglassDirectoryManagerFactory at " + root + " --- index rolling scheduler: " + _scheduler + " mode: " + _mode);
+    updateDirectoryManager();
+  }
+  public HourglassDirectoryManagerFactory(File root, HourGlassScheduler scheduler, DIRECTORY_MODE mode)
+  {
+    _root = root;
+    _scheduler = scheduler;
+    this._mode = mode;
+    log.info("starting HourglassDirectoryManagerFactory at " + root + " --- index rolling scheduler: " + _scheduler + " mode: " + _mode);
     updateDirectoryManager();
   }
   public DirectoryManager getDirectoryManager()
   {
     return _currentDirMgr;
+  }
+  private FSDirectory getFSDirectoryFromFile(File f) throws IOException
+  {
+    FSDirectory dir = null;
+    switch(_mode)
+    {
+    case SIMPLE:
+      dir = new SimpleFSDirectory(f);
+      break;
+    case NIO:
+      dir = new NIOFSDirectory(f);
+      break;
+    case MMAP:
+      dir = new MMapDirectory(f);
+      break;
+    }
+    return dir;
   }
   protected void setNextUpdateTime()
   {
@@ -82,7 +113,7 @@ public class HourglassDirectoryManagerFactory
     {
       log.error(e);
     }
-    _currentDirMgr = new DefaultDirectoryManager(_location);
+    _currentDirMgr = new DefaultDirectoryManager(_location, _mode);
     isRecentlyChanged = true;
     setNextUpdateTime();
     return isRecentlyChanged;
@@ -144,7 +175,7 @@ public class HourglassDirectoryManagerFactory
       { // don't add the current one
         try
         {
-          list.add(new SimpleFSDirectory(file));
+          list.add(getFSDirectoryFromFile(file));
         } catch (IOException e)
         {
           log.error("potential index corruption", e);

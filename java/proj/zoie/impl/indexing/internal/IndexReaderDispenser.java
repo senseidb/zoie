@@ -16,7 +16,6 @@ package proj.zoie.impl.indexing.internal;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.index.IndexReader;
@@ -246,29 +245,8 @@ public class IndexReaderDispenser<R extends IndexReader, V extends ZoieVersion>
       return null;
     }
   }
-    
+      
   /**
-<<<<<<< HEAD
-=======
-   * @param readers
-   * @throws IOException
-   */
-  public void returnReaders(List<ZoieIndexReader<R>> readers) throws IOException
-  {
-    IOException error = null;
-    for (ZoieIndexReader<R> r : readers){
-      try {
-        if (r instanceof InternalIndexReader<?,?>) r.decRef();
-      } catch (IOException e) {
-        log.error(r + " " + e);
-        error = e;
-      }
-    }
-    if (error != null) throw error;
-  }
-  
-  /**
->>>>>>> hao: Implementing comparable versions that can be read/write as strings via signature files.
    * Closes the factory.
    * 
    */

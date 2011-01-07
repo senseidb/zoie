@@ -9,10 +9,12 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.Date;
-import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.SimpleFSDirectory;
 
 import proj.zoie.api.impl.util.ChannelUtil;
@@ -24,8 +26,9 @@ import proj.zoie.api.ZoieVersion;
 public class DefaultDirectoryManager<V extends ZoieVersion> implements DirectoryManager<V>
 {
   public static final Logger log = Logger.getLogger(DefaultDirectoryManager.class);
-  
+
   private File _location;
+  private final DIRECTORY_MODE _mode;
   ZoieVersionFactory<V> _zoieVersionFactory;
   public DefaultDirectoryManager(File location, ZoieVersionFactory<V> zoieVersionFactory)
   {
@@ -33,6 +36,15 @@ public class DefaultDirectoryManager<V extends ZoieVersion> implements Directory
     _zoieVersionFactory = zoieVersionFactory;
     _location = location;
     _zoieVersionFactory = zoieVersionFactory;
+    _mode = DIRECTORY_MODE.SIMPLE;
+  }
+  public DefaultDirectoryManager(File location, ZoieVersionFactory<V> zoieVersionFactory, DIRECTORY_MODE mode)
+  {
+    if (location==null) throw new IllegalArgumentException("null index directory.");
+    _zoieVersionFactory = zoieVersionFactory;
+    _location = location;
+    _zoieVersionFactory = zoieVersionFactory;
+    _mode = mode;
   }
   
   public File getLocation()
@@ -40,11 +52,6 @@ public class DefaultDirectoryManager<V extends ZoieVersion> implements Directory
     return _location;
   }
   
-  public List<Directory> getAllArchivedDirectories()
-  {
-    throw new UnsupportedOperationException();
-  }
-
   public Directory getDirectory() throws IOException
   {
     return getDirectory(false);
@@ -81,7 +88,21 @@ public class DefaultDirectoryManager<V extends ZoieVersion> implements Directory
       }
     }
     
-    return new SimpleFSDirectory(_location);
+    FSDirectory dir = null;
+    switch(_mode)
+    {
+    case SIMPLE:
+      dir = new SimpleFSDirectory(_location);
+      break;
+    case NIO:
+      dir = new NIOFSDirectory(_location);
+      break;
+    case MMAP:
+      dir = new MMapDirectory(_location);
+      break;
+    }
+    log.info("created Directory: " + dir);
+    return dir;
   }
   
   public static <V extends ZoieVersion> IndexSignature<V> readSignature(File file, ZoieVersionFactory<V> zoieVersionFactory)

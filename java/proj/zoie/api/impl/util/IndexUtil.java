@@ -17,7 +17,6 @@ package proj.zoie.api.impl.util;
  */
 import java.io.IOException;
 
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.Directory;
 

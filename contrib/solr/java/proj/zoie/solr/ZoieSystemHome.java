@@ -21,7 +21,9 @@ import org.apache.solr.core.IndexReaderFactory;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 
+import proj.zoie.api.DefaultZoieVersion;
 import proj.zoie.api.ZoieException;
+import proj.zoie.api.impl.DefaultZoieVersionFactory;
 import proj.zoie.impl.indexing.DefaultIndexReaderDecorator;
 import proj.zoie.impl.indexing.ZoieSystem;
 import proj.zoie.mbean.ZoieSystemAdmin;
@@ -29,7 +31,7 @@ import proj.zoie.mbean.ZoieSystemAdmin;
 public class ZoieSystemHome {
 	private static Logger log = Logger.getLogger(ZoieSystemHome.class);
 	
-	private ZoieSystem<IndexReader,DocumentWithID> _zoieSystem;
+	private ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion> _zoieSystem;
 	
 	private ZoieSystemHome(SolrCore core){
 		String idxDir = core.getIndexDir();
@@ -60,7 +62,7 @@ public class ZoieSystemHome {
 		boolean realtime = config.getBool("zoie.realtime", true);
 		
 		
-		_zoieSystem = new ZoieSystem<IndexReader,DocumentWithID>(idxFile,new ZoieSolrIndexableInterpreter(),new DefaultIndexReaderDecorator(),analyzer,similarity,batchSize,batchDelay,realtime);
+		_zoieSystem = new ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion>(idxFile,new ZoieSolrIndexableInterpreter(),new DefaultIndexReaderDecorator(),analyzer,similarity,batchSize,batchDelay,realtime, new DefaultZoieVersionFactory());
 		
 		log.info("Zoie System loaded with: ");
 		log.info("zoie.batchSize: "+batchSize);
@@ -84,7 +86,7 @@ public class ZoieSystemHome {
 		}
 	}
 	
-	public ZoieSystem<IndexReader,DocumentWithID> getZoieSystem(){
+	public ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion> getZoieSystem(){
 		return _zoieSystem;
 	}
 	

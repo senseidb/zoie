@@ -11,18 +11,19 @@ import org.apache.lucene.store.Directory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.IndexReaderFactory;
 
+import proj.zoie.api.DefaultZoieVersion;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.impl.indexing.ZoieSystem;
 
 public class ZoieSolrIndexReaderFactory extends IndexReaderFactory {
-	private ZoieSystem<IndexReader,DocumentWithID> _zoieSystem = null;
+	private ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion> _zoieSystem = null;
 	private List<ZoieIndexReader<IndexReader>> _readerList = null; 
 	@Override
 	public void init(NamedList args) {
 		super.init(args);
 	}
 	
-	public void setZoieSystem(ZoieSystem<IndexReader,DocumentWithID> zoieSystem){
+	public void setZoieSystem(ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion> zoieSystem){
 		_zoieSystem = zoieSystem;
 	}
 

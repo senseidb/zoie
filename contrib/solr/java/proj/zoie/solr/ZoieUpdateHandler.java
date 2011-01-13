@@ -30,9 +30,11 @@ import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.UpdateHandler;
 
+import proj.zoie.api.DefaultZoieVersion;
 import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.impl.indexing.ZoieSystem;
 
@@ -68,12 +70,12 @@ public class ZoieUpdateHandler extends UpdateHandler {
 			throw new IOException("zoie home is not setup");
 		}
 		
-		ZoieSystem<IndexReader,DocumentWithID> zoie = zoieHome.getZoieSystem();
+		ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion> zoie = zoieHome.getZoieSystem();
 		if (zoie==null){
 			throw new IOException("zoie is not setup");
 		}
-		long version = zoie.getCurrentVersion();
-		DataEvent<DocumentWithID> event = new DataEvent<DocumentWithID>(version,new DocumentWithID(zoieUid,doc));
+		DefaultZoieVersion version = zoie.getCurrentVersion();
+		DataEvent<DocumentWithID, DefaultZoieVersion> event = new DataEvent<DocumentWithID, DefaultZoieVersion>(new DocumentWithID(zoieUid,doc), version);
 		try {
 			zoie.consume(Arrays.asList(event));
 			if (_autocommit){
@@ -113,7 +115,7 @@ public class ZoieUpdateHandler extends UpdateHandler {
 	public void commit(CommitUpdateCommand cmd) throws IOException {
 		ZoieSystemHome zoieHome = ZoieSystemHome.getInstance(_core);
 		if (zoieHome!=null){
-			ZoieSystem<IndexReader,DocumentWithID> zoie = zoieHome.getZoieSystem();
+			ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion> zoie = zoieHome.getZoieSystem();
 			if (zoie!=null){
 				try {
 					zoie.flushEvents(10000);
@@ -143,12 +145,12 @@ public class ZoieUpdateHandler extends UpdateHandler {
 			throw new IOException("zoie home is not setup");
 		}
 		
-		ZoieSystem<IndexReader,DocumentWithID> zoie = zoieHome.getZoieSystem();
+		ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion> zoie = zoieHome.getZoieSystem();
 		if (zoie==null){
 			throw new IOException("zoie is not setup");
 		}
-		long version = zoie.getCurrentVersion();
-		DataEvent<DocumentWithID> event = new DataEvent<DocumentWithID>(version,new DocumentWithID(zoieUid,true));
+		DefaultZoieVersion version = zoie.getCurrentVersion();
+		DataEvent<DocumentWithID, DefaultZoieVersion> event = new DataEvent<DocumentWithID, DefaultZoieVersion>(new DocumentWithID(zoieUid,true), version);
 		try {
 			zoie.consume(Arrays.asList(event));
 			if (_autocommit){
@@ -176,7 +178,7 @@ public class ZoieUpdateHandler extends UpdateHandler {
 			throw new IOException("zoie home is not setup");
 		}
 		
-		ZoieSystem<IndexReader,DocumentWithID> zoie = zoieHome.getZoieSystem();
+		ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion> zoie = zoieHome.getZoieSystem();
 		if (zoie==null){
 			throw new IOException("zoie is not setup");
 		}
@@ -236,10 +238,10 @@ public class ZoieUpdateHandler extends UpdateHandler {
 		}
 		
 		if (delList.size()>0){
-			long version = zoie.getCurrentVersion();
-			ArrayList<DataEvent<DocumentWithID>> eventList = new ArrayList<DataEvent<DocumentWithID>>(delList.size());
+		  DefaultZoieVersion version = zoie.getCurrentVersion();
+			ArrayList<DataEvent<DocumentWithID, DefaultZoieVersion>> eventList = new ArrayList<DataEvent<DocumentWithID, DefaultZoieVersion>>(delList.size());
 			for (long val : delList){
-			  eventList.add(new DataEvent<DocumentWithID>(version,new DocumentWithID(val,true)));
+			  eventList.add(new DataEvent<DocumentWithID, DefaultZoieVersion>(new DocumentWithID(val,true), version));
 			}
 			try {
 				zoie.consume(eventList);

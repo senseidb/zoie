@@ -23,7 +23,8 @@ import org.apache.solr.core.SolrCore;
 
 import proj.zoie.api.DefaultZoieVersion;
 import proj.zoie.api.ZoieException;
-import proj.zoie.api.impl.DefaultZoieVersionFactory;
+import proj.zoie.api.DefaultZoieVersion.DefaultZoieVersionFactory;
+import proj.zoie.impl.indexing.ZoieConfig;
 import proj.zoie.impl.indexing.DefaultIndexReaderDecorator;
 import proj.zoie.impl.indexing.ZoieSystem;
 import proj.zoie.mbean.ZoieSystemAdmin;
@@ -61,8 +62,12 @@ public class ZoieSystemHome {
 		long batchDelay = config.getInt("zoie.batchDelay",300000);
 		boolean realtime = config.getBool("zoie.realtime", true);
 		
+		ZoieConfig<DefaultZoieVersion> zoieConfig = new ZoieConfig<DefaultZoieVersion>(new DefaultZoieVersionFactory());
+		zoieConfig.setBatchSize(batchSize);
+		zoieConfig.setBatchDelay(batchDelay);
+		zoieConfig.setRtIndexing(realtime);
 		
-		_zoieSystem = new ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion>(idxFile,new ZoieSolrIndexableInterpreter(),new DefaultIndexReaderDecorator(),analyzer,similarity,batchSize,batchDelay,realtime, new DefaultZoieVersionFactory());
+		_zoieSystem = new ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion>(idxFile,new ZoieSolrIndexableInterpreter(),new DefaultIndexReaderDecorator(),zoieConfig);
 		
 		log.info("Zoie System loaded with: ");
 		log.info("zoie.batchSize: "+batchSize);

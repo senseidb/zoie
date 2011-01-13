@@ -48,7 +48,10 @@ public class ZoieUpdateHandler extends UpdateHandler {
 		super(core);
 		_core = core;
 
-		_autocommit = core.getSolrConfig().getBool("zoie.autocommit", true);
+		// _autocommit = core.getSolrConfig().getBool("zoie.autocommit", true);
+		
+		// this should NOT be enabled until Solr stops caching searchers
+		_autocommit = false;
 	}
 
 	@Override

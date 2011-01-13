@@ -34,7 +34,6 @@ import proj.zoie.api.DefaultZoieVersion;
 import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.impl.indexing.ZoieSystem;
 

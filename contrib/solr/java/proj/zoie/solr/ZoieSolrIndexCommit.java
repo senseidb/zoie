@@ -68,4 +68,10 @@ public class ZoieSolrIndexCommit extends IndexCommit {
       return userData;
     }
 
+    @Override
+    public void delete()
+    {
+      throw new UnsupportedOperationException("since isDeleted always returns false, we don't support delete operation here");
+    }
+
 }

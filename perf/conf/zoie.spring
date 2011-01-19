@@ -19,7 +19,7 @@
        <constructor-arg value="${zoie.perf.numDocs}"/>
 	</bean>
 	
-	<bean id="versionfactory" class="proj.zoie.api.impl.DefaultZoieVersionFactory" />
+	<bean id="versionfactory" class="proj.zoie.api.DefaultZoieVersion$DefaultZoieVersionFactory" />
 	<bean id="indexingSystem.zoie" class="proj.zoie.impl.indexing.SimpleZoieSystem" init-method="start" destroy-method="shutdown">
 		<constructor-arg value="file:${index.directory}"/>
 		<constructor-arg ref="interpreter" />

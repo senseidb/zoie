@@ -161,7 +161,7 @@
 			<!-- <jvmarg value="-d64" /> -->
 			<jvmarg value="-server" />
 			<jvmarg value="-Xms512m" />
-			<jvmarg value="-Xmx1g" />
+			<jvmarg value="-Xmx2g" />
                         <jvmarg value="-XX:NewSize=1m" />
 			<jvmarg value="-Xloggc:${logs}/gc.log" />
 			<jvmarg value="-XX:+PrintGCTimeStamps" />

@@ -1,5 +1,6 @@
 package proj.zoie.impl.indexing;
 
+import java.io.Serializable;
 import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
@@ -7,7 +8,7 @@ import org.apache.lucene.index.IndexReader;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
 
-public abstract class AbstractReaderCache<R extends IndexReader>
+public abstract class AbstractReaderCache<R extends IndexReader, VALUE extends Serializable>
 {
   public abstract List<ZoieIndexReader<R>> getIndexReaders();
 

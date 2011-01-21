@@ -1,4 +1,5 @@
 package proj.zoie.impl.indexing.luceneNRT;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,6 +18,7 @@ package proj.zoie.impl.indexing.luceneNRT;
  */
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -44,134 +46,164 @@ import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 
-public class LuceneNRTDataConsumer<D, V extends ZoieVersion> implements DataConsumer<D,V>,IndexReaderFactory<IndexReader>{
-	private static final Logger logger = Logger.getLogger(LuceneNRTDataConsumer.class);
-	
-	/**
-	 * document ID field name
-	*/
-	public static final String DOCUMENT_ID_FIELD = "id";
-	  
-	
-	private IndexWriter _writer;
-	private Analyzer _analyzer;
-	private ZoieIndexableInterpreter<D> _interpreter;
-	private Directory _dir;
-	
-	public LuceneNRTDataConsumer(File dir,ZoieIndexableInterpreter<D> interpreter) throws IOException{
-		this(FSDirectory.open(dir),new StandardAnalyzer(Version.LUCENE_CURRENT),interpreter);
-	}
-	
-	public LuceneNRTDataConsumer(File dir,Analyzer analyzer,ZoieIndexableInterpreter<D> interpreter) throws IOException{
-		this(FSDirectory.open(dir),analyzer,interpreter);
-	}
-	
-	public LuceneNRTDataConsumer(Directory dir,Analyzer analyzer,ZoieIndexableInterpreter<D> interpreter){
-		_writer = null;
-		_analyzer = analyzer;
-		_interpreter = interpreter;
-		_dir = dir;
-	}
-	
-	public void start(){
-		try {
-			_writer = new IndexWriter(_dir, _analyzer,MaxFieldLength.UNLIMITED);
-		} catch (IOException e) {
-			logger.error("uanble to start consumer: "+e.getMessage(),e);
-		}
-	}
-	
-	public void shutdown(){
-		if (_writer!=null){
-			try {
-				_writer.close();
-			} catch (IOException e) {
-				logger.error(e.getMessage(),e);
-			}
-		}
-	}
-	
-	public void consume(Collection<proj.zoie.api.DataConsumer.DataEvent<D,V>> events)
-			throws ZoieException {
-		if (_writer == null){
-			throw new ZoieException("Internal IndexWriter null, perhaps not started?");
-		}
-		
-		if (events.size() > 0){
-			for (DataEvent<D,V> event : events){
-				ZoieIndexable indexable = _interpreter.convertAndInterpret(event.getData());
-				if (indexable.isSkip()) continue;
-				
-				try {
-				  _writer.deleteDocuments(new Term(DOCUMENT_ID_FIELD,String.valueOf(indexable.getUID())));
-				} catch(IOException e) {
-				  throw new ZoieException(e.getMessage(),e);
-				}
-				  
-			  IndexingReq[] reqs = indexable.buildIndexingReqs();
-			  for (IndexingReq req : reqs){
-				Analyzer localAnalyzer = req.getAnalyzer();
-				Document doc = req.getDocument();
-				Field uidField = new Field(DOCUMENT_ID_FIELD,String.valueOf(indexable.getUID()),Store.NO,Index.NOT_ANALYZED_NO_NORMS);
-				uidField.setOmitTermFreqAndPositions(true);
-				doc.add(uidField);
-				if (localAnalyzer == null) localAnalyzer = _analyzer;
-				try {
-					_writer.addDocument(doc, localAnalyzer);
-				} catch(IOException e) {
-					throw new ZoieException(e.getMessage(),e);
-				}
-			  }
-			}
-			
-			
-			int numdocs;
-			try {
-				// for realtime commit is not needed per lucene mailing list
-				//_writer.commit();
-				numdocs = _writer.numDocs();
-			} catch (IOException e) {
-				throw new ZoieException(e.getMessage(),e);
-			}
-			
-			logger.info("flushed "+events.size()+" events to index, index now contains "+numdocs+" docs.");
-		}
-	}
+public class LuceneNRTDataConsumer<D, V extends ZoieVersion, VALUE extends Serializable> implements DataConsumer<D, V>, IndexReaderFactory<IndexReader, VALUE>
+{
+  private static final Logger logger = Logger.getLogger(LuceneNRTDataConsumer.class);
 
-	public Analyzer getAnalyzer() {
-		return _analyzer;
-	}
+  /**
+   * document ID field name
+   */
+  public static final String DOCUMENT_ID_FIELD = "id";
 
-	public IndexReader getDiskIndexReader() throws IOException {
-		if (_writer!=null){
-		  return _writer.getReader();
-		}
-		else{
-		  return null;
-		}
-	}
+  private IndexWriter _writer;
+  private Analyzer _analyzer;
+  private ZoieIndexableInterpreter<D, VALUE> _interpreter;
+  private Directory _dir;
 
-	public List<IndexReader> getIndexReaders() throws IOException {
-		IndexReader subReader = getDiskIndexReader();
-		ArrayList<IndexReader> list = new ArrayList<IndexReader>();
-		if (subReader!=null){
-			list.add(subReader);
-		}
-		return list;
-	}
+  public LuceneNRTDataConsumer(File dir, ZoieIndexableInterpreter<D, VALUE> interpreter) throws IOException
+  {
+    this(FSDirectory.open(dir), new StandardAnalyzer(Version.LUCENE_CURRENT), interpreter);
+  }
 
-	public void returnIndexReaders(List<IndexReader> readers) {
-		if (readers!=null){
-			for (IndexReader r : readers){
-				try{
-					r.close();
-				}
-				catch(Exception e){
-					logger.error(e.getMessage(),e);
-				}
-			}
-		}
-	}
+  public LuceneNRTDataConsumer(File dir, Analyzer analyzer, ZoieIndexableInterpreter<D, VALUE> interpreter) throws IOException
+  {
+    this(FSDirectory.open(dir), analyzer, interpreter);
+  }
+
+  public LuceneNRTDataConsumer(Directory dir, Analyzer analyzer, ZoieIndexableInterpreter<D, VALUE> interpreter)
+  {
+    _writer = null;
+    _analyzer = analyzer;
+    _interpreter = interpreter;
+    _dir = dir;
+  }
+
+  public void start()
+  {
+    try
+    {
+      _writer = new IndexWriter(_dir, _analyzer, MaxFieldLength.UNLIMITED);
+    } catch (IOException e)
+    {
+      logger.error("uanble to start consumer: " + e.getMessage(), e);
+    }
+  }
+
+  public void shutdown()
+  {
+    if (_writer != null)
+    {
+      try
+      {
+        _writer.close();
+      } catch (IOException e)
+      {
+        logger.error(e.getMessage(), e);
+      }
+    }
+  }
+
+  public void consume(Collection<proj.zoie.api.DataConsumer.DataEvent<D, V>> events) throws ZoieException
+  {
+    if (_writer == null)
+    {
+      throw new ZoieException("Internal IndexWriter null, perhaps not started?");
+    }
+
+    if (events.size() > 0)
+    {
+      for (DataEvent<D, V> event : events)
+      {
+        ZoieIndexable indexable = _interpreter.convertAndInterpret(event.getData());
+        if (indexable.isSkip())
+          continue;
+
+        try
+        {
+          _writer.deleteDocuments(new Term(DOCUMENT_ID_FIELD, String.valueOf(indexable.getUID())));
+        } catch (IOException e)
+        {
+          throw new ZoieException(e.getMessage(), e);
+        }
+
+        IndexingReq[] reqs = indexable.buildIndexingReqs();
+        for (IndexingReq req : reqs)
+        {
+          Analyzer localAnalyzer = req.getAnalyzer();
+          Document doc = req.getDocument();
+          Field uidField = new Field(DOCUMENT_ID_FIELD, String.valueOf(indexable.getUID()), Store.NO, Index.NOT_ANALYZED_NO_NORMS);
+          uidField.setOmitTermFreqAndPositions(true);
+          doc.add(uidField);
+          if (localAnalyzer == null)
+            localAnalyzer = _analyzer;
+          try
+          {
+            _writer.addDocument(doc, localAnalyzer);
+          } catch (IOException e)
+          {
+            throw new ZoieException(e.getMessage(), e);
+          }
+        }
+      }
+
+      int numdocs;
+      try
+      {
+        // for realtime commit is not needed per lucene mailing list
+        // _writer.commit();
+        numdocs = _writer.numDocs();
+      } catch (IOException e)
+      {
+        throw new ZoieException(e.getMessage(), e);
+      }
+
+      logger.info("flushed " + events.size() + " events to index, index now contains " + numdocs + " docs.");
+    }
+  }
+
+  public Analyzer getAnalyzer()
+  {
+    return _analyzer;
+  }
+
+  public IndexReader getDiskIndexReader() throws IOException
+  {
+    if (_writer != null)
+    {
+      return _writer.getReader();
+    } else
+    {
+      return null;
+    }
+  }
+
+  public List<IndexReader> getIndexReaders() throws IOException
+  {
+    IndexReader subReader = getDiskIndexReader();
+    ArrayList<IndexReader> list = new ArrayList<IndexReader>();
+    if (subReader != null)
+    {
+      list.add(subReader);
+    }
+    return list;
+  }
+
+  public void returnIndexReaders(List<IndexReader> readers)
+  {
+    if (readers != null)
+    {
+      for (IndexReader r : readers)
+      {
+        try
+        {
+          r.close();
+        } catch (Exception e)
+        {
+          logger.error(e.getMessage(), e);
+        }
+      }
+    }
+  }
 
   public V getVersion()
   {

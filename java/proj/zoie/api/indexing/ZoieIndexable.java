@@ -15,13 +15,17 @@ package proj.zoie.api.indexing;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.io.Serializable;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 
 /**
  * Builder object to produce indexing requests.
+ * @param VALUE the generic type for the associated Key-Value store data. UID is the Key and type is always Long.
  */
-public interface ZoieIndexable{
+public interface ZoieIndexable<VALUE extends Serializable>
+{
 	/**
 	 * document ID field name
 	 * @deprecated this field should no longer be used
@@ -77,4 +81,15 @@ public interface ZoieIndexable{
 	 * @return An array of indexing requests
 	 */
 	IndexingReq[] buildIndexingReqs();
+	/**
+	 * Indicator for whether there's data to be sent to the Data Store.
+	 * If true, the data can be accessed by hasStoreData() method.
+	 * @return true if there is associated data that should be sent to the Data Store.
+	 */
+	boolean hasStoreData();
+	/**
+	 * The method that returns the Data to be put in a Data Store associated with zoie. The Key is UID.
+	 * @return the Data to be put into the data store.
+	 */
+	VALUE getStoreValue();
 }

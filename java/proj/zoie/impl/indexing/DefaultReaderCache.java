@@ -1,6 +1,7 @@
 package proj.zoie.impl.indexing;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -13,7 +14,7 @@ import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
 
-public class DefaultReaderCache<R extends IndexReader> extends AbstractReaderCache<R>
+public class DefaultReaderCache<R extends IndexReader, VALUE extends Serializable> extends AbstractReaderCache<R, VALUE>
 {
   private static final Logger log = Logger.getLogger(DefaultReaderCache.class);
   private final Thread _maintenance;
@@ -25,9 +26,9 @@ public class DefaultReaderCache<R extends IndexReader> extends AbstractReaderCac
   private final ReentrantReadWriteLock returningIndexReaderQueueLock = new ReentrantReadWriteLock();
   private final Object cachemonitor = new Object();
   private long _freshness = 10000L;
-  private final IndexReaderFactory<ZoieIndexReader<R>> _readerfactory;
+  private final IndexReaderFactory<ZoieIndexReader<R>, VALUE> _readerfactory;
 
-  public DefaultReaderCache(IndexReaderFactory<ZoieIndexReader<R>> readerfactory)
+  public DefaultReaderCache(IndexReaderFactory<ZoieIndexReader<R>, VALUE> readerfactory)
   {
     _readerfactory = readerfactory;
     _maintenance = newMaintenanceThread();
@@ -173,8 +174,8 @@ public class DefaultReaderCache<R extends IndexReader> extends AbstractReaderCac
   public static ReaderCacheFactory FACTORY = new ReaderCacheFactory(){
 
     @Override
-    public <R extends IndexReader> AbstractReaderCache<R> newInstance(IndexReaderFactory<ZoieIndexReader<R>> readerfactory)
+    public <R extends IndexReader, VALUE extends Serializable> AbstractReaderCache<R, VALUE> newInstance(IndexReaderFactory<ZoieIndexReader<R>, VALUE> readerfactory)
     {
-      return new DefaultReaderCache<R>(readerfactory);
+      return new DefaultReaderCache<R, VALUE>(readerfactory);
     }};
 }

@@ -19,6 +19,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.Serializable;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
@@ -30,13 +31,13 @@ import proj.zoie.api.indexing.AbstractZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 
-public class FileIndexableInterpreter implements ZoieIndexableInterpreter<File> 
+public class FileIndexableInterpreter<VALUE extends Serializable> implements ZoieIndexableInterpreter<File, VALUE> 
 {
 	protected static int id = 0;
 	private static final Logger log = Logger.getLogger(FileIndexableInterpreter.class);
 	static ThreadLocal<StringBuilder> myStringBuilder = new ThreadLocal<StringBuilder>();
 	static ThreadLocal<char[]> myCharBuffer = new ThreadLocal<char[]>();
-	protected class FileIndexable extends AbstractZoieIndexable
+	protected class FileIndexable extends AbstractZoieIndexable<VALUE>
 	{
 		private File _file;
 		private int _uid;
@@ -126,8 +127,8 @@ public class FileIndexableInterpreter implements ZoieIndexableInterpreter<File>
 		}
 	}
 	
-	public ZoieIndexable convertAndInterpret(File src) {
-		ZoieIndexable idxable = new FileIndexable(src, id);
+	public ZoieIndexable<VALUE> convertAndInterpret(File src) {
+		ZoieIndexable<VALUE> idxable = new FileIndexable(src, id);
 		id++;
 		return idxable;
 	}

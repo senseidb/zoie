@@ -48,7 +48,7 @@ public class DiskSearchIndex<R extends IndexReader, V extends ZoieVersion> exten
 
   public static final Logger log = Logger.getLogger(DiskSearchIndex.class);
 
-  public DiskSearchIndex(DirectoryManager<V> dirMgr, IndexReaderDecorator<R> decorator,SearchIndexManager<R,V> idxMgr){
+  public DiskSearchIndex(DirectoryManager<V> dirMgr, IndexReaderDecorator<R> decorator,SearchIndexManager<R,V, ?> idxMgr){
     super(idxMgr, true);  
     _dirMgr = dirMgr;
     _mergePolicyParams = new MergePolicyParams();

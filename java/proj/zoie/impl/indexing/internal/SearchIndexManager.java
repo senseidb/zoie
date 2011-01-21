@@ -18,6 +18,7 @@ package proj.zoie.impl.indexing.internal;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,7 +35,8 @@ import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
-public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> implements IndexReaderFactory<ZoieIndexReader<R>>{
+public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion, VALUE extends Serializable> implements IndexReaderFactory<ZoieIndexReader<R>, VALUE>
+{
     private static final Logger log = Logger.getLogger(SearchIndexManager.class);
     
     public static enum Status

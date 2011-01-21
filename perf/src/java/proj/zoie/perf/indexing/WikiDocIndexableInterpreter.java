@@ -14,18 +14,18 @@ import org.apache.lucene.document.Field.Store;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 
-public class WikiDocIndexableInterpreter implements ZoieIndexableInterpreter<ContentDoc> {
+public class WikiDocIndexableInterpreter implements ZoieIndexableInterpreter<ContentDoc, String> {
 	private ThreadLocal<SimpleDateFormat> _formatter = new ThreadLocal<SimpleDateFormat>() {
 	      protected SimpleDateFormat initialValue() {
 	    	  return new SimpleDateFormat("dd-MMM-yyyy hh:mm:ss.SSS");
 		      }   
 		    };
 		    
-	public ZoieIndexable convertAndInterpret(ContentDoc src) {
+	public ZoieIndexable<String> convertAndInterpret(ContentDoc src) {
 		return new EnWikiIndexable(src);
 	}
 	
-	private class EnWikiIndexable implements ZoieIndexable{
+	private class EnWikiIndexable implements ZoieIndexable<String>{
 		private ContentDoc _wikiDoc;
 		public EnWikiIndexable(ContentDoc wikiDoc){
 			_wikiDoc = wikiDoc;
@@ -81,6 +81,20 @@ public class WikiDocIndexableInterpreter implements ZoieIndexableInterpreter<Con
 		public boolean isSkip() {
 			return false;
 		}
+
+    @Override
+    public String getStoreValue()
+    {
+      // TODO Auto-generated method stub
+      return null;
+    }
+
+    @Override
+    public boolean hasStoreData()
+    {
+      // TODO Auto-generated method stub
+      return false;
+    }
 		
 	}
 

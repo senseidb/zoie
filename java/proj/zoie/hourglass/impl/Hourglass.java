@@ -317,9 +317,4 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion, VALUE ex
     // TODO Auto-generated method stub
     log.info("starting Hourglass... already done due by auto-start");
   }
-  @Override
-  public V getZoieVersion(String str)
-  {
-    return _currentZoie.getZoieVersion(str);
-  }
 }

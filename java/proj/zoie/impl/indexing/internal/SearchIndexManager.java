@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 
 import proj.zoie.api.ZoieVersion;
-import proj.zoie.api.ZoieVersionFactory;
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.IndexReaderFactory;
@@ -50,8 +49,6 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion, VA
 	  final DocIDMapperFactory _docIDMapperFactory;
 	  private final DiskSearchIndex<R,V> _diskIndex;
 	  
-	  final ZoieVersionFactory<V> _zoieVersionFactory;
-	  
 	  private volatile Status _diskIndexerStatus;
 	  private volatile Mem<R,V> _mem;
 	  /**
@@ -65,11 +62,10 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion, VA
 	   * @param location 
 	   * @param indexReaderDecorator
 	   */
-	  public SearchIndexManager(DirectoryManager<V> dirMgr,IndexReaderDecorator<R> indexReaderDecorator,DocIDMapperFactory docIDMapperFactory, ZoieVersionFactory<V> zoieVersionFactory, RAMIndexFactory<R, V> ramIndexFactory)
+	  public SearchIndexManager(DirectoryManager<V> dirMgr,IndexReaderDecorator<R> indexReaderDecorator,DocIDMapperFactory docIDMapperFactory, RAMIndexFactory<R, V> ramIndexFactory)
 	  {
 	    _dirMgr = dirMgr;
 	    _docIDMapperFactory = docIDMapperFactory;
-	    _zoieVersionFactory = zoieVersionFactory;
 	    _ramIndexFactory = ramIndexFactory;
 	    if (indexReaderDecorator!=null)
 	    {
@@ -105,10 +101,6 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion, VA
 	  public DocIDMapperFactory getDocIDMapperFactory(){
 		  return _docIDMapperFactory;
 	  }
-	  
-	  public ZoieVersionFactory<V> getZoieVersionFactory(){
-      return _zoieVersionFactory;
-    }
 	  
     public int getDiskSegmentCount() throws IOException
     {

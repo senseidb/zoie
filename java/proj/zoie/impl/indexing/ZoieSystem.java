@@ -147,7 +147,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V, VALUE>
         .getDocidMapperFactory(), zoieConfig.getAnalyzer(), zoieConfig
         .getSimilarity(), zoieConfig.getBatchSize(),
         zoieConfig.getBatchDelay(), zoieConfig.isRtIndexing(), zoieConfig
-        .getMaxBatchSize(), zoieConfig.getZoieVersionFactory(), zoieConfig.getReadercachefactory(), zoieConfig.getRamIndexFactory());
+        .getMaxBatchSize(), zoieConfig.getReadercachefactory(), zoieConfig.getRamIndexFactory());
     readercache.setFreshness(zoieConfig.getFreshness());
   }
 
@@ -173,7 +173,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V, VALUE>
         zoieConfig.getDocidMapperFactory(), zoieConfig.getAnalyzer(),
         zoieConfig.getSimilarity(), zoieConfig.getBatchSize(), zoieConfig
         .getBatchDelay(), zoieConfig.isRtIndexing(), zoieConfig
-        .getMaxBatchSize(), zoieConfig.getZoieVersionFactory(), zoieConfig.getReadercachefactory(), zoieConfig.getRamIndexFactory());
+        .getMaxBatchSize(), zoieConfig.getReadercachefactory(), zoieConfig.getRamIndexFactory());
     readercache.setFreshness(zoieConfig.getFreshness());
   }
 
@@ -210,8 +210,6 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V, VALUE>
     this(dirMgr, interpreter, indexReaderDecorator,
         new DefaultDocIDMapperFactory(), analyzer, similarity, batchSize,
         batchDelay, rtIndexing, zoieVersionFactory);
-    // this(dirMgr, interpreter, indexReaderDecorator, analyzer, similarity,
-    // batchSize, batchDelay, rtIndexing);
   }
 
   /**
@@ -329,7 +327,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V, VALUE>
       boolean rtIndexing, int maxBatchSize,
       ZoieVersionFactory<V> zoieVersionFactory)
   {
-    this(dirMgr, interpreter, indexReaderDecorator, docidMapperFactory, analyzer, similarity, batchSize, batchDelay, rtIndexing, maxBatchSize, zoieVersionFactory, DefaultReaderCache.FACTORY, new DefaultRAMIndexFactory<R,V>());
+    this(dirMgr, interpreter, indexReaderDecorator, docidMapperFactory, analyzer, similarity, batchSize, batchDelay, rtIndexing, maxBatchSize, DefaultReaderCache.FACTORY, new DefaultRAMIndexFactory<R,V>());
   }
   /**
    * Creates a new ZoieSystem.
@@ -368,7 +366,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V, VALUE>
       DocIDMapperFactory docidMapperFactory, Analyzer analyzer,
       Similarity similarity, int batchSize, long batchDelay,
       boolean rtIndexing, int maxBatchSize,
-      ZoieVersionFactory<V> zoieVersionFactory, ReaderCacheFactory readercachefactory, RAMIndexFactory<R, V> ramIndexFactory)
+      ReaderCacheFactory readercachefactory, RAMIndexFactory<R, V> ramIndexFactory)
   {
     if (dirMgr == null)
       throw new IllegalArgumentException("null directory manager.");
@@ -379,7 +377,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V, VALUE>
 
     docidMapperFactory = docidMapperFactory == null ? new DefaultDocIDMapperFactory()
     : docidMapperFactory;
-    _searchIdxMgr = new SearchIndexManager<R, V, VALUE>(_dirMgr, indexReaderDecorator, docidMapperFactory, zoieVersionFactory, ramIndexFactory);
+    _searchIdxMgr = new SearchIndexManager<R, V, VALUE>(_dirMgr, indexReaderDecorator, docidMapperFactory, ramIndexFactory);
     _realtimeIndexing = rtIndexing;
     _interpreter = interpreter;
 
@@ -393,7 +391,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V, VALUE>
         + "\t"
         + (indexReaderDecorator != null ? indexReaderDecorator.toString()
             : "null") + "\t" + docidMapperFactory.toString() + "\t"
-            + zoieVersionFactory.toString() + "\tAnalyzer: " + _analyzer.toString()
+            + "Analyzer: " + _analyzer.toString()
             + "\tSimilarity: " + _similarity.toString()
             + "\tbatchSize (desired max batch size for indexing to RAM): "
             + batchSize
@@ -456,19 +454,6 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V, VALUE>
     {
       _diskLoader.setOptimizeScheduler(scheduler);
     }
-  }
-
-
-  /**
-   * return the zoie version given a string.
-   */
-  /* (non-Javadoc)
-   * @see proj.zoie.api.ZoieVersionFactory#getZoieVersion(java.lang.String)
-   */
-  @Override
-  public V getZoieVersion(String str)
-  {
-    return getVersion();
   }
 
   /**

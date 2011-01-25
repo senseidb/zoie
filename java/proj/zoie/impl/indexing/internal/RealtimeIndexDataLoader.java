@@ -111,7 +111,7 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D, V extends ZoieVer
           if(_loadMgrThread == null || !_loadMgrThread.isAlive())
           {
             ZoieHealth.setFatal();
-            throw new ZoieException("load manager has stopped");
+            throw new ZoieException("fatal: indexing thread loader manager has stopped");
           }
           
           this.notifyAll(); // wake up load manager thread      

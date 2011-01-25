@@ -204,7 +204,7 @@ public class BatchedIndexDataLoader<R extends IndexReader,D, V extends ZoieVersi
 	          // check if load manager thread is alive
 	          if(_loadMgrThread == null || !_loadMgrThread.isAlive())
 	          {
-	            throw new ZoieException("load manager has stopped");
+	            throw new ZoieException("fatal: indexing thread loader manager has stopped");
 	          }
 	          
 	          try

@@ -137,6 +137,11 @@
 		</jar>
 	</target>
 
+	<target name="deploy-zoie-core" depends="dist" description="--> deploy .jar to oss repo">
+		<exec executable="mvn">
+			<arg line="deploy:deploy-file -Durl=https://oss.sonatype.org/content/repositories/snapshots -DrepositoryId=sonatype-nexus-snapshots -Dfile=${dist}/${project.name}-${version}.jar -DpomFile=zoie-core-pom.xml"/>
+		</exec>
+	</target>
 
 	<target name="example-war" depends="dist">
 		<ant antfile="build.xml" dir="example" target="dist" />
@@ -149,11 +154,23 @@
 	<target name="zoie-server" description="--> build server" depends="dist">
 		<ant antfile="build.xml" dir="contrib/server" target="dist" />
 	</target>
+
+	<target name="deploy-zoie-server" description="--> deploy server" depends="zoie-server">
+		<exec executable="mvn">
+			<arg line="deploy:deploy-file -Durl=https://oss.sonatype.org/content/repositories/snapshots -DrepositoryId=sonatype-nexus-snapshots -Dfile=${dist}/${project.name}-server-${version}.jar -DpomFile=zoie-server-pom.xml"/>
+		</exec>
+	</target>
 	
 	<target name="zoie-solr" description="--> build solr plugin" depends="dist">
 		<ant antfile="build.xml" dir="contrib/solr" target="dist" inheritAll="false"/>
 	</target>
 
+	<target name="deploy-zoie-solr" description="--> deploy solr plugin" depends="zoie-solr">
+		<exec executable="mvn">
+			<arg line="deploy:deploy-file -Durl=https://oss.sonatype.org/content/repositories/snapshots -DrepositoryId=sonatype-nexus-snapshots -Dfile=${dist}/${project.name}-solr-${version}.jar -DpomFile=zoie-solr-pom.xml"/>
+		</exec>
+	</target>
+	
 	<target name="run-server" depends="zoie-server" description="--> run server">
 		<java fork="true" jar="${dist}/zoie-server-${version}.jar" failonerror="true" maxmemory="1g">
 			<sysproperty key="log.home" value="${logs}" />

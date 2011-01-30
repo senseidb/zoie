@@ -4,7 +4,7 @@
 	<groupId>com.sna-projects</groupId>
 	<artifactId>zoie-core</artifactId>
 	<packaging>jar</packaging>
-	<name>zoie-core</name>
+	<name>zoie core</name>
 	<version>2.5.0-SNAPSHOT</version>
 	<description>realtime search/indexing system written in Java</description>
 	<url>http://sna-projects.com/zoie/</url>
@@ -103,7 +103,6 @@
 			<groupId>org.apache.lucene</groupId>
 			<artifactId>lucene-highlighter</artifactId>
 			<version>2.9.1</version>
-			<type>pom</type>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>

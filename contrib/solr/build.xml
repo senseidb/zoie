@@ -5,6 +5,7 @@
         <property name="lib.solr" value="lib"/>
     	
 		<property name="src.dir" value="java"/>
+    	<property name="doc" value="doc"/>
         <property name="build" value="build"/>
     	<property name="xml" value="xml"/>
 	    <property name="dist" value="${zoie.root}/dist"/>
@@ -49,7 +50,24 @@
                 </javac>
         </target>
 	
-        <target name="dist" depends="compile">
+		<target name="javadoc" depends="init" description="--> build javadoc">
+			<javadoc
+					           sourcepath="${src.dir}"
+							   classpathref="project.class.path"
+					           defaultexcludes="yes"
+					           destdir="${doc}"
+					           author="false"
+							   public="true"
+					           version="true"
+					           use="true"
+					           windowtitle="zoie-solr">
+					    <doctitle><![CDATA[<h1>Zoie Solr Plugin</h1>]]></doctitle>
+					  </javadoc>
+		</target>
+	
+        <target name="dist" depends="compile,javadoc">
 			<jar destfile="${dist}/zoie-solr-${version}.jar"  basedir="${build}" />
+    		<jar destfile="${dist}/zoie-solr-${version}-sources.jar" basedir="${src.dir}"/>
+    		<jar destfile="${dist}/zoie-solr-${version}-javadoc.jar" basedir="${doc}"/>
         </target>
 </project>

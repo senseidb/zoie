@@ -7,6 +7,7 @@
 		<property name="src.server" value="java"/>
         <property name="build" value="build"/>
 	    <property name="dist" value="${zoie.root}/dist"/>
+		<property name="doc" value="doc"/>
 	  
 	    <property file="${zoie.root}/version.properties" />
 		
@@ -48,7 +49,7 @@
                 </javac>
         </target>
 	
-	  <target name="dist" depends="compile">
+	  <target name="dist" depends="compile,javadoc">
 			<unzip dest="${build}">
 			    <fileset dir="${lib.server}">
 			        <include name="jetty-*.jar"/>
@@ -65,5 +66,23 @@
 				   <attribute name="Main-Class" value="proj.zoie.server.ZoieServer"/>
 				</manifest>
 			</jar>
+			<jar destfile="${dist}/zoie-server-${version}-sources.jar" basedir="${src.server}"/>
+			<jar destfile="${dist}/zoie-server-${version}-javadoc.jar" basedir="${doc}"/>
 	    </target>
+	
+		<target name="javadoc" depends="init" description="--> build javadoc">
+			<javadoc
+					           sourcepath="${src.server}"
+							   classpathref="project.class.path"
+					           defaultexcludes="yes"
+					           destdir="${doc}"
+					           author="false"
+							   public="true"
+					           version="true"
+					           use="true"
+					           windowtitle="zoie-server">
+					    <doctitle><![CDATA[<h1>Zoie Server</h1>]]></doctitle>
+					  </javadoc>
+		</target>
+	
 </project>

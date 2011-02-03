@@ -123,7 +123,7 @@
 		</exec>
 	</target>
 
-	<target name="dist" depends="compile,gitversion" description="--> build .jar into dist">
+	<target name="dist" depends="compile,gitversion,zoie-core-javadoc" description="--> build .jar and sources into dist">
 		<tstamp>
 			<format property="TODAY" pattern="yyyy-MM-dd HH:mm:ss" />
 		</tstamp>
@@ -135,11 +135,19 @@
         	                <attribute name="Built-Date" value="${TODAY}" />
                 	</manifest>
 		</jar>
+		<jar destfile="${dist}/${project.name}-${version}-sources.jar" basedir="${src}"/>
+		<jar destfile="${dist}/${project.name}-${version}-javadoc.jar" basedir="${doc}"/>
 	</target>
 
-	<target name="deploy-zoie-core" depends="dist" description="--> deploy .jar to oss repo">
+	<target name="deploy-zoie-core-snapshot" depends="dist" description="--> deploy .jar to oss repo">
 		<exec executable="mvn">
 			<arg line="deploy:deploy-file -Durl=https://oss.sonatype.org/content/repositories/snapshots -DrepositoryId=sonatype-nexus-snapshots -Dfile=${dist}/${project.name}-${version}.jar -DpomFile=zoie-core-pom.xml"/>
+		</exec>
+		<exec executable="mvn">
+			<arg line="deploy:deploy-file -Durl=https://oss.sonatype.org/content/repositories/snapshots -DrepositoryId=sonatype-nexus-snapshots -Dfile=${dist}/${project.name}-${version}-sources.jar -Dclassifier=sources -DgroupId=com.sna-projects -DartifactId=zoie-core -Dversion=${version}-SNAPSHOT -Dpackaging=jar"/> 
+		</exec>
+		<exec executable="mvn">
+			<arg line="deploy:deploy-file -Durl=https://oss.sonatype.org/content/repositories/snapshots -DrepositoryId=sonatype-nexus-snapshots -Dfile=${dist}/${project.name}-${version}-javadoc.jar -Dclassifier=javadoc -DgroupId=com.sna-projects -DartifactId=zoie-core -Dversion=${version}-SNAPSHOT -Dpackaging=jar"/> 
 		</exec>
 	</target>
 
@@ -155,9 +163,15 @@
 		<ant antfile="build.xml" dir="contrib/server" target="dist" />
 	</target>
 
-	<target name="deploy-zoie-server" description="--> deploy server" depends="zoie-server">
+	<target name="deploy-zoie-server-snapshot" description="--> deploy server" depends="zoie-server">
 		<exec executable="mvn">
 			<arg line="deploy:deploy-file -Durl=https://oss.sonatype.org/content/repositories/snapshots -DrepositoryId=sonatype-nexus-snapshots -Dfile=${dist}/${project.name}-server-${version}.jar -DpomFile=zoie-server-pom.xml"/>
+		</exec>
+		<exec executable="mvn">
+			<arg line="deploy:deploy-file -Durl=https://oss.sonatype.org/content/repositories/snapshots -DrepositoryId=sonatype-nexus-snapshots -Dfile=${dist}/${project.name}-server-${version}-sources.jar -Dclassifier=sources -DgroupId=com.sna-projects -DartifactId=zoie-server -Dversion=${version}-SNAPSHOT -Dpackaging=jar"/> 
+		</exec>
+		<exec executable="mvn">
+			<arg line="deploy:deploy-file -Durl=https://oss.sonatype.org/content/repositories/snapshots -DrepositoryId=sonatype-nexus-snapshots -Dfile=${dist}/${project.name}-server-${version}-javadoc.jar -Dclassifier=javadoc -DgroupId=com.sna-projects -DartifactId=zoie-server -Dversion=${version}-SNAPSHOT -Dpackaging=jar"/> 
 		</exec>
 	</target>
 	
@@ -165,9 +179,15 @@
 		<ant antfile="build.xml" dir="contrib/solr" target="dist" inheritAll="false"/>
 	</target>
 
-	<target name="deploy-zoie-solr" description="--> deploy solr plugin" depends="zoie-solr">
+	<target name="deploy-zoie-solr-snapshot" description="--> deploy solr plugin" depends="zoie-solr">
 		<exec executable="mvn">
 			<arg line="deploy:deploy-file -Durl=https://oss.sonatype.org/content/repositories/snapshots -DrepositoryId=sonatype-nexus-snapshots -Dfile=${dist}/${project.name}-solr-${version}.jar -DpomFile=zoie-solr-pom.xml"/>
+		</exec>
+		<exec executable="mvn">
+			<arg line="deploy:deploy-file -Durl=https://oss.sonatype.org/content/repositories/snapshots -DrepositoryId=sonatype-nexus-snapshots -Dfile=${dist}/${project.name}-solr-${version}-sources.jar -Dclassifier=sources -DgroupId=com.sna-projects -DartifactId=zoie-solr -Dversion=${version}-SNAPSHOT -Dpackaging=jar"/> 
+		</exec>
+		<exec executable="mvn">
+			<arg line="deploy:deploy-file -Durl=https://oss.sonatype.org/content/repositories/snapshots -DrepositoryId=sonatype-nexus-snapshots -Dfile=${dist}/${project.name}-solr-${version}-javadoc.jar -Dclassifier=javadoc -DgroupId=com.sna-projects -DartifactId=zoie-solr -Dversion=${version}-SNAPSHOT -Dpackaging=jar"/> 
 		</exec>
 	</target>
 	
@@ -202,13 +222,8 @@
 		</java>
 	</target>
 
-	<target name="javadoc" depends="init" description="--> build javadoc">
-		<javadoc packagenames="proj.zoie.api,
-							   proj.zoie.api.indexing,
-							   proj.zoie.api.impl.util,
-							   proj.zoie.impl.indexing,
-							   proj.zoie.mbean,
-							   proj.zoie.service.api"
+	<target name="zoie-core-javadoc" depends="init" description="--> build javadoc">
+		<javadoc
 				           sourcepath="${src}"
 						   classpathref="compile.class.path"
 				           defaultexcludes="yes"

@@ -17,8 +17,8 @@ import proj.zoie.hourglass.impl.Hourglass;
 public class HourglassAdmin implements HourglassAdminMBean
 {
 
-  private final Hourglass<?, ?, ?> hourglass;
-  public HourglassAdmin(Hourglass<?, ?, ?> hourglass)
+  private final Hourglass<?, ?, ?, ?> hourglass;
+  public HourglassAdmin(Hourglass<?, ?, ?, ?> hourglass)
   {
     this.hourglass = hourglass;
   }

@@ -17,7 +17,7 @@ public class DefaultRAMIndexFactory<R extends IndexReader, V extends ZoieVersion
   private static final Logger log = Logger.getLogger(DefaultRAMIndexFactory.class);
 
   @Override
-  public synchronized RAMSearchIndex<R, V> newInstance(V version, IndexReaderDecorator<R> decorator, SearchIndexManager<R, V> idxMgr)
+  public synchronized RAMSearchIndex<R, V> newInstance(V version, IndexReaderDecorator<R> decorator, SearchIndexManager<R, V, ?> idxMgr)
   {
     return new RAMSearchIndex<R, V>(version, decorator, idxMgr, new RAMDirectory(), null);
   }

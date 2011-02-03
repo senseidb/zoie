@@ -15,6 +15,7 @@ package proj.zoie.impl.indexing.internal;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -28,13 +29,13 @@ import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 
-public class DelegateIndexDataConsumer<D,V extends ZoieVersion> implements DataConsumer<D, V> {
+public class DelegateIndexDataConsumer<D,V extends ZoieVersion, VALUE extends Serializable> implements DataConsumer<D, V> {
 	private static final Logger log = Logger.getLogger(DelegateIndexDataConsumer.class);
-	private final DataConsumer<ZoieIndexable,V> _diskConsumer;
-	private final DataConsumer<ZoieIndexable,V> _ramConsumer;
-	private final ZoieIndexableInterpreter<D> _interpreter;
+	private final DataConsumer<ZoieIndexable<VALUE>,V> _diskConsumer;
+	private final DataConsumer<ZoieIndexable<VALUE>,V> _ramConsumer;
+	private final ZoieIndexableInterpreter<D, VALUE> _interpreter;
 	
-	public DelegateIndexDataConsumer(DataConsumer<ZoieIndexable,V> diskConsumer,DataConsumer<ZoieIndexable,V> ramConsumer,ZoieIndexableInterpreter<D> interpreter)
+	public DelegateIndexDataConsumer(DataConsumer<ZoieIndexable<VALUE>,V> diskConsumer,DataConsumer<ZoieIndexable<VALUE>,V> ramConsumer,ZoieIndexableInterpreter<D, VALUE> interpreter)
 	{
 	  	_diskConsumer=diskConsumer;
 	  	_ramConsumer=ramConsumer;
@@ -46,15 +47,15 @@ public class DelegateIndexDataConsumer<D,V extends ZoieVersion> implements DataC
 		if (data!=null)
 		{
 		  //PriorityQueue<DataEvent<ZoieIndexable>> indexableList = new PriorityQueue<DataEvent<ZoieIndexable>>(data.size(), DataEvent.getComparator());
-		  ArrayList<DataEvent<ZoieIndexable,V>> indexableList=new ArrayList<DataEvent<ZoieIndexable,V>>(data.size());
+		  ArrayList<DataEvent<ZoieIndexable<VALUE>,V>> indexableList=new ArrayList<DataEvent<ZoieIndexable<VALUE>,V>>(data.size());
 		  Iterator<DataEvent<D,V>> iter=data.iterator();
 		  while(iter.hasNext())
 		  {
 			  try{
 			    DataEvent<D,V> event=iter.next();
-			    ZoieIndexable indexable = ((ZoieIndexableInterpreter<D>)_interpreter).convertAndInterpret(event.getData());
+			    ZoieIndexable<VALUE> indexable = ((ZoieIndexableInterpreter<D, VALUE>)_interpreter).convertAndInterpret(event.getData());
 			   
-			    DataEvent<ZoieIndexable,V> newEvent=new DataEvent<ZoieIndexable,V>(indexable,event.getVersion());
+			    DataEvent<ZoieIndexable<VALUE>,V> newEvent=new DataEvent<ZoieIndexable<VALUE>,V>(indexable,event.getVersion());
 			    indexableList.add(newEvent);
 			  }
 			  catch(Exception e){
@@ -69,7 +70,7 @@ public class DelegateIndexDataConsumer<D,V extends ZoieVersion> implements DataC
 		    {
 	          if (_ramConsumer != null)
 	          {
-	            ArrayList<DataEvent<ZoieIndexable,V>> ramList=new ArrayList<DataEvent<ZoieIndexable,V>>(indexableList);
+	            ArrayList<DataEvent<ZoieIndexable<VALUE>,V>> ramList=new ArrayList<DataEvent<ZoieIndexable<VALUE>,V>>(indexableList);
 	            _ramConsumer.consume(ramList);
 	          }
 	          _diskConsumer.consume(indexableList);

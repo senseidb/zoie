@@ -18,6 +18,7 @@ package proj.zoie.impl.indexing.internal;
 import it.unimi.dsi.fastutil.longs.LongSet;
 
 import java.io.IOException;
+import java.io.Serializable;
 
 import proj.zoie.api.ZoieVersion;
 
@@ -25,9 +26,11 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Similarity;
 
-public class RAMLuceneIndexDataLoader<R extends IndexReader, V extends ZoieVersion> extends LuceneIndexDataLoader<R,V> {
+public class RAMLuceneIndexDataLoader<R extends IndexReader, V extends ZoieVersion, VALUE extends Serializable> extends LuceneIndexDataLoader<R,V, VALUE>
+{
 
-	public RAMLuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R,V> idxMgr) {
+	public RAMLuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R,V, VALUE> idxMgr)
+	{
 		super(analyzer, similarity,idxMgr);
 	}
 

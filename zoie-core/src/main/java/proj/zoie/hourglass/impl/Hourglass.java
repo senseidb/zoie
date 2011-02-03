@@ -1,6 +1,7 @@
 package proj.zoie.hourglass.impl;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -29,23 +30,23 @@ import proj.zoie.impl.indexing.ZoieConfig;
 import proj.zoie.impl.indexing.ZoieSystem;
 import proj.zoie.api.ZoieVersion;
 
-public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implements Zoie<R, D, V>
+public class Hourglass<R extends IndexReader, D, V extends ZoieVersion, VALUE extends Serializable> implements Zoie<R, D, V, VALUE>
 {
   public static final Logger log = Logger.getLogger(Hourglass.class);
   private final HourglassDirectoryManagerFactory<V> _dirMgrFactory;
-  private final ZoieIndexableInterpreter<D> _interpreter;
+  private final ZoieIndexableInterpreter<D, VALUE> _interpreter;
   private final IndexReaderDecorator<R> _decorator;
   private final ZoieConfig<V> _zConfig;
-  private volatile ZoieSystem<R, D,V> _currentZoie;
+  private volatile ZoieSystem<R, D,V, VALUE> _currentZoie;
   private volatile boolean _isShutdown = false;
   final ReentrantReadWriteLock _shutdownLock = new ReentrantReadWriteLock();
   private final ReentrantLock _consumeLock = new ReentrantLock();
-  private final HourglassReaderManager<R, D, V> _readerMgr;
+  private final HourglassReaderManager<R, D, V, VALUE> _readerMgr;
   private volatile V _currentVersion = null;
   private long _freshness = 1000;
   final HourGlassScheduler _scheduler;
   public volatile long SLA = 4; // getIndexReaders should return in 4ms or a warning is logged
-  public Hourglass(HourglassDirectoryManagerFactory<V> dirMgrFactory, ZoieIndexableInterpreter<D> interpreter, IndexReaderDecorator<R> readerDecorator,ZoieConfig<V> zoieConfig)
+  public Hourglass(HourglassDirectoryManagerFactory<V> dirMgrFactory, ZoieIndexableInterpreter<D, VALUE> interpreter, IndexReaderDecorator<R> readerDecorator,ZoieConfig<V> zoieConfig)
   {
     _zConfig = zoieConfig;
     _dirMgrFactory = dirMgrFactory;
@@ -53,7 +54,7 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
     _dirMgrFactory.clearRecentlyChanged();
     _interpreter = interpreter;
     _decorator = readerDecorator;
-    _readerMgr = new HourglassReaderManager<R, D, V>(this, _dirMgrFactory, _decorator, loadArchives());
+    _readerMgr = new HourglassReaderManager<R, D, V, VALUE>(this, _dirMgrFactory, _decorator, loadArchives());
     _currentVersion = _dirMgrFactory.getArchivedVersion();
     _currentZoie = _readerMgr.retireAndNew(null);
     _currentZoie.start();
@@ -84,20 +85,20 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
     log.info("load "+dirs.size()+" archived indices of " + getSizeBytes() +" bytes in " + (System.currentTimeMillis() - t0) + "ms");
     return archives;
   }
-  ZoieSystem<R, D,V> createZoie(DirectoryManager<V> dirmgr)
+  ZoieSystem<R, D,V, VALUE> createZoie(DirectoryManager<V> dirmgr)
   {
-    return new ZoieSystem<R, D, V>(dirmgr, _interpreter, _decorator, _zConfig);
+    return new ZoieSystem<R, D, V, VALUE>(dirmgr, _interpreter, _decorator, _zConfig);
   }
 
   public ZoieConfig getzConfig()
   {
     return _zConfig;
   }
-  public ZoieSystem<R, D, V> getCurrentZoie()
+  public ZoieSystem<R, D, V, VALUE> getCurrentZoie()
   {
     return _currentZoie;
   }
-  public HourglassDirectoryManagerFactory getDirMgrFactory()
+  public HourglassDirectoryManagerFactory<V> getDirMgrFactory()
   {
     return _dirMgrFactory;
   }
@@ -315,10 +316,5 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
   {
     // TODO Auto-generated method stub
     log.info("starting Hourglass... already done due by auto-start");
-  }
-  @Override
-  public V getZoieVersion(String str)
-  {
-    return _currentZoie.getZoieVersion(str);
   }
 }

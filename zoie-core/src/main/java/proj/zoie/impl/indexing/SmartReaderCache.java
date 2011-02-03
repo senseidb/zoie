@@ -1,6 +1,7 @@
 package proj.zoie.impl.indexing;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
@@ -15,7 +16,7 @@ import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
 
-public class SmartReaderCache<R extends IndexReader> extends AbstractReaderCache<R>
+public class SmartReaderCache<R extends IndexReader, VALUE extends Serializable> extends AbstractReaderCache<R, VALUE>
 {
   private static final Logger log = Logger.getLogger(DefaultReaderCache.class);
   private final Thread _maintenance;
@@ -24,11 +25,11 @@ public class SmartReaderCache<R extends IndexReader> extends AbstractReaderCache
   private volatile long cachedreaderTimestamp = 0;
   private final Object cachemonitor = new Object();
   private long _freshness = 10000L;
-  private final IndexReaderFactory<ZoieIndexReader<R>> _readerfactory;
+  private final IndexReaderFactory<ZoieIndexReader<R>, VALUE> _readerfactory;
   private final HashMap<WeakReference<List<ZoieIndexReader<R>>>, List<ZoieIndexReader<R>>> readermap;
   private final ReferenceQueue<List<ZoieIndexReader<R>>> refq;
 
-  public SmartReaderCache(IndexReaderFactory<ZoieIndexReader<R>> readerfactory)
+  public SmartReaderCache(IndexReaderFactory<ZoieIndexReader<R>, VALUE> readerfactory)
   {
     readermap = new HashMap<WeakReference<List<ZoieIndexReader<R>>>, List<ZoieIndexReader<R>>>();
     refq = new ReferenceQueue<List<ZoieIndexReader<R>>>();
@@ -159,8 +160,8 @@ public class SmartReaderCache<R extends IndexReader> extends AbstractReaderCache
   public static ReaderCacheFactory FACTORY = new ReaderCacheFactory(){
 
     @Override
-    public <R extends IndexReader> AbstractReaderCache<R> newInstance(IndexReaderFactory<ZoieIndexReader<R>> readerfactory)
+    public <R extends IndexReader, VALUE extends Serializable> AbstractReaderCache<R, VALUE> newInstance(IndexReaderFactory<ZoieIndexReader<R>, VALUE> readerfactory)
     {
-      return new SmartReaderCache<R>(readerfactory);
+      return new SmartReaderCache<R, VALUE>(readerfactory);
     }};
 }

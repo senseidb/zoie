@@ -1,4 +1,6 @@
 package proj.zoie.api.indexing;
+
+import java.io.Serializable;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,6 +21,6 @@ package proj.zoie.api.indexing;
 /**
  * Interface to translate from a data object to an indexable object.
  */
-public interface ZoieIndexableInterpreter<V>{
-	ZoieIndexable convertAndInterpret(V src);
+public interface ZoieIndexableInterpreter<V, VALUE extends Serializable>{
+	ZoieIndexable<VALUE> convertAndInterpret(V src);
 }

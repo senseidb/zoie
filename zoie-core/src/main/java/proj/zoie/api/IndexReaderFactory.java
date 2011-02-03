@@ -16,6 +16,7 @@ package proj.zoie.api;
  * limitations under the License.
  */
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -24,7 +25,8 @@ import org.apache.lucene.index.IndexReader;
 /**
  * This interface is IndexReader instances are to be managed.
  */
-public interface IndexReaderFactory<R extends IndexReader> {
+public interface IndexReaderFactory<R extends IndexReader, VALUE extends Serializable>
+{
 	
 	/**
 	 * Returns a list of index readers.

@@ -1,13 +1,18 @@
 package proj.zoie.solr;
 
-import proj.zoie.api.indexing.AbstractZoieIndexableInterpreter;
-import proj.zoie.api.indexing.ZoieIndexable;
+import java.io.Serializable;
 
-public class ZoieSolrIndexableInterpreter extends
-		AbstractZoieIndexableInterpreter<DocumentWithID> {
+import proj.zoie.api.indexing.AbstractZoieIndexableInterpreter;
+
+/**
+ * Does not support store data.
+ */
+public class ZoieSolrIndexableInterpreter extends AbstractZoieIndexableInterpreter<DocumentWithID, Serializable>
+{
 
 	@Override
-	public ZoieIndexable convertAndInterpret(DocumentWithID src) {
+	public DocumentWithID convertAndInterpret(DocumentWithID src)
+	{
 		return src;
 	}
 

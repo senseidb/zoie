@@ -1,4 +1,7 @@
 package proj.zoie.api.indexing;
+
+import java.io.Serializable;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,7 +19,8 @@ package proj.zoie.api.indexing;
  * limitations under the License.
  */
 
-public abstract class AbstractZoieIndexable implements ZoieIndexable {
+public abstract class AbstractZoieIndexable<VALUE extends Serializable> implements ZoieIndexable<VALUE>
+{
 	public static final String DOCUMENT_ID_PAYLOAD_FIELD="_ID";
 	
 	public abstract IndexingReq[] buildIndexingReqs();
@@ -29,4 +33,15 @@ public abstract class AbstractZoieIndexable implements ZoieIndexable {
 		return false;
 	}
 
+	@Override
+  public boolean hasStoreData()
+  {
+    return false;
+  }
+
+	@Override
+  public VALUE getStoreValue()
+  {
+    return null;
+  }
 }

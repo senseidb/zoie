@@ -18,6 +18,7 @@ package proj.zoie.impl.indexing.internal;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,7 +27,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 
 import proj.zoie.api.ZoieVersion;
-import proj.zoie.api.ZoieVersionFactory;
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.IndexReaderFactory;
@@ -34,7 +34,8 @@ import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
-public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> implements IndexReaderFactory<ZoieIndexReader<R>>{
+public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion, VALUE extends Serializable> implements IndexReaderFactory<ZoieIndexReader<R>, VALUE>
+{
     private static final Logger log = Logger.getLogger(SearchIndexManager.class);
     
     public static enum Status
@@ -47,8 +48,6 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
 
 	  final DocIDMapperFactory _docIDMapperFactory;
 	  private final DiskSearchIndex<R,V> _diskIndex;
-	  
-	  final ZoieVersionFactory<V> _zoieVersionFactory;
 	  
 	  private volatile Status _diskIndexerStatus;
 	  private volatile Mem<R,V> _mem;
@@ -63,11 +62,10 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
 	   * @param location 
 	   * @param indexReaderDecorator
 	   */
-	  public SearchIndexManager(DirectoryManager<V> dirMgr,IndexReaderDecorator<R> indexReaderDecorator,DocIDMapperFactory docIDMapperFactory, ZoieVersionFactory<V> zoieVersionFactory, RAMIndexFactory<R, V> ramIndexFactory)
+	  public SearchIndexManager(DirectoryManager<V> dirMgr,IndexReaderDecorator<R> indexReaderDecorator,DocIDMapperFactory docIDMapperFactory, RAMIndexFactory<R, V> ramIndexFactory)
 	  {
 	    _dirMgr = dirMgr;
 	    _docIDMapperFactory = docIDMapperFactory;
-	    _zoieVersionFactory = zoieVersionFactory;
 	    _ramIndexFactory = ramIndexFactory;
 	    if (indexReaderDecorator!=null)
 	    {
@@ -103,10 +101,6 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
 	  public DocIDMapperFactory getDocIDMapperFactory(){
 		  return _docIDMapperFactory;
 	  }
-	  
-	  public ZoieVersionFactory<V> getZoieVersionFactory(){
-      return _zoieVersionFactory;
-    }
 	  
     public int getDiskSegmentCount() throws IOException
     {

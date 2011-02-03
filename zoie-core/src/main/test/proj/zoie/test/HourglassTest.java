@@ -113,7 +113,7 @@ public class HourglassTest extends ZoieTestCase
     zConfig.setBatchSize(3);
     zConfig.setBatchDelay(10);
     zConfig.setFreshness(10);
-    Hourglass<IndexReader, String,DefaultZoieVersion> hourglass = new Hourglass<IndexReader, String,DefaultZoieVersion>(factory, new HourglassTestInterpreter(), new IndexReaderDecorator<IndexReader>(){
+    Hourglass<IndexReader, String,DefaultZoieVersion, String> hourglass = new Hourglass<IndexReader, String,DefaultZoieVersion, String>(factory, new HourglassTestInterpreter(), new IndexReaderDecorator<IndexReader>(){
 
       public IndexReader decorate(ZoieIndexReader<IndexReader> indexReader)
           throws IOException
@@ -211,7 +211,7 @@ public class HourglassTest extends ZoieTestCase
     memoryProvider.stop();
     hourglass.shutdown();
   }
-  private int getTotalNumDocs(Hourglass<IndexReader, String,DefaultZoieVersion> hourglass)
+  private int getTotalNumDocs(Hourglass<IndexReader, String,DefaultZoieVersion, String> hourglass)
   {
     int numDocs = 0;
     List<ZoieIndexReader<IndexReader>> readers = null;
@@ -233,7 +233,7 @@ public class HourglassTest extends ZoieTestCase
     }
     return numDocs;
   }
-  public static class TestHourglassIndexable extends HourglassIndexable
+  public static class TestHourglassIndexable extends HourglassIndexable<String>
   {
     protected static long nextUID = System.currentTimeMillis();
     public final long UID;
@@ -272,12 +272,22 @@ public class HourglassTest extends ZoieTestCase
     {
       return false;
     }
+    @Override
+    public String getStoreValue()
+    {
+      return "" + getUID();
+    }
+    @Override
+    public boolean hasStoreData()
+    {
+      return true;
+    }
     
   }
-  public static class HourglassTestInterpreter implements HourglassIndexableInterpreter<String>
+  public static class HourglassTestInterpreter implements HourglassIndexableInterpreter<String, String>
   {
 
-    public HourglassIndexable convertAndInterpret(String src)
+    public HourglassIndexable<String> convertAndInterpret(String src)
     {
       log.info("converting " + src);
       return new TestHourglassIndexable(src);

@@ -4,7 +4,11 @@ import org.apache.lucene.document.Document;
 
 import proj.zoie.api.indexing.AbstractZoieIndexable;
 
-public class DocumentWithID extends AbstractZoieIndexable{
+/**
+ * This ZoieIndexable does not have store data.
+ */
+public class DocumentWithID extends AbstractZoieIndexable
+{
 	private final long _id;
 	private final Document _doc;
 	private final boolean _isDel;

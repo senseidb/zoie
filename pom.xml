@@ -23,13 +23,13 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>com.snaprojects.zoie</groupId>
+    <groupId>com.sna-projects.zoie</groupId>
     <artifactId>zoie-parent</artifactId>
     <version>2.5.1-SNAPSHOT</version>
     <relativePath>zoie-parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>zoie</artifactId>
+  <artifactId>zoie-project</artifactId>
   <packaging>pom</packaging>
   <name>Zoie</name>
   <url>http://sna-projects.com/zoie</url>

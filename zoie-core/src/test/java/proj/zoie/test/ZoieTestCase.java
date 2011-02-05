@@ -3,7 +3,6 @@ package proj.zoie.test;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.util.Properties;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -12,21 +11,20 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.DocIdSet;
+import org.junit.After;
 
+import proj.zoie.api.DefaultZoieVersion;
 import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.ZoieIndexReader;
-import proj.zoie.api.DefaultZoieVersion;
+import proj.zoie.api.ZoieVersionFactory;
 import proj.zoie.api.impl.InRangeDocIDMapperFactory;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.impl.indexing.ZoieSystem;
 import proj.zoie.test.data.TestDataInterpreter;
 import proj.zoie.test.data.TestInRangeDataInterpreter;
-import junit.framework.TestCase;
-
-import proj.zoie.api.ZoieVersionFactory;
 
 
-public class ZoieTestCase extends TestCase
+public class ZoieTestCase
 {
   static Logger log = Logger.getLogger(ZoieTestCase.class);
   static MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
@@ -52,45 +50,13 @@ public class ZoieTestCase extends TestCase
     }
   }
 
-  ZoieTestCase()
-  {
-    super();
-    String confdir = System.getProperty("conf.dir");
-    if (confdir==null) confdir="conf";
-    try
-    {
-      org.apache.log4j.PropertyConfigurator.configure(confdir+"/log4j.properties");
-    } catch(Exception e)
-    {
-      org.apache.log4j.PropertyConfigurator.configure((Properties)null);
-    }
-  }
 
-  ZoieTestCase(String name)
-  {
-    super(name);
-    String confdir = System.getProperty("conf.dir");
-    if (confdir==null) confdir="conf";
-    try
-    {
-      org.apache.log4j.PropertyConfigurator.configure(confdir+"/log4j.properties");
-    } catch(Exception e)
-    {
-      org.apache.log4j.PropertyConfigurator.configure((Properties)null);
-    }
-  }
-
-  @Override
-  public void setUp()
-  {
-    System.out.println("executing test case: " + getName());
-    log.info("\n\n\nexecuting test case: " + getName());
-  }
-  @Override
+  @After
   public void tearDown()
   {
     deleteDirectory(getIdxDir());
   }
+  
   protected static File getIdxDir()
   {
     File tmpDir=new File(System.getProperty("java.io.tmpdir"));

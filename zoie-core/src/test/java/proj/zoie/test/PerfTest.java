@@ -8,12 +8,12 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Random;
 
+import org.junit.Test;
+
 public class PerfTest {
 
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
+	@Test
+	public void perfTest() {
 		Random rand = new Random();
 		int max = 5000000;
 		int[] docs = new int[max];

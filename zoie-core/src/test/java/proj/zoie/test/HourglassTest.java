@@ -52,7 +52,7 @@ import proj.zoie.api.DefaultZoieVersion.DefaultZoieVersionFactory;
  * @author "Xiaoyang Gu<xgu@linkedin.com>"
  * 
  */
-public class HourglassTest extends ZoieTestCase {
+public class HourglassTest extends ZoieTestCaseBase {
 	static Logger log = Logger.getLogger(HourglassTest.class);
 
 	@Test

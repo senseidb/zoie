@@ -1,6 +1,6 @@
 package proj.zoie.test.data;
 
-public class TestData {
+public class DataForTests {
 	public static String[] testdata=new String[]{
 		"zoie odd 0",
 		"zoie even 1",

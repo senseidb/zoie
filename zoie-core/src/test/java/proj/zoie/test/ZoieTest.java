@@ -51,10 +51,10 @@ import proj.zoie.impl.indexing.AsyncDataConsumer;
 import proj.zoie.impl.indexing.MemoryStreamDataProvider;
 import proj.zoie.impl.indexing.ZoieSystem;
 import proj.zoie.impl.indexing.internal.IndexSignature;
-import proj.zoie.test.data.TestData;
+import proj.zoie.test.data.DataForTests;
 import proj.zoie.test.mock.MockDataLoader;
 
-public class ZoieTest extends ZoieTestCase {
+public class ZoieTest extends ZoieTestCaseBase {
 	static Logger log = Logger.getLogger(ZoieTest.class);
 
 	public ZoieTest() {
@@ -235,7 +235,7 @@ public class ZoieTest extends ZoieTestCase {
 		memoryProvider.start();
 
 		try {
-			int count = TestData.testdata.length;
+			int count = DataForTests.testdata.length;
 			List<DataEvent<String, DefaultZoieVersion>> list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
 					count);
 			DefaultZoieVersion zvt = null;
@@ -243,7 +243,7 @@ public class ZoieTest extends ZoieTestCase {
 				zvt = new DefaultZoieVersion();
 				zvt.setVersionId(i);
 				list.add(new DataEvent<String, DefaultZoieVersion>(
-						TestData.testdata[i], zvt));
+						DataForTests.testdata[i], zvt));
 			}
 			memoryProvider.addEvents(list);
 			memoryProvider.flush();
@@ -291,7 +291,7 @@ public class ZoieTest extends ZoieTestCase {
 		memoryProvider.setDataConsumer(idxSystem);
 		memoryProvider.start();
 		try {
-			int count = TestData.testdata.length;
+			int count = DataForTests.testdata.length;
 			List<DataEvent<String, DefaultZoieVersion>> list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
 					count);
 
@@ -301,7 +301,7 @@ public class ZoieTest extends ZoieTestCase {
 				zvt.setVersionId(i);
 
 				list.add(new DataEvent<String, DefaultZoieVersion>(
-						TestData.testdata[i], zvt));
+						DataForTests.testdata[i], zvt));
 			}
 			memoryProvider.addEvents(list);
 			idxSystem.syncWthVersion(10000, zvt);
@@ -540,7 +540,7 @@ public class ZoieTest extends ZoieTestCase {
 						return;
 					}
 
-					int expected = TestData.testdata.length;
+					int expected = DataForTests.testdata.length;
 					while (!stop) {
 						Searcher searcher = null;
 						List<ZoieIndexReader<IndexReader>> readers = null;
@@ -658,7 +658,7 @@ public class ZoieTest extends ZoieTestCase {
 		try {
 			idxSystem.setBatchSize(10);
 
-			final int count = TestData.testdata.length;
+			final int count = DataForTests.testdata.length;
 			List<DataEvent<String, DefaultZoieVersion>> list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
 					count);
 			DefaultZoieVersion zvt = null;
@@ -668,7 +668,7 @@ public class ZoieTest extends ZoieTestCase {
 				// list.add(new DataEvent<String,DefaultZoieVersion>(i,
 				// TestData.testdata[i]));
 				list.add(new DataEvent<String, DefaultZoieVersion>(
-						TestData.testdata[i], zvt));
+						DataForTests.testdata[i], zvt));
 			}
 			memoryProvider.addEvents(list);
 			idxSystem.syncWthVersion(100000, zvt);
@@ -684,7 +684,7 @@ public class ZoieTest extends ZoieTestCase {
 					list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
 							1);
 					list.add(new DataEvent<String, DefaultZoieVersion>(
-							TestData.testdata[i], zvt));
+							DataForTests.testdata[i], zvt));
 					memoryProvider.addEvents(list);
 					idxSystem.syncWthVersion(100000, zvt);
 				}
@@ -737,7 +737,7 @@ public class ZoieTest extends ZoieTestCase {
 
 			long version = 0;
 			DefaultZoieVersion zvt = null;
-			final int count = TestData.testdata.length;
+			final int count = DataForTests.testdata.length;
 			List<DataEvent<String, DefaultZoieVersion>> list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
 					count);
 			for (int i = 0; i < count; i++) {
@@ -746,7 +746,7 @@ public class ZoieTest extends ZoieTestCase {
 				zvt.setVersionId(i);
 				// list.add(new DataEvent<String>(i, TestData.testdata[i]));
 				list.add(new DataEvent<String, DefaultZoieVersion>(
-						TestData.testdata[i], zvt));
+						DataForTests.testdata[i], zvt));
 			}
 			memoryProvider.addEvents(list);
 			idxSystem.syncWthVersion(10000, zvt);
@@ -781,10 +781,10 @@ public class ZoieTest extends ZoieTestCase {
 
 			searcher = new IndexSearcher(reader);
 			hits = searcher.search(q, 10);
-			int expected = TestData.testdata.length;
+			int expected = DataForTests.testdata.length;
 			assertEquals("before update: zoie count mismatch[hit count: "
 					+ hits.totalHits + " / expected: "
-					+ TestData.testdata.length + "]", count, hits.totalHits);
+					+ DataForTests.testdata.length + "]", count, hits.totalHits);
 			q = parser.parse("zoie2");
 
 			searcher.close();
@@ -805,13 +805,13 @@ public class ZoieTest extends ZoieTestCase {
 			idxSystem.returnIndexReaders(readers);
 
 			list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
-					TestData.testdata2.length);
-			for (int i = 0; i < TestData.testdata2.length; i++) {
+					DataForTests.testdata2.length);
+			for (int i = 0; i < DataForTests.testdata2.length; i++) {
 				version = count + i;
 				zvt = new DefaultZoieVersion();
 				zvt.setVersionId(version);
 				list.add(new DataEvent<String, DefaultZoieVersion>(
-						TestData.testdata2[i], zvt));
+						DataForTests.testdata2[i], zvt));
 			}
 			memoryProvider.addEvents(list);
 			idxSystem.syncWthVersion(10000, zvt);
@@ -840,7 +840,7 @@ public class ZoieTest extends ZoieTestCase {
 			searcher = new IndexSearcher(reader);
 
 			hits = searcher.search(q, 10);
-			expected = TestData.testdata2.length;
+			expected = DataForTests.testdata2.length;
 			assertEquals("after update: zoie2 count mismatch[hit count: "
 					+ hits.totalHits + " / expected: " + expected + "]",
 					expected, hits.totalHits);
@@ -864,7 +864,7 @@ public class ZoieTest extends ZoieTestCase {
 		DefaultDirectoryManager<DefaultZoieVersion> dirMgr = new DefaultDirectoryManager<DefaultZoieVersion>(
 				idxDir, defaultZoieVersionFactory);
 		try {
-			int count = TestData.testdata.length;
+			int count = DataForTests.testdata.length;
 			List<DataEvent<String, DefaultZoieVersion>> list;
 			IndexSignature<DefaultZoieVersion> sig;
 
@@ -873,7 +873,7 @@ public class ZoieTest extends ZoieTestCase {
 				DefaultZoieVersion zvt = new DefaultZoieVersion();
 				zvt.setVersionId(i);
 				list.add(new DataEvent<String, DefaultZoieVersion>(
-						TestData.testdata[i], zvt));
+						DataForTests.testdata[i], zvt));
 			}
 			idxSystem.consume(list);
 			idxSystem.flushEvents(100000);
@@ -888,7 +888,7 @@ public class ZoieTest extends ZoieTestCase {
 				DefaultZoieVersion zvt = new DefaultZoieVersion();
 				zvt.setVersionId(i);
 				list.add(new DataEvent<String, DefaultZoieVersion>(
-						TestData.testdata[i], zvt));
+						DataForTests.testdata[i], zvt));
 			}
 			idxSystem.consume(list);
 			idxSystem.flushEvents(100000);
@@ -923,7 +923,7 @@ public class ZoieTest extends ZoieTestCase {
 		idxSystem.setBatchSize(10);
 
 		// long version = 0;
-		final int count = TestData.testdata.length;
+		final int count = DataForTests.testdata.length;
 		List<DataEvent<String, DefaultZoieVersion>> list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
 				count);
 		DefaultZoieVersion zvt = null;
@@ -932,7 +932,7 @@ public class ZoieTest extends ZoieTestCase {
 			zvt.setVersionId(i);
 			// version = i;
 			list.add(new DataEvent<String, DefaultZoieVersion>(
-					TestData.testdata[i], zvt));
+					DataForTests.testdata[i], zvt));
 		}
 		memoryProvider.addEvents(list);
 		idxSystem.syncWthVersion(10000, zvt);
@@ -990,7 +990,7 @@ public class ZoieTest extends ZoieTestCase {
 		long version = 0;
 		DefaultZoieVersion zvt = null;
 		for (int rep = 0; rep < 5; rep++) {
-			final int count = TestData.testdata.length;
+			final int count = DataForTests.testdata.length;
 			List<DataEvent<String, DefaultZoieVersion>> list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
 					count);
 			for (int i = 0; i < count; i++) {
@@ -998,7 +998,7 @@ public class ZoieTest extends ZoieTestCase {
 				zvt = new DefaultZoieVersion();
 				zvt.setVersionId(version);
 				list.add(new DataEvent<String, DefaultZoieVersion>(
-						TestData.testdata[i], zvt));
+						DataForTests.testdata[i], zvt));
 			}
 			memoryProvider.addEvents(list);
 			idxSystem.flushEvents(10000);
@@ -1143,12 +1143,12 @@ public class ZoieTest extends ZoieTestCase {
 			DefaultZoieVersion zvt = null;
 
 			list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
-					TestData.testdata.length);
-			for (int i = 0; i < TestData.testdata.length; ++i) {
+					DataForTests.testdata.length);
+			for (int i = 0; i < DataForTests.testdata.length; ++i) {
 				zvt = new DefaultZoieVersion();
 				zvt.setVersionId(i);
 				list.add(new DataEvent<String, DefaultZoieVersion>(
-						TestData.testdata[i], zvt));
+						DataForTests.testdata[i], zvt));
 			}
 			idxSystem.consume(list);
 			idxSystem.flushEvents(100000);
@@ -1157,7 +1157,7 @@ public class ZoieTest extends ZoieTestCase {
 			versionExported.setVersionId(zvt.getVersionId());
 
 			assertEquals("index version mismatch after first flush",
-					TestData.testdata.length - 1, zvt.getVersionId());
+					DataForTests.testdata.length - 1, zvt.getVersionId());
 
 			int hits = countHits(idxSystem, q);
 
@@ -1174,19 +1174,19 @@ public class ZoieTest extends ZoieTestCase {
 			channel = null;
 
 			list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
-					TestData.testdata2.length);
-			for (int i = 0; i < TestData.testdata2.length; ++i) {
+					DataForTests.testdata2.length);
+			for (int i = 0; i < DataForTests.testdata2.length; ++i) {
 				zvt = new DefaultZoieVersion();
-				zvt.setVersionId(TestData.testdata.length + i);
+				zvt.setVersionId(DataForTests.testdata.length + i);
 
 				list.add(new DataEvent<String, DefaultZoieVersion>(
-						TestData.testdata.length + TestData.testdata2[i], zvt));
+						DataForTests.testdata.length + DataForTests.testdata2[i], zvt));
 			}
 			idxSystem.consume(list);
 			idxSystem.flushEvents(100000);
 			zvt = (DefaultZoieVersion) dirMgr.getVersion();
 			assertEquals("index version mismatch after second flush",
-					TestData.testdata.length + TestData.testdata2.length - 1,
+					DataForTests.testdata.length + DataForTests.testdata2.length - 1,
 					zvt.getVersionId());
 			assertEquals("should have no hits", 0, countHits(idxSystem, q));
 

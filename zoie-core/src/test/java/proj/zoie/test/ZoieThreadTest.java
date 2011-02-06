@@ -33,9 +33,9 @@ import proj.zoie.api.DefaultZoieVersion.DefaultZoieVersionFactory;
 import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.impl.indexing.MemoryStreamDataProvider;
 import proj.zoie.impl.indexing.ZoieSystem;
-import proj.zoie.test.data.TestData;
+import proj.zoie.test.data.DataForTests;
 
-public class ZoieThreadTest extends ZoieTestCase {
+public class ZoieThreadTest extends ZoieTestCaseBase {
 	static Logger log = Logger.getLogger(ZoieThreadTest.class);
 
 	public ZoieThreadTest() {
@@ -75,7 +75,7 @@ public class ZoieThreadTest extends ZoieTestCase {
 						return;
 					}
 
-					int expected = TestData.testdata.length;
+					int expected = DataForTests.testdata.length;
 					while (!stop) {
 						Searcher searcher = null;
 						List<ZoieIndexReader<IndexReader>> readers = null;
@@ -193,7 +193,7 @@ public class ZoieThreadTest extends ZoieTestCase {
 		try {
 			idxSystem.setBatchSize(10);
 
-			final int count = TestData.testdata.length;
+			final int count = DataForTests.testdata.length;
 			DefaultZoieVersion zvt = null;
 			List<DataEvent<String, DefaultZoieVersion>> list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
 					count);
@@ -202,7 +202,7 @@ public class ZoieThreadTest extends ZoieTestCase {
 				zvt = new DefaultZoieVersion();
 				zvt.setVersionId(i);
 				list.add(new DataEvent<String, DefaultZoieVersion>(
-						TestData.testdata[i], zvt));
+						DataForTests.testdata[i], zvt));
 			}
 			memoryProvider.addEvents(list);
 			// idxSystem.syncWthVersion(100000, count - 1);
@@ -226,7 +226,7 @@ public class ZoieThreadTest extends ZoieTestCase {
 					list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
 							1);
 					list.add(new DataEvent<String, DefaultZoieVersion>(
-							TestData.testdata[i], zvt));
+							DataForTests.testdata[i], zvt));
 
 					memoryProvider.addEvents(list);
 					// idxSystem.syncWthVersion(100000, version);
@@ -442,7 +442,7 @@ public class ZoieThreadTest extends ZoieTestCase {
 						zvt));
 			}
 			memoryProvider.addEvents(list);
-			idxSystem.syncWthVersion(100000, zvt);
+			idxSystem.syncWthVersion(1000000, zvt);
 
 			for (QueryThread queryThread : queryThreads)
 				queryThread.start();

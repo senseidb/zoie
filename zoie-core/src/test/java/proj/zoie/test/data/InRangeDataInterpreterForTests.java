@@ -16,24 +16,24 @@ import proj.zoie.api.indexing.ZoieIndexableInterpreter;
  * @author "Xiaoyang Gu<xgu@linkedin.com>"
  * 
  */
-public class TestInRangeDataInterpreter implements
+public class InRangeDataInterpreterForTests implements
     ZoieIndexableInterpreter<String, String>
 {
 
   long _delay;
   final Analyzer _analyzer;
 
-  public TestInRangeDataInterpreter()
+  public InRangeDataInterpreterForTests()
   {
     this(0, null);
   }
 
-  public TestInRangeDataInterpreter(long delay)
+  public InRangeDataInterpreterForTests(long delay)
   {
     this(delay, null);
   }
 
-  public TestInRangeDataInterpreter(long delay, Analyzer analyzer)
+  public InRangeDataInterpreterForTests(long delay, Analyzer analyzer)
   {
     _delay = delay;
     _analyzer = analyzer;

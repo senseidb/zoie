@@ -20,13 +20,13 @@ import proj.zoie.api.ZoieVersionFactory;
 import proj.zoie.api.impl.InRangeDocIDMapperFactory;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.impl.indexing.ZoieSystem;
-import proj.zoie.test.data.TestDataInterpreter;
-import proj.zoie.test.data.TestInRangeDataInterpreter;
+import proj.zoie.test.data.DataInterpreterForTests;
+import proj.zoie.test.data.InRangeDataInterpreterForTests;
 
 
-public class ZoieTestCase
+public class ZoieTestCaseBase
 {
-  static Logger log = Logger.getLogger(ZoieTestCase.class);
+  static Logger log = Logger.getLogger(ZoieTestCaseBase.class);
   static MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
   public void registerMBean(Object standardmbean, String mbeanname)
   {
@@ -122,7 +122,7 @@ public class ZoieTestCase
    */
   protected static ZoieSystem<IndexReader,String, DefaultZoieVersion, String> createZoie(File idxDir,boolean realtime, long delay,Analyzer analyzer,DocIDMapperFactory docidMapperFactory, ZoieVersionFactory<DefaultZoieVersion> zoieVersionFactory)
   {
-    ZoieSystem<IndexReader,String,DefaultZoieVersion, String> idxSystem=new ZoieSystem<IndexReader, String, DefaultZoieVersion, String>(idxDir,new TestDataInterpreter(delay,analyzer),
+    ZoieSystem<IndexReader,String,DefaultZoieVersion, String> idxSystem=new ZoieSystem<IndexReader, String, DefaultZoieVersion, String>(idxDir,new DataInterpreterForTests(delay,analyzer),
         new TestIndexReaderDecorator(),docidMapperFactory, null,null,50,2000,realtime,zoieVersionFactory);
     return idxSystem;
   }
@@ -146,7 +146,7 @@ public class ZoieTestCase
 
   protected static ZoieSystem<IndexReader,String,DefaultZoieVersion, String> createInRangeZoie(File idxDir,boolean realtime, InRangeDocIDMapperFactory docidMapperFactory, ZoieVersionFactory<DefaultZoieVersion> zoieVersionFactory)
   {
-    ZoieSystem<IndexReader,String,DefaultZoieVersion, String> idxSystem=new ZoieSystem<IndexReader, String,DefaultZoieVersion, String>(idxDir,new TestInRangeDataInterpreter(20,null),
+    ZoieSystem<IndexReader,String,DefaultZoieVersion, String> idxSystem=new ZoieSystem<IndexReader, String,DefaultZoieVersion, String>(idxDir,new InRangeDataInterpreterForTests(20,null),
         new TestIndexReaderDecorator(),docidMapperFactory,null,null,50,2000,realtime,zoieVersionFactory);
     return idxSystem;
   } 

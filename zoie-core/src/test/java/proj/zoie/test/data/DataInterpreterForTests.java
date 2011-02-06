@@ -9,23 +9,23 @@ import org.apache.lucene.document.Field.Store;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 
-public class TestDataInterpreter implements ZoieIndexableInterpreter<String, String>
+public class DataInterpreterForTests implements ZoieIndexableInterpreter<String, String>
 {
 
     long _delay;
     final Analyzer _analyzer;
     
-    public TestDataInterpreter()
+    public DataInterpreterForTests()
     {
       this(0,null);
     }
     
-    public TestDataInterpreter(long delay)
+    public DataInterpreterForTests(long delay)
     {
       this(delay,null);
     }
     
-    public TestDataInterpreter(long delay,Analyzer analyzer)
+    public DataInterpreterForTests(long delay,Analyzer analyzer)
     {
       _delay = delay;
       _analyzer = analyzer;

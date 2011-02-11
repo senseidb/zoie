@@ -25,7 +25,7 @@ public class PerfZoieServiceAdmin implements PerfZoieServiceMBean
   protected ExecutorService _threadPool = Executors.newFixedThreadPool(numThreads + 1);
   protected volatile boolean _perfRunStarted = false;
   
-  protected volatile ZoieSystem<IndexReader,?,?> _zoieSystem;
+  protected volatile ZoieSystem<IndexReader,?,?, ?> _zoieSystem;
   protected volatile MonitoredZoieService<?> _svc;
   protected volatile Thread _perfThread;
   
@@ -53,12 +53,12 @@ public class PerfZoieServiceAdmin implements PerfZoieServiceMBean
     return _svc;
   }
   
-  public void setZoieSystem(ZoieSystem<IndexReader,?,?> system)
+  public void setZoieSystem(ZoieSystem<IndexReader, ?, ?, ?> system)
   {
     _zoieSystem = system;
   }
   
-  public ZoieSystem<?,?,?> getZoieSystem()
+  public ZoieSystem<?, ?, ?, ?> getZoieSystem()
   {
     return _zoieSystem;
   }

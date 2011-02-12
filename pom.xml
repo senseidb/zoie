@@ -45,7 +45,6 @@
   </scm>
 
   <modules>
-    <module>zoie-parent</module>
     <module>zoie-core</module>
     <module>zoie-server</module>
     <module>zoie-solr</module>

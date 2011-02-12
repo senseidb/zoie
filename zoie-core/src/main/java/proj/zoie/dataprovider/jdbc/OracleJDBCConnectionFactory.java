@@ -1,4 +1,4 @@
-package proj.zoie.dataprovider.jdbc.oracle;
+package proj.zoie.dataprovider.jdbc;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

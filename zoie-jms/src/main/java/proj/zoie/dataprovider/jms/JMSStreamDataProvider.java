@@ -11,10 +11,11 @@ import javax.jms.TopicSubscriber;
 
 import org.apache.log4j.Logger;
 
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.impl.indexing.StreamDataProvider;
 
-public class JMSStreamDataProvider<T> extends StreamDataProvider<T> {
+public class JMSStreamDataProvider<T, V extends ZoieVersion> extends StreamDataProvider<T, V> {
 	
 	private static final Logger logger = Logger.getLogger(JMSStreamDataProvider.class);
 
@@ -23,7 +24,7 @@ public class JMSStreamDataProvider<T> extends StreamDataProvider<T> {
 	private final String clientID;
 	private final TopicConnectionFactory connectionFactory;
 	private final TopicFactory topicFactory;
-	private final DataEventBuilder<T> dataEventBuilder;
+	private final DataEventBuilder<T, V> dataEventBuilder;
 	private TopicSubscriber subscriber;
 	private TopicConnection connection;
 	
@@ -34,7 +35,7 @@ public class JMSStreamDataProvider<T> extends StreamDataProvider<T> {
 
 	public JMSStreamDataProvider(String topicName, String clientID,
 			TopicConnectionFactory connectionFactory, TopicFactory topicFactory,
-			DataEventBuilder<T> dataEventBuilder) {
+			DataEventBuilder<T, V> dataEventBuilder) {
 		super();
 		this.topicName = topicName;
 		this.clientID = clientID;
@@ -90,7 +91,7 @@ public class JMSStreamDataProvider<T> extends StreamDataProvider<T> {
 	}
 
 	@Override
-	public DataEvent<T> next() {
+	public DataEvent<T, V> next() {
 		for (;;) {
 			if (subscriber == null) {
 				reconnect();

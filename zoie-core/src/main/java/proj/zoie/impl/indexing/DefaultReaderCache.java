@@ -2,6 +2,7 @@ package proj.zoie.impl.indexing;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -26,11 +27,11 @@ public class DefaultReaderCache<R extends IndexReader, VALUE extends Serializabl
   private final ReentrantReadWriteLock returningIndexReaderQueueLock = new ReentrantReadWriteLock();
   private final Object cachemonitor = new Object();
   private long _freshness = 10000L;
-  private final IndexReaderFactory<ZoieIndexReader<R>, VALUE> _readerfactory;
+  private final WeakReference<IndexReaderFactory<ZoieIndexReader<R>, VALUE>> _readerfactory;
 
   public DefaultReaderCache(IndexReaderFactory<ZoieIndexReader<R>, VALUE> readerfactory)
   {
-    _readerfactory = readerfactory;
+    _readerfactory = new WeakReference<IndexReaderFactory<ZoieIndexReader<R>, VALUE>>(readerfactory);
     _maintenance = newMaintenanceThread();
     _maintenance.setDaemon(true);
   }
@@ -110,67 +111,84 @@ public class DefaultReaderCache<R extends IndexReader, VALUE extends Serializabl
 
   private Thread newMaintenanceThread()
   {
-    return new Thread("zoie-indexReader-maintenance")
+    return new MaintenanceThread();
+  }
+  private class MaintenanceThread extends Thread
+  {
+    public MaintenanceThread()
     {
-      @Override
-      public void run()
+      super("zoie-indexReader-maintenance");
+    }
+    @Override
+    public void run()
+    {
+      while (true)
       {
-        while (true)
+        try
+        {
+          synchronized (cachemonitor)
+          {
+            cachemonitor.wait(_freshness);
+          }
+        } catch (InterruptedException e)
+        {
+          Thread.interrupted(); // clear interrupted state
+        }
+        List<ZoieIndexReader<R>> newreaders = null;
+        if (alreadyShutdown)
+        {
+          newreaders = new ArrayList<ZoieIndexReader<R>>();
+          // clean up and quit
+        } else
         {
           try
           {
-            synchronized (cachemonitor)
+            IndexReaderFactory<ZoieIndexReader<R>, VALUE> readerfactory = _readerfactory.get();
+            if (readerfactory != null)
             {
-              cachemonitor.wait(_freshness);
-            }
-          } catch (InterruptedException e)
-          {
-            Thread.interrupted(); // clear interrupted state
-          }
-          List<ZoieIndexReader<R>> newreaders = null;
-          if (alreadyShutdown)
-          {
-            newreaders = new ArrayList<ZoieIndexReader<R>>();
-            // clean up and quit
-          } else
-          {
-            try
+              newreaders = readerfactory.getIndexReaders();
+            } else
             {
-              newreaders = _readerfactory.getIndexReaders();
-            } catch (IOException e)
-            {
-              log.info("zoie-indexReader-maintenance", e);
               newreaders = new ArrayList<ZoieIndexReader<R>>();
             }
-          }
-          List<ZoieIndexReader<R>> oldreaders = cachedreaders;
-          cachedreadersLock.writeLock().lock();
-          cachedreaders = newreaders;
-          cachedreadersLock.writeLock().unlock();
-          cachedreaderTimestamp = System.currentTimeMillis();
-          synchronized (cachemonitor)
+          } catch (IOException e)
           {
-            cachemonitor.notifyAll();
-          }
-          // return the old cached reader
-          returnIndexReaders(oldreaders);
-          // process the returing index reader queue
-          returningIndexReaderQueueLock.writeLock().lock();
-          ConcurrentLinkedQueue<List<ZoieIndexReader<R>>> oldreturningIndexReaderQueue = returningIndexReaderQueue;
-          returningIndexReaderQueue = new ConcurrentLinkedQueue<List<ZoieIndexReader<R>>>();
-          returningIndexReaderQueueLock.writeLock().unlock();
-          for (List<ZoieIndexReader<R>> readers : oldreturningIndexReaderQueue)
-          {
-            for (ZoieIndexReader<R> r : readers)
-            {
-              r.decZoieRef();
-            }
+            log.info("zoie-indexReader-maintenance", e);
+            newreaders = new ArrayList<ZoieIndexReader<R>>();
           }
         }
+        List<ZoieIndexReader<R>> oldreaders = cachedreaders;
+        cachedreadersLock.writeLock().lock();
+        cachedreaders = newreaders;
+        cachedreadersLock.writeLock().unlock();
+        cachedreaderTimestamp = System.currentTimeMillis();
+        synchronized (cachemonitor)
+        {
+          cachemonitor.notifyAll();
+        }
+        // return the old cached reader
+        if (!oldreaders.isEmpty())
+          returnIndexReaders(oldreaders);
+        // process the returing index reader queue
+        returningIndexReaderQueueLock.writeLock().lock();
+        ConcurrentLinkedQueue<List<ZoieIndexReader<R>>> oldreturningIndexReaderQueue = returningIndexReaderQueue;
+        returningIndexReaderQueue = new ConcurrentLinkedQueue<List<ZoieIndexReader<R>>>();
+        returningIndexReaderQueueLock.writeLock().unlock();
+        for (List<ZoieIndexReader<R>> readers : oldreturningIndexReaderQueue)
+        {
+          for (ZoieIndexReader<R> r : readers)
+          {
+            r.decZoieRef();
+          }
+        }
+        if (_readerfactory.get() == null && cachedreaders.size() == 0)
+        {
+          log.info("ZoieSystem has been GCed. Exiting DefaultReaderCache Maintenance Thread " + this);
+          break; // if the system is GCed, we quit.
+        }
       }
-    };
+    }
   }
-
   public static ReaderCacheFactory FACTORY = new ReaderCacheFactory(){
 
     @Override

@@ -138,7 +138,6 @@ public class SmartReaderCache<R extends IndexReader, VALUE extends Serializable>
           cachedreaders = new ArrayList<ZoieIndexReader<R>>(newreaders);
           WeakReference<List<ZoieIndexReader<R>>> w = new WeakReference<List<ZoieIndexReader<R>>>(cachedreaders, refq);
           readermap.put(w, newreaders); // when nobody uses cachedreaders, we will clean newreaders :)
-          System.out.println("add   " + newreaders);
           cachedreaderTimestamp = System.currentTimeMillis();
           synchronized (cachemonitor)
           {
@@ -149,7 +148,6 @@ public class SmartReaderCache<R extends IndexReader, VALUE extends Serializable>
           while((wclean = refq.poll()) != null)
           {
             List<ZoieIndexReader<R>> readers = readermap.remove(wclean);
-            System.out.println("clean " + readers);
             _readerfactory.returnIndexReaders(readers);
           }
         }

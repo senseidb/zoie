@@ -96,7 +96,6 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader, V extends ZoieVers
 		    _idxMgr.setPartialExpunge(optType == OptimizeType.PARTIAL);
 		    try
 		    {
-		      System.out.println("DiskLuceneIndexDataLoader:consume(): disk consume");
 		      super.consume(events);
 		    }
 		    finally

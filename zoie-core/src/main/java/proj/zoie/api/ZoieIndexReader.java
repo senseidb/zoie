@@ -33,7 +33,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.ReaderUtil;
 
 import proj.zoie.api.impl.DefaultIndexReaderMerger;
-import proj.zoie.api.impl.ZoieReaderContext.ContextAccessor;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
 public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndexReader
@@ -63,90 +62,96 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndex
       }
 	  }
 	}
-	/**
-	 * The delete set is per reader, which is why it is tied to an instance of zoieindexreader
-	 * and it is not static as in the general case for thread local.
-	 * It is threadlocal because we share the underlying reader among different thread.
-	 */
-//	protected ContextAccessor<int[]> _delDocIds;
 	protected int[] _delDocIds;
 	protected long _minUID;
 	protected long _maxUID;
 	protected boolean _noDedup = false;
-    protected final IndexReaderDecorator<R> _decorator;
-    protected DocIDMapper _docIDMapper;
-    
-    public static <R extends IndexReader> List<R> extractDecoratedReaders(List<ZoieIndexReader<R>> readerList) throws IOException{
-  	  LinkedList<R> retList = new LinkedList<R>();
-  	  for (ZoieIndexReader<R> reader : readerList){
-  		  retList.addAll(reader.getDecoratedReaders());
-  	  }
-  	  return retList;
-  	}
-  	
-  	public static class SubReaderInfo<R extends IndexReader>{
+	protected final IndexReaderDecorator<R> _decorator;
+	protected DocIDMapper _docIDMapper;
+
+	public static <R extends IndexReader> List<R> extractDecoratedReaders(List<ZoieIndexReader<R>> readerList) throws IOException
+	{
+	  LinkedList<R> retList = new LinkedList<R>();
+	  for (ZoieIndexReader<R> reader : readerList)
+	  {
+	    retList.addAll(reader.getDecoratedReaders());
+	  }
+	  return retList;
+	}
+
+	public static class SubReaderInfo<R extends IndexReader>
+	{
 	  public final R subreader;
 	  public final int subdocid;
 
-	  SubReaderInfo(R subreader,int subdocid){
-		this.subreader = subreader;
-		this.subdocid = subdocid;
+	  SubReaderInfo(R subreader,int subdocid)
+	  {
+	    this.subreader = subreader;
+	    this.subdocid = subdocid;
 	  }
-  	}
-  	
-  	public interface SubReaderAccessor<R extends IndexReader>{
-  		SubReaderInfo<R> getSubReaderInfo(int docid);
-  	}
-  	
-  	public interface SubZoieReaderAccessor<R extends IndexReader>{
-  		SubReaderInfo<ZoieIndexReader<R>> getSubReaderInfo(int docid);
-  		SubReaderInfo<ZoieIndexReader<R>> geSubReaderInfoFromUID(long uid);
-  	}
-  	  
-  	public static <R extends IndexReader> SubReaderAccessor<R> getSubReaderAccessor(List<R> readerList){
-  	  int size = readerList.size();
-  	  final IndexReader[] subR = new IndexReader[size];
-  	  final int[] starts = new int[size+1];
-  	  
-  	  int maxDoc = 0;
+	}
 
-  	  int i = 0;
-  	  for (R r : readerList) {
-  	    starts[i] = maxDoc;
-  	    subR[i] = r;
-  	    maxDoc += r.maxDoc();          // compute maxDocs
-  	    i++;
-  	  }
-  	  starts[size] = maxDoc;
-  	  
-  	  return new SubReaderAccessor<R>() {
-		
-		public SubReaderInfo<R> getSubReaderInfo(int docid) {
-			int subIdx = ReaderUtil.subIndex(docid, starts);
-		  	int subdocid = docid - starts[subIdx];
-		  	R subreader = (R)(subR[subIdx]);
-		  	return new SubReaderInfo<R>(subreader, subdocid);
-		}
+	public interface SubReaderAccessor<R extends IndexReader>
+	{
+	  SubReaderInfo<R> getSubReaderInfo(int docid);
+	}
+
+	public interface SubZoieReaderAccessor<R extends IndexReader>
+	{
+	  SubReaderInfo<ZoieIndexReader<R>> getSubReaderInfo(int docid);
+	  SubReaderInfo<ZoieIndexReader<R>> geSubReaderInfoFromUID(long uid);
+	}
+
+	public static <R extends IndexReader> SubReaderAccessor<R> getSubReaderAccessor(List<R> readerList)
+	{
+	  int size = readerList.size();
+	  final IndexReader[] subR = new IndexReader[size];
+	  final int[] starts = new int[size+1];
+
+	  int maxDoc = 0;
+
+	  int i = 0;
+	  for (R r : readerList)
+	  {
+	    starts[i] = maxDoc;
+	    subR[i] = r;
+	    maxDoc += r.maxDoc();          // compute maxDocs
+	    i++;
+	  }
+	  starts[size] = maxDoc;
+
+	  return new SubReaderAccessor<R>()
+	  {
+	    public SubReaderInfo<R> getSubReaderInfo(int docid)
+	    {
+	      int subIdx = ReaderUtil.subIndex(docid, starts);
+	      int subdocid = docid - starts[subIdx];
+	      R subreader = (R)(subR[subIdx]);
+	      return new SubReaderInfo<R>(subreader, subdocid);
+	    }
 	  };
-  	}
+	}
 	
-  	public static <R extends IndexReader> SubZoieReaderAccessor<R> getSubZoieReaderAccessor(List<ZoieIndexReader<R>> readerList){
-    	  int size = readerList.size();
-    	  final ZoieIndexReader<?>[] subR = new ZoieIndexReader<?>[size];
-    	  final int[] starts = new int[size+1];
-    	  
-    	  int maxDoc = 0;
+	public static <R extends IndexReader> SubZoieReaderAccessor<R> getSubZoieReaderAccessor(List<ZoieIndexReader<R>> readerList)
+	{
+	  int size = readerList.size();
+	  final ZoieIndexReader<?>[] subR = new ZoieIndexReader<?>[size];
+	  final int[] starts = new int[size+1];
 
-    	  int i = 0;
-    	  for (ZoieIndexReader<R> r : readerList) {
-    	    starts[i] = maxDoc;
-    	    subR[i] = r;
-    	    maxDoc += r.maxDoc();          // compute maxDocs
-    	    i++;
-    	  }
-    	  starts[size] = maxDoc;
-    	  
-    	  return new SubZoieReaderAccessor<R>() {
+	  int maxDoc = 0;
+
+	  int i = 0;
+	  for (ZoieIndexReader<R> r : readerList)
+	  {
+	    starts[i] = maxDoc;
+	    subR[i] = r;
+	    maxDoc += r.maxDoc();          // compute maxDocs
+	    i++;
+	  }
+	  starts[size] = maxDoc;
+
+    	  return new SubZoieReaderAccessor<R>()
+    	  {
   		
 	  		public SubReaderInfo<ZoieIndexReader<R>> getSubReaderInfo(int docid) {
 	  			int subIdx = ReaderUtil.subIndex(docid, starts);

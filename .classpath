@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="java"/>
-	<classpathentry kind="src" path="test"/>
 	<classpathentry kind="src" path="perf/src/java"/>
-	<classpathentry kind="src" path="contrib/solr/java"/>
+	<classpathentry kind="src" path="zoie-core/src/main/java"/>
+	<classpathentry kind="src" path="zoie-core/src/test/java"/>
+	<classpathentry kind="src" path="zoie-solr/src/main/java"/>
 	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry exported="true" kind="lib" path="lib/master/commons-logging.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/master/fastutil.jar"/>

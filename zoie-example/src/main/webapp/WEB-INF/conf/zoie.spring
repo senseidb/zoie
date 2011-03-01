@@ -4,17 +4,18 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans 
 						http://www.springframework.org/schema/beans/spring-beans.xsd">
-	
-	<import resource="propertyLoader.spring" />
+
 	
 	<bean id="fileInterpreter" class="proj.zoie.impl.indexing.FileIndexableInterpreter" />
 	
+	<bean id="versionFactory" class="proj.zoie.api.DefaultZoieVersion.DefaultZoieVersionFactory" />
 	
 	<bean id="indexingSystem" class="proj.zoie.impl.indexing.SimpleZoieSystem" init-method="start" destroy-method="shutdown">
-		<constructor-arg value="file:${index.directory}"/>
+		<constructor-arg value="file:index"/>
 		<constructor-arg ref="fileInterpreter" />
 		<constructor-arg value="1000" />
 		<constructor-arg value="300000" />
+		<constructor-arg ref="versionFactory" />
 	</bean>
 	
 	<bean id="zoie-system-mbean" class="proj.zoie.mbean.ZoieSystemAdmin">

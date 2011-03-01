@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import java.io.Serializable;
+
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
@@ -34,13 +36,13 @@ import proj.zoie.service.api.SearchRequest;
 import proj.zoie.service.api.SearchResult;
 import proj.zoie.service.api.ZoieSearchService;
 
-public class ExampleZoieSearchServiceImpl<R extends IndexReader> implements ZoieSearchService {
+public class ExampleZoieSearchServiceImpl<R extends IndexReader,VALUE extends Serializable> implements ZoieSearchService {
 
 	private static final Logger log = Logger.getLogger(ExampleZoieSearchServiceImpl.class);
 	
-	private IndexReaderFactory<ZoieIndexReader<R>> _idxReaderFactory;
+	private IndexReaderFactory<ZoieIndexReader<R>,VALUE> _idxReaderFactory;
 	
-	public ExampleZoieSearchServiceImpl(IndexReaderFactory<ZoieIndexReader<R>> idxReaderFactory){
+	public ExampleZoieSearchServiceImpl(IndexReaderFactory<ZoieIndexReader<R>,VALUE> idxReaderFactory){
 		_idxReaderFactory=idxReaderFactory;
 	}
 	

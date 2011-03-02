@@ -11,7 +11,7 @@
 	<bean id="versionFactory" class="proj.zoie.api.DefaultZoieVersion.DefaultZoieVersionFactory" />
 	
 	<bean id="indexingSystem" class="proj.zoie.impl.indexing.SimpleZoieSystem" init-method="start" destroy-method="shutdown">
-		<constructor-arg value="file:index"/>
+		<constructor-arg value="file:${index.dir}"/>
 		<constructor-arg ref="fileInterpreter" />
 		<constructor-arg value="1000" />
 		<constructor-arg value="300000" />
@@ -34,15 +34,6 @@
 	
 	<alias name="indexingSystem" alias="index-reader-factory"/>
 	<alias name="indexingSystem" alias="consumer"/>
-	<!-- 
-	<bean id="nrtConsumer" class="proj.zoie.impl.indexing.luceneNRT.LuceneNRTDataConsumer" init-method="start" destroy-method="shutdown">
-		<constructor-arg value="file:${index.directory}"/>
-		<constructor-arg ref="fileInterpreter" />
-	</bean>
-	
-	<alias name="nrtConsumer" alias="index-reader-factory"/>
-	<alias name="nrtConsumer" alias="consumer"/>
-	 -->
 	
 	<bean id="searchService" class="proj.zoie.example.service.impl.ExampleZoieSearchServiceImpl">
 		<constructor-arg ref="index-reader-factory"/>

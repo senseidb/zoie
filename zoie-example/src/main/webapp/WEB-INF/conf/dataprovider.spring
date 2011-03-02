@@ -5,9 +5,10 @@
 
 	<import resource="zoie.spring"/>
 	
+	<import resource="propertyLoader.spring" />
 	
 	<bean id="dataprovider" class="proj.zoie.impl.indexing.FileDataProvider">
-		<constructor-arg value="file:src"/>
+		<constructor-arg value="file:${source.dir}"/>
 		<property name="dataConsumer" ref="consumer" />
 	</bean>
 	

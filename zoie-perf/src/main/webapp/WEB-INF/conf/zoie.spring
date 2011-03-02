@@ -18,10 +18,11 @@
 	   <constructor-arg ref="srcInterpreter" />
        <constructor-arg value="${zoie.perf.numDocs}"/>
 	</bean>
-	
+
 	<bean id="versionfactory" class="proj.zoie.api.DefaultZoieVersion$DefaultZoieVersionFactory" />
+
 	<bean id="indexingSystem.zoie" class="proj.zoie.impl.indexing.SimpleZoieSystem" init-method="start" destroy-method="shutdown">
-		<constructor-arg value="file:${index.directory}"/>
+		<constructor-arg value="file:${index.dir}"/>
 		<constructor-arg ref="interpreter" />
 		<constructor-arg value="1000" />
 		<constructor-arg value="300000" />
@@ -44,12 +45,12 @@
 	
 	 <!--
 	<bean id="indexingSystem.nrt" class="proj.zoie.impl.indexing.luceneNRT.LuceneNRTDataConsumer" lazy-init="true" init-method="start" destroy-method="shutdown">
-		<constructor-arg value="file:${index.directory}"/>
+		<constructor-arg value="file:${index.dir}"/>
 		<constructor-arg ref="srcInterpreter" />
 	</bean>
 	-->
 	<bean id="indexingSystem.nrt" class="proj.zoie.impl.indexing.luceneNRT.ThrottledLuceneNRTDataConsumer" lazy-init="true" init-method="start" destroy-method="shutdown">
-		<constructor-arg value="file:${index.directory}"/>
+		<constructor-arg value="file:${index.dir}"/>
 		<constructor-arg ref="srcInterpreter" />
 		<constructor-arg value="${nrt.throttleFactor}" />
 	</bean>
@@ -62,10 +63,11 @@
     <property name="zoieSystem" ref="indexingSystem.zoie"/>
     <property name="waitTimeMillis" value="${zoie.perf.waitTimeMillis}"/>
   </bean>
-	
-	<bean id="searchService" class="proj.zoie.perf.server.MonitoredZoieService">
-		<constructor-arg ref="index-reader-factory"/>
-	</bean>
+
+  <bean id="searchService" class="proj.zoie.perf.server.MonitoredZoieService">
+    <constructor-arg ref="index-reader-factory"/>
+  </bean>
+
 <!--
   <bean id="sampleService" class="proj.zoie.example.service.impl.ExampleZoieSearchServiceImpl">
     <constructor-arg ref="index-reader-factory" />

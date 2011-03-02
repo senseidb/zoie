@@ -36,6 +36,18 @@
 		  <arg line="jetty:run" />
 	   </exec>
 	</target>
+	
+    <target name="perf-client" depends="dist">
+	   <exec executable="mvn" dir="zoie-perf">
+		   <arg line="-e exec:java proj.zoie.perf.client.ZoieClient" />
+	   </exec>
+	</target>
+	
+    <target name="perf-server" depends="dist">
+	   <exec executable="mvn" dir="zoie-perf">
+		  <arg line="jetty:run" />
+	   </exec>
+	</target>
 
     <target name="run-cmdline" depends="dist" description="--> run the cmdline console">
 	  <exec executable="mvn">

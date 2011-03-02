@@ -5,9 +5,7 @@
 <web-app>
     <context-param>
 		<param-name>contextConfigLocation</param-name>
-		<param-value>
-			classpath:applicationContext.spring
-		</param-value>
+		<param-value>/WEB-INF/conf/applicationContext.spring</param-value>
 	</context-param>
 	<listener>
 		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>

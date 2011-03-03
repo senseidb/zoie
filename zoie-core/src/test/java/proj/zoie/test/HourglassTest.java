@@ -110,7 +110,7 @@ public class HourglassTest extends ZoieTestCaseBase {
 		zConfig.setBatchSize(3);
 		zConfig.setBatchDelay(10);
 		zConfig.setFreshness(10);
-		Hourglass<IndexReader, String, DefaultZoieVersion, String> hourglass = new Hourglass<IndexReader, String, DefaultZoieVersion, String>(
+		Hourglass<IndexReader, String, DefaultZoieVersion> hourglass = new Hourglass<IndexReader, String, DefaultZoieVersion>(
 				factory, new HourglassTestInterpreter(),
 				new IndexReaderDecorator<IndexReader>() {
 
@@ -211,7 +211,7 @@ public class HourglassTest extends ZoieTestCaseBase {
 	}
 
 	private int getTotalNumDocs(
-			Hourglass<IndexReader, String, DefaultZoieVersion, String> hourglass) {
+			Hourglass<IndexReader, String, DefaultZoieVersion> hourglass) {
 		int numDocs = 0;
 		List<ZoieIndexReader<IndexReader>> readers = null;
 		try {
@@ -230,7 +230,7 @@ public class HourglassTest extends ZoieTestCaseBase {
 	}
 
 	public static class TestHourglassIndexable extends
-			HourglassIndexable<String> {
+			HourglassIndexable {
 		protected static long nextUID = System.currentTimeMillis();
 		public final long UID;
 		final String _str;
@@ -267,8 +267,8 @@ public class HourglassTest extends ZoieTestCaseBase {
 		}
 
 		@Override
-		public String getStoreValue() {
-			return "" + getUID();
+		public byte[] getStoreValue() {
+			return String.valueOf(getUID()).getBytes();
 		}
 
 		@Override
@@ -279,10 +279,12 @@ public class HourglassTest extends ZoieTestCaseBase {
 	}
 
 	public static class HourglassTestInterpreter implements
-			HourglassIndexableInterpreter<String, String> {
+			HourglassIndexableInterpreter<String> {
 
-		public HourglassIndexable<String> convertAndInterpret(String src) {
-			log.info("converting " + src);
+		public HourglassIndexable convertAndInterpret(String src) {
+			if (log.isDebugEnabled()){
+			  log.debug("converting " + src);
+			}
 			return new TestHourglassIndexable(src);
 		}
 

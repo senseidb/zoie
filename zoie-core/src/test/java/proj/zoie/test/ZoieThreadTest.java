@@ -52,7 +52,7 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
 	public void testThreadDelImpl() throws ZoieException {
 		File idxDir = getIdxDir();
 		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		final ZoieSystem<IndexReader, String, DefaultZoieVersion, String> idxSystem = createZoie(
+		final ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createZoie(
 				idxDir, true, 100, defaultZoieVersionFactory);
 		for (String bname : idxSystem.getStandardMBeanNames()) {
 			registerMBean(idxSystem.getStandardMBean(bname), bname);
@@ -288,7 +288,7 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
 			testdata[i] = "zoie " + (i % 2 == 0 ? "even " : "odd ") + i;
 		}
 		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		final ZoieSystem<IndexReader, String, DefaultZoieVersion, String> idxSystem = createZoie(
+		final ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createZoie(
 				idxDir, true, 2, defaultZoieVersionFactory);
 		for (String bname : idxSystem.getStandardMBeanNames()) {
 			registerMBean(idxSystem.getStandardMBean(bname), bname);

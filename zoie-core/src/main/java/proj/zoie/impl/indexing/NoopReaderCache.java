@@ -1,7 +1,6 @@
 package proj.zoie.impl.indexing;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,13 +11,13 @@ import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
 
-public class NoopReaderCache<R extends IndexReader, VALUE extends Serializable> extends AbstractReaderCache<R, VALUE>
+public class NoopReaderCache<R extends IndexReader> extends AbstractReaderCache<R>
 {
   private static final Logger log = Logger.getLogger(NoopReaderCache.class);
   private volatile boolean alreadyShutdown = false;
-  private final IndexReaderFactory<ZoieIndexReader<R>, VALUE> _readerfactory;
+  private final IndexReaderFactory<ZoieIndexReader<R>> _readerfactory;
 
-  public NoopReaderCache(IndexReaderFactory<ZoieIndexReader<R>, VALUE> readerfactory)
+  public NoopReaderCache(IndexReaderFactory<ZoieIndexReader<R>> readerfactory)
   {
     _readerfactory = readerfactory;
   }
@@ -75,8 +74,8 @@ public class NoopReaderCache<R extends IndexReader, VALUE extends Serializable> 
   {
 
     @Override
-    public <R extends IndexReader, VALUE extends Serializable> AbstractReaderCache<R, VALUE> newInstance(IndexReaderFactory<ZoieIndexReader<R>, VALUE> readerfactory)
+    public <R extends IndexReader> AbstractReaderCache<R> newInstance(IndexReaderFactory<ZoieIndexReader<R>> readerfactory)
     {
-      return new NoopReaderCache<R, VALUE>(readerfactory);
+      return new NoopReaderCache<R>(readerfactory);
     }};
 }

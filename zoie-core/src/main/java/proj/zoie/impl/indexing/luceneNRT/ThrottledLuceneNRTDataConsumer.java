@@ -2,7 +2,6 @@ package proj.zoie.impl.indexing.luceneNRT;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -18,21 +17,21 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.DataConsumer;
 import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieException;
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.indexing.ZoieIndexable;
-import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
+import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 
-public class ThrottledLuceneNRTDataConsumer<D, V extends ZoieVersion, VALUE extends Serializable> implements DataConsumer<D,V>,IndexReaderFactory<IndexReader, VALUE>
+public class ThrottledLuceneNRTDataConsumer<D, V extends ZoieVersion> implements DataConsumer<D,V>,IndexReaderFactory<IndexReader>
 {
 	private static final Logger logger = Logger.getLogger(ThrottledLuceneNRTDataConsumer.class);
 
@@ -45,7 +44,7 @@ public class ThrottledLuceneNRTDataConsumer<D, V extends ZoieVersion, VALUE exte
 	
 	private IndexWriter _writer;
 	private Analyzer _analyzer;
-	private ZoieIndexableInterpreter<D, VALUE> _interpreter;
+	private ZoieIndexableInterpreter<D> _interpreter;
 	private Directory _dir;
 	private final long _throttleFactor;
 	private IndexReader _currentReader;
@@ -53,15 +52,15 @@ public class ThrottledLuceneNRTDataConsumer<D, V extends ZoieVersion, VALUE exte
 	private HashSet<IndexReader> _returnSet = new HashSet<IndexReader>();
 	private ConcurrentLinkedQueue<IndexReader> _returnList = new ConcurrentLinkedQueue<IndexReader>();
 	
-	public ThrottledLuceneNRTDataConsumer(File dir,ZoieIndexableInterpreter<D, VALUE> interpreter,long throttleFactor) throws IOException{
+	public ThrottledLuceneNRTDataConsumer(File dir,ZoieIndexableInterpreter<D> interpreter,long throttleFactor) throws IOException{
 		this(FSDirectory.open(dir),new StandardAnalyzer(Version.LUCENE_CURRENT),interpreter,throttleFactor);
 	}
 	
-	public ThrottledLuceneNRTDataConsumer(File dir,Analyzer analyzer,ZoieIndexableInterpreter<D, VALUE> interpreter,long throttleFactor) throws IOException{
+	public ThrottledLuceneNRTDataConsumer(File dir,Analyzer analyzer,ZoieIndexableInterpreter<D> interpreter,long throttleFactor) throws IOException{
 		this(FSDirectory.open(dir),analyzer,interpreter,throttleFactor);
 	}
 	
-	public ThrottledLuceneNRTDataConsumer(Directory dir,Analyzer analyzer,ZoieIndexableInterpreter<D, VALUE> interpreter,long throttleFactor){
+	public ThrottledLuceneNRTDataConsumer(Directory dir,Analyzer analyzer,ZoieIndexableInterpreter<D> interpreter,long throttleFactor){
 		_writer = null;
 		_analyzer = analyzer;
 		_interpreter = interpreter;

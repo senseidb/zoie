@@ -15,7 +15,7 @@ import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
 
-public class DefaultReaderCache<R extends IndexReader, VALUE extends Serializable> extends AbstractReaderCache<R, VALUE>
+public class DefaultReaderCache<R extends IndexReader> extends AbstractReaderCache<R>
 {
   private static final Logger log = Logger.getLogger(DefaultReaderCache.class);
   private final Thread _maintenance;
@@ -27,11 +27,11 @@ public class DefaultReaderCache<R extends IndexReader, VALUE extends Serializabl
   private final ReentrantReadWriteLock returningIndexReaderQueueLock = new ReentrantReadWriteLock();
   private final Object cachemonitor = new Object();
   private long _freshness = 10000L;
-  private final WeakReference<IndexReaderFactory<ZoieIndexReader<R>, VALUE>> _readerfactory;
+  private final WeakReference<IndexReaderFactory<ZoieIndexReader<R>>> _readerfactory;
 
-  public DefaultReaderCache(IndexReaderFactory<ZoieIndexReader<R>, VALUE> readerfactory)
+  public DefaultReaderCache(IndexReaderFactory<ZoieIndexReader<R>> readerfactory)
   {
-    _readerfactory = new WeakReference<IndexReaderFactory<ZoieIndexReader<R>, VALUE>>(readerfactory);
+    _readerfactory = new WeakReference<IndexReaderFactory<ZoieIndexReader<R>>>(readerfactory);
     _maintenance = newMaintenanceThread();
     _maintenance.setDaemon(true);
   }
@@ -143,7 +143,7 @@ public class DefaultReaderCache<R extends IndexReader, VALUE extends Serializabl
         {
           try
           {
-            IndexReaderFactory<ZoieIndexReader<R>, VALUE> readerfactory = _readerfactory.get();
+            IndexReaderFactory<ZoieIndexReader<R>> readerfactory = _readerfactory.get();
             if (readerfactory != null)
             {
               newreaders = readerfactory.getIndexReaders();
@@ -192,8 +192,8 @@ public class DefaultReaderCache<R extends IndexReader, VALUE extends Serializabl
   public static ReaderCacheFactory FACTORY = new ReaderCacheFactory(){
 
     @Override
-    public <R extends IndexReader, VALUE extends Serializable> AbstractReaderCache<R, VALUE> newInstance(IndexReaderFactory<ZoieIndexReader<R>, VALUE> readerfactory)
+    public <R extends IndexReader> AbstractReaderCache<R> newInstance(IndexReaderFactory<ZoieIndexReader<R>> readerfactory)
     {
-      return new DefaultReaderCache<R, VALUE>(readerfactory);
+      return new DefaultReaderCache<R>(readerfactory);
     }};
 }

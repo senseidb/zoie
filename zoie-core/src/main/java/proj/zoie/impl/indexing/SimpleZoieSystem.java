@@ -27,7 +27,7 @@ import proj.zoie.api.indexing.ZoieIndexableInterpreter;
  * @deprecated use {@link ZoieSystem#buildDefaultInstance(File, ZoieIndexableInterpreter, int, long, boolean)}
  * @param <V>
  */
-public class SimpleZoieSystem<D, V extends ZoieVersion, VALUE extends Serializable> extends ZoieSystem<IndexReader,D,V, VALUE> {
+public class SimpleZoieSystem<D, V extends ZoieVersion> extends ZoieSystem<IndexReader,D,V> {
 
 	/**
 	 * @param idxDir
@@ -35,7 +35,7 @@ public class SimpleZoieSystem<D, V extends ZoieVersion, VALUE extends Serializab
 	 * @param batchSize
 	 * @param batchDelay
 	 */
-	public SimpleZoieSystem(File idxDir, ZoieIndexableInterpreter<D, VALUE> interpreter,int batchSize, long batchDelay,ZoieVersionFactory<V> zoieVersionFactory) {
+	public SimpleZoieSystem(File idxDir, ZoieIndexableInterpreter<D> interpreter,int batchSize, long batchDelay,ZoieVersionFactory<V> zoieVersionFactory) {
 		super(idxDir, interpreter, new DefaultIndexReaderDecorator(), null,null,batchSize, batchDelay, true, zoieVersionFactory);
 	}
 

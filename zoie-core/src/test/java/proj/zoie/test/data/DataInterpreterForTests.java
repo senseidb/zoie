@@ -9,7 +9,7 @@ import org.apache.lucene.document.Field.Store;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 
-public class DataInterpreterForTests implements ZoieIndexableInterpreter<String, String>
+public class DataInterpreterForTests implements ZoieIndexableInterpreter<String>
 {
 
     long _delay;
@@ -31,11 +31,11 @@ public class DataInterpreterForTests implements ZoieIndexableInterpreter<String,
       _analyzer = analyzer;
     }
     
-	public ZoieIndexable<String> interpret(final String src) {
+	public ZoieIndexable interpret(final String src) {
 		String[] parts=src.split(" ");
 		final long id=Long.parseLong(parts[parts.length-1])+((long)(Integer.MAX_VALUE)*2L);
 		//System.out.println(src+ " : UID : " + id);
-		return new ZoieIndexable<String>(){
+		return new ZoieIndexable(){
 			public Document buildDocument(){
 				Document doc=new Document();
 				doc.add(new Field("contents",src,Store.NO,Index.ANALYZED));
@@ -75,9 +75,9 @@ public class DataInterpreterForTests implements ZoieIndexableInterpreter<String,
 			}
 
       @Override
-      public String getStoreValue()
+      public byte[] getStoreValue()
       {
-        return "" + getUID();
+        return String.valueOf(getUID()).getBytes();
       }
 
       @Override

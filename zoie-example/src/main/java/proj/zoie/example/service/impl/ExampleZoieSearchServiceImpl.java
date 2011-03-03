@@ -36,13 +36,13 @@ import proj.zoie.service.api.SearchRequest;
 import proj.zoie.service.api.SearchResult;
 import proj.zoie.service.api.ZoieSearchService;
 
-public class ExampleZoieSearchServiceImpl<R extends IndexReader,VALUE extends Serializable> implements ZoieSearchService {
+public class ExampleZoieSearchServiceImpl<R extends IndexReader> implements ZoieSearchService {
 
 	private static final Logger log = Logger.getLogger(ExampleZoieSearchServiceImpl.class);
 	
-	private IndexReaderFactory<ZoieIndexReader<R>,VALUE> _idxReaderFactory;
+	private IndexReaderFactory<ZoieIndexReader<R>> _idxReaderFactory;
 	
-	public ExampleZoieSearchServiceImpl(IndexReaderFactory<ZoieIndexReader<R>,VALUE> idxReaderFactory){
+	public ExampleZoieSearchServiceImpl(IndexReaderFactory<ZoieIndexReader<R>> idxReaderFactory){
 		_idxReaderFactory=idxReaderFactory;
 	}
 	

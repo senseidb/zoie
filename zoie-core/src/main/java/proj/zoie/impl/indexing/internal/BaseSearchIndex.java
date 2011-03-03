@@ -34,9 +34,9 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 
 import proj.zoie.api.DocIDMapper;
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 
 public abstract class BaseSearchIndex<R extends IndexReader, V extends ZoieVersion> {
@@ -46,10 +46,10 @@ public abstract class BaseSearchIndex<R extends IndexReader, V extends ZoieVersi
 	  protected MergeScheduler _mergeScheduler;
 	  protected IndexWriter _indexWriter = null;
 	  protected volatile LongOpenHashSet _delDocs = new LongOpenHashSet();
-	  protected final SearchIndexManager<R,V, ?> _idxMgr;
+	  protected final SearchIndexManager<R,V> _idxMgr;
 	  protected boolean _closeWriterAfterUpdate;
 	  
-	  protected BaseSearchIndex(SearchIndexManager<R,V, ?> idxMgr, boolean closeWriterAfterUpdate){
+	  protected BaseSearchIndex(SearchIndexManager<R,V> idxMgr, boolean closeWriterAfterUpdate){
 		  _idxMgr = idxMgr;
 		  _closeWriterAfterUpdate = closeWriterAfterUpdate;
 	  }

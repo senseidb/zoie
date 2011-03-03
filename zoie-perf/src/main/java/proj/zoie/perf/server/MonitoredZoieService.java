@@ -37,11 +37,11 @@ public class MonitoredZoieService<R extends IndexReader> implements ZoieSearchSe
 
   private static final Logger log = Logger.getLogger(MonitoredZoieService.class);
 	
-  private final IndexReaderFactory<R, ?> _idxReaderFactory;
+  private final IndexReaderFactory<R> _idxReaderFactory;
   
   private long _sum = 0L;
   
-  public MonitoredZoieService(IndexReaderFactory<R, ?> idxReaderFactory)
+  public MonitoredZoieService(IndexReaderFactory<R> idxReaderFactory)
   {
 	  _idxReaderFactory = idxReaderFactory;
   }

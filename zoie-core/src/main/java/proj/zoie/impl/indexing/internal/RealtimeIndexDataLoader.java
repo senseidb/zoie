@@ -17,7 +17,6 @@ package proj.zoie.impl.indexing.internal;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -29,9 +28,9 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Similarity;
 
 import proj.zoie.api.DataConsumer;
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieHealth;
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
@@ -43,28 +42,28 @@ import proj.zoie.impl.indexing.IndexUpdatedEvent;
  * @author ymatsuda, xgu
  *
  */
-public class RealtimeIndexDataLoader<R extends IndexReader, D, V extends ZoieVersion, VALUE extends Serializable> extends BatchedIndexDataLoader<R,D,V, VALUE>
+public class RealtimeIndexDataLoader<R extends IndexReader, D, V extends ZoieVersion> extends BatchedIndexDataLoader<R,D,V>
 {
   private int _currentBatchSize;
-  private final DataConsumer<ZoieIndexable<VALUE>,V>  _ramConsumer;
-  private final DiskLuceneIndexDataLoader<R,V, VALUE> _luceneDataLoader;
+  private final DataConsumer<ZoieIndexable,V>  _ramConsumer;
+  private final DiskLuceneIndexDataLoader<R,V> _luceneDataLoader;
   private final Analyzer                     _analyzer;
   private final Similarity                   _similarity;
   
   private static Logger log = Logger.getLogger(RealtimeIndexDataLoader.class);
   
-  public RealtimeIndexDataLoader(DiskLuceneIndexDataLoader<R,V, VALUE> dataLoader, int batchSize,int maxBatchSize,long delay,
+  public RealtimeIndexDataLoader(DiskLuceneIndexDataLoader<R,V> dataLoader, int batchSize,int maxBatchSize,long delay,
                                  Analyzer analyzer,
                                  Similarity similarity,
-                                 SearchIndexManager<R,V, VALUE> idxMgr,
-                                 ZoieIndexableInterpreter<D, VALUE> interpreter,
+                                 SearchIndexManager<R,V> idxMgr,
+                                 ZoieIndexableInterpreter<D> interpreter,
                                  Queue<IndexingEventListener<V>> lsnrList)
   {
-    super((DataConsumer<ZoieIndexable<VALUE>,V>)dataLoader, batchSize, maxBatchSize, delay, idxMgr, interpreter, lsnrList);
+    super((DataConsumer<ZoieIndexable,V>)dataLoader, batchSize, maxBatchSize, delay, idxMgr, interpreter, lsnrList);
     _analyzer = analyzer;
     _similarity = similarity;
     _currentBatchSize = 0;
-    _ramConsumer = new RAMLuceneIndexDataLoader<R,V, VALUE>(_analyzer, _similarity, _idxMgr);
+    _ramConsumer = new RAMLuceneIndexDataLoader<R,V>(_analyzer, _similarity, _idxMgr);
     _luceneDataLoader = dataLoader;
   }
   
@@ -76,19 +75,19 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D, V extends ZoieVer
   {
     if (events != null)
     {
-      ArrayList<DataEvent<ZoieIndexable<VALUE>,V>> indexableList =
-          new ArrayList<DataEvent<ZoieIndexable<VALUE>,V>>(events.size());
+      ArrayList<DataEvent<ZoieIndexable,V>> indexableList =
+          new ArrayList<DataEvent<ZoieIndexable,V>>(events.size());
       Iterator<DataEvent<D,V>> iter = events.iterator();
       while (iter.hasNext())
       {
         try
         {
           DataEvent<D,V> event = iter.next();
-          ZoieIndexable<VALUE> indexable =
-                ((ZoieIndexableInterpreter<D, VALUE>) _interpreter).convertAndInterpret(event.getData());
+          ZoieIndexable indexable =
+                ((ZoieIndexableInterpreter<D>) _interpreter).convertAndInterpret(event.getData());
           
-          DataEvent<ZoieIndexable<VALUE>,V> newEvent =
-              new DataEvent<ZoieIndexable<VALUE>,V>(indexable,event.getVersion());
+          DataEvent<ZoieIndexable,V> newEvent =
+              new DataEvent<ZoieIndexable,V>(indexable,event.getVersion());
           indexableList.add(newEvent);
         }
         catch (Exception e)

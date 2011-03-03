@@ -54,7 +54,7 @@ public class RAMSearchIndex<R extends IndexReader, V extends ZoieVersion> extend
 
   public static final Logger log = Logger.getLogger(RAMSearchIndex.class);
 
-  public RAMSearchIndex(V version, IndexReaderDecorator<R> decorator, SearchIndexManager<R, V, ?> idxMgr, Directory ramIdxDir,
+  public RAMSearchIndex(V version, IndexReaderDecorator<R> decorator, SearchIndexManager<R, V> idxMgr, Directory ramIdxDir,
       File backingdir)
   {
     super(idxMgr, true);

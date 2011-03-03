@@ -16,7 +16,6 @@ package proj.zoie.impl.indexing.internal;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -28,14 +27,14 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.index.IndexReader;
 
 import proj.zoie.api.DataConsumer;
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieHealth;
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.indexing.AbstractZoieIndexable;
 import proj.zoie.api.indexing.IndexingEventListener;
+import proj.zoie.api.indexing.IndexingEventListener.IndexingEvent;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
-import proj.zoie.api.indexing.IndexingEventListener.IndexingEvent;
 import proj.zoie.impl.indexing.IndexUpdatedEvent;
 import proj.zoie.impl.indexing.IndexingThread;
 
@@ -51,20 +50,20 @@ import proj.zoie.impl.indexing.IndexingThread;
  * @param <R>
  * @param <V>
  */
-public class BatchedIndexDataLoader<R extends IndexReader,D, V extends ZoieVersion, VALUE extends Serializable> implements DataConsumer<D,V> {
+public class BatchedIndexDataLoader<R extends IndexReader,D, V extends ZoieVersion> implements DataConsumer<D,V> {
 
 	protected int _batchSize;
 	protected long _delay;
-	protected final DataConsumer<ZoieIndexable<VALUE>, V> _dataLoader;
-	protected List<DataEvent<ZoieIndexable<VALUE>, V>> _batchList;
+	protected final DataConsumer<ZoieIndexable, V> _dataLoader;
+	protected List<DataEvent<ZoieIndexable, V>> _batchList;
 	protected final LoaderThread _loadMgrThread;
 	protected long _lastFlushTime;
 	protected int _eventCount;
 	protected int _maxBatchSize;
 	protected boolean _stop;
 	protected boolean _flush;
-	protected final SearchIndexManager<R,V, VALUE> _idxMgr;
-	protected final ZoieIndexableInterpreter<D, VALUE> _interpreter;
+	protected final SearchIndexManager<R,V> _idxMgr;
+	protected final ZoieIndexableInterpreter<D> _interpreter;
 	private final Queue<IndexingEventListener<V>> _lsnrList;
 	  
 	  private static Logger log = Logger.getLogger(BatchedIndexDataLoader.class);
@@ -77,16 +76,16 @@ public class BatchedIndexDataLoader<R extends IndexReader,D, V extends ZoieVersi
 	   * @param idxMgr
 	   * @param lsnrList the list of IndexingEventListeners. This should be a <b>Synchronized</b> list if the content of this list is mutable.
 	   */
-	  public BatchedIndexDataLoader(DataConsumer<ZoieIndexable<VALUE>,V> dataLoader, int batchSize,int maxBatchSize,long delay,
-                                    SearchIndexManager<R,V, VALUE> idxMgr,
-                                    ZoieIndexableInterpreter<D, VALUE> interpreter,
+	  public BatchedIndexDataLoader(DataConsumer<ZoieIndexable,V> dataLoader, int batchSize,int maxBatchSize,long delay,
+                                    SearchIndexManager<R,V> idxMgr,
+                                    ZoieIndexableInterpreter<D> interpreter,
                                     Queue<IndexingEventListener<V>> lsnrList)
 	  {
 	    _maxBatchSize=Math.max(maxBatchSize, batchSize);
 	    _batchSize=Math.min(batchSize, _maxBatchSize);
 	    _delay=delay;
 	    _dataLoader=dataLoader;
-	    _batchList=new LinkedList<DataEvent<ZoieIndexable<VALUE>,V>>();
+	    _batchList=new LinkedList<DataEvent<ZoieIndexable,V>>();
 	    _lastFlushTime=0L;
 	    _eventCount=0;
 	    _loadMgrThread=new LoaderThread();
@@ -176,18 +175,18 @@ public class BatchedIndexDataLoader<R extends IndexReader,D, V extends ZoieVersi
 	  {
 	    if (events != null)
 	    {
-	      ArrayList<DataEvent<ZoieIndexable<VALUE>,V>> indexableList =
-	          new ArrayList<DataEvent<ZoieIndexable<VALUE>,V>>(events.size());
+	      ArrayList<DataEvent<ZoieIndexable,V>> indexableList =
+	          new ArrayList<DataEvent<ZoieIndexable,V>>(events.size());
 	      Iterator<DataEvent<D,V>> iter = events.iterator();
 	      while (iter.hasNext())
 	      {
 	        try
 	        {
 	          DataEvent<D,V> event = iter.next();
-	          ZoieIndexable<VALUE> indexable = ((ZoieIndexableInterpreter<D, VALUE>) _interpreter).convertAndInterpret(event.getData());
+	          ZoieIndexable indexable = ((ZoieIndexableInterpreter<D>) _interpreter).convertAndInterpret(event.getData());
 	          
-	          DataEvent<ZoieIndexable<VALUE>,V> newEvent =
-	              new DataEvent<ZoieIndexable<VALUE>,V>(indexable, event.getVersion());
+	          DataEvent<ZoieIndexable,V> newEvent =
+	              new DataEvent<ZoieIndexable,V>(indexable, event.getVersion());
 	          indexableList.add(newEvent);
 	        }
 	        catch (Exception e)
@@ -232,10 +231,10 @@ public class BatchedIndexDataLoader<R extends IndexReader,D, V extends ZoieVersi
        * This method needs to be called within a synchronized block on 'this'.
        * @return the list of data events already received. A new list is created to receive new data events.
        */
-      protected List<DataEvent<ZoieIndexable<VALUE>,V>> getBatchList()
+      protected List<DataEvent<ZoieIndexable,V>> getBatchList()
 	  {
-        List<DataEvent<ZoieIndexable<VALUE>,V>> tmpList=_batchList;
-        _batchList=new LinkedList<DataEvent<ZoieIndexable<VALUE>,V>>();
+        List<DataEvent<ZoieIndexable,V>> tmpList=_batchList;
+        _batchList=new LinkedList<DataEvent<ZoieIndexable,V>>();
         return tmpList;
 	  }
 	  
@@ -286,7 +285,7 @@ public class BatchedIndexDataLoader<R extends IndexReader,D, V extends ZoieVersi
 	   */
 	  protected void processBatch()
 	  {
-        List<DataEvent<ZoieIndexable<VALUE>,V>> tmpList=null;
+        List<DataEvent<ZoieIndexable,V>> tmpList=null;
         long now=System.currentTimeMillis();
         long duration=now-_lastFlushTime;
 
@@ -411,17 +410,17 @@ public class BatchedIndexDataLoader<R extends IndexReader,D, V extends ZoieVersi
 		}
 	  }
 
-	  protected static class ZoieIndexableDecorator<VALUE extends Serializable> extends AbstractZoieIndexable<VALUE>
+	  protected static class ZoieIndexableDecorator extends AbstractZoieIndexable
 	  {
-	    private final ZoieIndexable<VALUE> _inner;
-	    private ZoieIndexableDecorator(ZoieIndexable<VALUE> inner)
+	    private final ZoieIndexable _inner;
+	    private ZoieIndexableDecorator(ZoieIndexable inner)
 	    {
 	      _inner = inner;
 	    }
 
-	    public static <VALUE extends Serializable> ZoieIndexableDecorator<VALUE> decorate(ZoieIndexable<VALUE> inner)
+	    public static ZoieIndexableDecorator decorate(ZoieIndexable inner)
 	    {
-	      return (inner == null ? null : new ZoieIndexableDecorator<VALUE>(inner));
+	      return (inner == null ? null : new ZoieIndexableDecorator(inner));
 	    }
 	    
 	    

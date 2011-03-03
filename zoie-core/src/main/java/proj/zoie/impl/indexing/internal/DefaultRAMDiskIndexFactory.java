@@ -22,7 +22,7 @@ public class DefaultRAMDiskIndexFactory<R extends IndexReader, V extends ZoieVer
   private static int fold = 10000;
 
   @Override
-  public synchronized RAMSearchIndex<R, V> newInstance(V version, IndexReaderDecorator<R> decorator, SearchIndexManager<R, V, ?> idxMgr)
+  public synchronized RAMSearchIndex<R, V> newInstance(V version, IndexReaderDecorator<R> decorator, SearchIndexManager<R, V> idxMgr)
   {
     Directory ramIdxDir;
     try

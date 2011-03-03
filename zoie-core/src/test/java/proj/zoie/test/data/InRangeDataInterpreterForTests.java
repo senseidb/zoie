@@ -17,7 +17,7 @@ import proj.zoie.api.indexing.ZoieIndexableInterpreter;
  * 
  */
 public class InRangeDataInterpreterForTests implements
-    ZoieIndexableInterpreter<String, String>
+    ZoieIndexableInterpreter<String>
 {
 
   long _delay;
@@ -39,11 +39,11 @@ public class InRangeDataInterpreterForTests implements
     _analyzer = analyzer;
   }
 
-  public ZoieIndexable<String> interpret(final String src)
+  public ZoieIndexable interpret(final String src)
   {
     String[] parts = src.split(" ");
     final long id = Long.parseLong(parts[parts.length - 1]);
-    return new ZoieIndexable<String>()
+    return new ZoieIndexable()
     {
       public Document buildDocument()
       {
@@ -86,9 +86,9 @@ public class InRangeDataInterpreterForTests implements
       }
 
       @Override
-      public String getStoreValue()
+      public byte[] getStoreValue()
       {
-        return "" + getUID();
+        return String.valueOf(getUID()).getBytes();
       }
 
       @Override
@@ -99,7 +99,7 @@ public class InRangeDataInterpreterForTests implements
     };
   }
 
-  public ZoieIndexable<String> convertAndInterpret(String src)
+  public ZoieIndexable convertAndInterpret(String src)
   {
     return interpret(src);
   }

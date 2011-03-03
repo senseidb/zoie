@@ -1,7 +1,6 @@
 package proj.zoie.hourglass.impl;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -14,12 +13,12 @@ import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.impl.indexing.ZoieSystem;
 
-public class Box<R extends IndexReader, D, V extends ZoieVersion, VALUE extends Serializable>
+public class Box<R extends IndexReader, D, V extends ZoieVersion>
 {
   public static final Logger log = Logger.getLogger(Box.class.getName());
   List<ZoieIndexReader<R>> _archives;
-  List<ZoieSystem<R, D, V, VALUE>> _retiree;
-  List<ZoieSystem<R, D, V, VALUE>> _actives;
+  List<ZoieSystem<R, D, V>> _retiree;
+  List<ZoieSystem<R, D, V>> _actives;
   IndexReaderDecorator<R> _decorator;
 
   /**
@@ -30,11 +29,11 @@ public class Box<R extends IndexReader, D, V extends ZoieVersion, VALUE extends 
    * @param actives
    * @param decorator
    */
-  public Box(List<ZoieIndexReader<R>> archives, List<ZoieSystem<R, D, V, VALUE>> retiree, List<ZoieSystem<R, D, V, VALUE>> actives, IndexReaderDecorator<R> decorator)
+  public Box(List<ZoieIndexReader<R>> archives, List<ZoieSystem<R, D, V>> retiree, List<ZoieSystem<R, D, V>> actives, IndexReaderDecorator<R> decorator)
   {
     _archives = new LinkedList<ZoieIndexReader<R>>(archives);
-    _retiree = new LinkedList<ZoieSystem<R, D, V, VALUE>>(retiree);
-    _actives = new LinkedList<ZoieSystem<R, D, V, VALUE>>(actives);
+    _retiree = new LinkedList<ZoieSystem<R, D, V>>(retiree);
+    _actives = new LinkedList<ZoieSystem<R, D, V>>(actives);
     _decorator = decorator;
     if (log.isDebugEnabled())
     {
@@ -52,12 +51,12 @@ public class Box<R extends IndexReader, D, V extends ZoieVersion, VALUE extends 
       r.decZoieRef();
       log.info("refCount at shutdown: " + r.getRefCount() + " " + r.directory());
     }
-    for (ZoieSystem<R, D, V, VALUE> zoie : _retiree)
+    for (ZoieSystem<R, D, V> zoie : _retiree)
     {
       zoie.shutdown();
     }
     // add the active index readers
-    for (ZoieSystem<R, D, V, VALUE> zoie : _actives)
+    for (ZoieSystem<R, D, V> zoie : _actives)
     {
       while (true)
       {

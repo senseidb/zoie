@@ -1,7 +1,5 @@
 package proj.zoie.hourglass.api;
 
-import java.io.Serializable;
-
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 
 /**
@@ -26,10 +24,9 @@ import proj.zoie.api.indexing.ZoieIndexableInterpreter;
  * 
  * @param <V>
  *          Interface to translate from a data object to an indexable object.
- * @param <VALUE> the type of the data for the associated Key-Value data store.
  */
 
-public interface HourglassIndexableInterpreter<V, VALUE extends Serializable> extends ZoieIndexableInterpreter<V, VALUE>
+public interface HourglassIndexableInterpreter<V> extends ZoieIndexableInterpreter<V>
 {
-  HourglassIndexable<VALUE> convertAndInterpret(V src);
+  HourglassIndexable convertAndInterpret(V src);
 }

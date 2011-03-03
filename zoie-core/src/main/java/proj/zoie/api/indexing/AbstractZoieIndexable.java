@@ -1,6 +1,5 @@
 package proj.zoie.api.indexing;
 
-import java.io.Serializable;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,7 +18,7 @@ import java.io.Serializable;
  * limitations under the License.
  */
 
-public abstract class AbstractZoieIndexable<VALUE extends Serializable> implements ZoieIndexable<VALUE>
+public abstract class AbstractZoieIndexable implements ZoieIndexable
 {
 	public static final String DOCUMENT_ID_PAYLOAD_FIELD="_ID";
 	
@@ -40,7 +39,7 @@ public abstract class AbstractZoieIndexable<VALUE extends Serializable> implemen
   }
 
 	@Override
-  public VALUE getStoreValue()
+  public byte[] getStoreValue()
   {
     return null;
   }

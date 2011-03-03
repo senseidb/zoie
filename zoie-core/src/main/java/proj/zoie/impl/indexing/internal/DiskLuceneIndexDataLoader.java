@@ -44,7 +44,7 @@ import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.OptimizeScheduler.OptimizeType;
 import proj.zoie.impl.indexing.internal.SearchIndexManager.Status;
 
-public class DiskLuceneIndexDataLoader<R extends IndexReader, V extends ZoieVersion, VALUE extends Serializable> extends LuceneIndexDataLoader<R,V, VALUE>
+public class DiskLuceneIndexDataLoader<R extends IndexReader, V extends ZoieVersion> extends LuceneIndexDataLoader<R,V>
 {
 
 	private long _lastTimeOptimized;
@@ -52,7 +52,7 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader, V extends ZoieVers
 	private Object _optimizeMonitor;
 	private volatile OptimizeScheduler _optScheduler;
 	
-	public DiskLuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R,V, ?> idxMgr) {
+	public DiskLuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R,V> idxMgr) {
 		super(analyzer, similarity, idxMgr);
 		_lastTimeOptimized=System.currentTimeMillis();
 		_optimizeMonitor = new Object();
@@ -84,7 +84,7 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader, V extends ZoieVers
     }
 
 	@Override
-	public void consume(Collection<DataEvent<ZoieIndexable<VALUE>,V>> events) throws ZoieException
+	public void consume(Collection<DataEvent<ZoieIndexable,V>> events) throws ZoieException
 	{
 		// updates the in memory status before and after the work
 		synchronized(_optimizeMonitor)

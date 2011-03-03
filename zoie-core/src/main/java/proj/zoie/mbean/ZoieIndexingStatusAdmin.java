@@ -15,17 +15,15 @@ package proj.zoie.mbean;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.Serializable;
 import java.util.Date;
 
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.impl.indexing.IndexUpdatedEvent;
 import proj.zoie.impl.indexing.ZoieSystem;
 
-import proj.zoie.api.ZoieVersion;
-
-public class ZoieIndexingStatusAdmin<V extends ZoieVersion, VALUE extends Serializable>implements ZoieIndexingStatusAdminMBean<V>,IndexingEventListener<V>{
-	private final ZoieSystem<?,?,V, VALUE> _zoieSystem;
+public class ZoieIndexingStatusAdmin<V extends ZoieVersion>implements ZoieIndexingStatusAdminMBean<V>,IndexingEventListener<V>{
+	private final ZoieSystem<?,?,V> _zoieSystem;
 	private long _endTime;
 	private long _startTime;
 	private int _leftOver;
@@ -34,7 +32,7 @@ public class ZoieIndexingStatusAdmin<V extends ZoieVersion, VALUE extends Serial
 	private int _totalSize;
 	private V _diskVersion;
 	
-	public ZoieIndexingStatusAdmin(ZoieSystem<?,?,V, VALUE> zoieSystem){
+	public ZoieIndexingStatusAdmin(ZoieSystem<?,?,V> zoieSystem){
 		_zoieSystem = zoieSystem;
 		_zoieSystem.addIndexingEventListener(this);
 		_startTime = 0L;

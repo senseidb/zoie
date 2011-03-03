@@ -61,7 +61,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 	}
 
 	private static int countHits(
-			ZoieSystem<IndexReader, String, DefaultZoieVersion, String> idxSystem,
+			ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem,
 			Query q) throws IOException {
 		Searcher searcher = null;
 		MultiReader reader = null;
@@ -94,7 +94,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 	public void testIndexWithAnalyzer() throws ZoieException, IOException {
 		File idxDir = getIdxDir();
 		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		ZoieSystem<IndexReader, String, DefaultZoieVersion, String> idxSystem = createZoie(
+		ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createZoie(
 				idxDir, true, 20, new WhitespaceAnalyzer(), null,
 				defaultZoieVersionFactory);
 		idxSystem.start();
@@ -225,7 +225,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 	public void testRealtime2() throws ZoieException {
 		File idxDir = getIdxDir();
 		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		ZoieSystem<IndexReader, String, DefaultZoieVersion, String> idxSystem = createZoie(
+		ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createZoie(
 				idxDir, true, defaultZoieVersionFactory);
 		idxSystem.start();
 
@@ -274,7 +274,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 	public void testRealtime() throws ZoieException {
 		File idxDir = getIdxDir();
 		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		ZoieSystem<IndexReader, String, DefaultZoieVersion, String> idxSystem = createZoie(
+		ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createZoie(
 				idxDir, true, defaultZoieVersionFactory);
 		idxSystem.start();
 		String query = "zoie";
@@ -519,7 +519,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 	private void testDelSetImpl() throws ZoieException {
 		File idxDir = getIdxDir();
 		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		final ZoieSystem<IndexReader, String, DefaultZoieVersion, String> idxSystem = createZoie(
+		final ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createZoie(
 				idxDir, true, 100, defaultZoieVersionFactory);
 		idxSystem.getAdminMBean().setFreshness(50);
 		idxSystem.start();
@@ -723,7 +723,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 	public void testUpdates() throws ZoieException, ParseException, IOException {
 		File idxDir = getIdxDir();
 		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		final ZoieSystem<IndexReader, String, DefaultZoieVersion, String> idxSystem = createZoie(
+		final ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createZoie(
 				idxDir, true, defaultZoieVersionFactory);
 		idxSystem.start();
 		final String query = "zoie";
@@ -858,7 +858,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 	public void testIndexSignature() throws ZoieException, IOException {
 		File idxDir = getIdxDir();
 		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		ZoieSystem<IndexReader, String, DefaultZoieVersion, String> idxSystem = createZoie(
+		ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createZoie(
 				idxDir, true, defaultZoieVersionFactory);
 		idxSystem.start();
 		DefaultDirectoryManager<DefaultZoieVersion> dirMgr = new DefaultDirectoryManager<DefaultZoieVersion>(
@@ -911,7 +911,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 
 		File idxDir = getIdxDir();
 		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		ZoieSystem<IndexReader, String, DefaultZoieVersion, String> idxSystem = createZoie(
+		ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createZoie(
 				idxDir, true, new InRangeDocIDMapperFactory(0, 1000000),
 				defaultZoieVersionFactory);
 		idxSystem.start();
@@ -957,7 +957,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 	public void testShutdown() throws Exception {
 		File idxDir = getIdxDir();
 		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		ZoieSystem<IndexReader, String, DefaultZoieVersion, String> idxSystem = createInRangeZoie(
+		ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createInRangeZoie(
 				idxDir, true, new InRangeDocIDMapperFactory(0, 1000000, 0),
 				defaultZoieVersionFactory);
 		idxSystem.start();
@@ -976,7 +976,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 	public void testInRangeDocIDMapperFactory() throws Exception {
 		File idxDir = getIdxDir();
 		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		ZoieSystem<IndexReader, String, DefaultZoieVersion, String> idxSystem = createInRangeZoie(
+		ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createInRangeZoie(
 				idxDir, true, new InRangeDocIDMapperFactory(0, 1000000, 0),
 				defaultZoieVersionFactory);
 		idxSystem.start();
@@ -1121,7 +1121,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 	public void testExportImport() throws ZoieException, IOException {
 		File idxDir = getIdxDir();
 		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		final ZoieSystem<IndexReader, String, DefaultZoieVersion, String> idxSystem = createZoie(
+		final ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createZoie(
 				idxDir, true, defaultZoieVersionFactory);
 		idxSystem.start();
 

@@ -21,7 +21,6 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -34,21 +33,21 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Similarity;
 
 import proj.zoie.api.DataConsumer;
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieSegmentReader;
+import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 
-public abstract class LuceneIndexDataLoader<R extends IndexReader, V extends ZoieVersion, VALUE extends Serializable> implements DataConsumer<ZoieIndexable<VALUE>,V>
+public abstract class LuceneIndexDataLoader<R extends IndexReader, V extends ZoieVersion> implements DataConsumer<ZoieIndexable,V>
 {
 	private static final Logger log = Logger.getLogger(LuceneIndexDataLoader.class);
 	protected final Analyzer _analyzer;
 	protected final Similarity _similarity;
-	protected final SearchIndexManager<R,V, ?> _idxMgr;
+	protected final SearchIndexManager<R,V> _idxMgr;
 
-	protected LuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R,V, ?> idxMgr) {
+	protected LuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R,V> idxMgr) {
 		_analyzer = analyzer;
 		_similarity = similarity;
 		_idxMgr=idxMgr;
@@ -66,7 +65,7 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader, V extends Zoi
 	 * @see proj.zoie.api.DataConsumer#consume(java.util.Collection)
 	 * 
 	 */
-	public void consume(Collection<DataEvent<ZoieIndexable<VALUE>,V>> events) throws ZoieException {
+	public void consume(Collection<DataEvent<ZoieIndexable,V>> events) throws ZoieException {
 		int eventCount = events.size();
         if (events == null || eventCount == 0)
 			return;
@@ -79,13 +78,13 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader, V extends Zoi
 		LongSet delSet =new LongOpenHashSet();
 		
 		try {
-		  for(DataEvent<ZoieIndexable<VALUE>,V> evt : events)
+		  for(DataEvent<ZoieIndexable,V> evt : events)
 		  {
 		    if (evt == null) continue;
     		    //version = Math.max(version, evt.getVersion());
 		        version = version == null ? evt.getVersion() : (version.compareTo(evt.getVersion()) < 0 ? evt.getVersion() : version);
     		    // interpret and get get the indexable instance
-    		    ZoieIndexable<VALUE> indexable = evt.getData();
+    		    ZoieIndexable indexable = evt.getData();
     		    if (indexable == null || indexable.isSkip())
     		      continue;
     

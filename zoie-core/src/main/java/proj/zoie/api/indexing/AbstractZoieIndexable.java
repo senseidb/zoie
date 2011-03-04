@@ -33,12 +33,6 @@ public abstract class AbstractZoieIndexable implements ZoieIndexable
 	}
 
 	@Override
-  public boolean hasStoreData()
-  {
-    return false;
-  }
-
-	@Override
   public byte[] getStoreValue()
   {
     return null;

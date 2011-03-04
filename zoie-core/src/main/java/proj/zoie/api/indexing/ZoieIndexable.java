@@ -79,12 +79,7 @@ public interface ZoieIndexable
 	 * @return An array of indexing requests
 	 */
 	IndexingReq[] buildIndexingReqs();
-	/**
-	 * Indicator for whether there's data to be sent to the Data Store.
-	 * If true, the data can be accessed by hasStoreData() method.
-	 * @return true if there is associated data that should be sent to the Data Store.
-	 */
-	boolean hasStoreData();
+	
 	/**
 	 * The method that returns the Data to be put in a Data Store associated with zoie. The Key is UID.
 	 * @return the Data to be put into the data store.

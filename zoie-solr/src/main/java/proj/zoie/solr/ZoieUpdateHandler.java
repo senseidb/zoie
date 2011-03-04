@@ -4,7 +4,6 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -73,7 +72,7 @@ public class ZoieUpdateHandler extends UpdateHandler {
 			throw new IOException("zoie home is not setup");
 		}
 		
-		ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion, Serializable> zoie = zoieHome.getZoieSystem();
+		ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion> zoie = zoieHome.getZoieSystem();
 		if (zoie==null){
 			throw new IOException("zoie is not setup");
 		}
@@ -118,7 +117,7 @@ public class ZoieUpdateHandler extends UpdateHandler {
 	public void commit(CommitUpdateCommand cmd) throws IOException {
 		ZoieSystemHome zoieHome = ZoieSystemHome.getInstance(_core);
 		if (zoieHome!=null){
-			ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion, Serializable> zoie = zoieHome.getZoieSystem();
+			ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion> zoie = zoieHome.getZoieSystem();
 			if (zoie!=null){
 				try {
 					zoie.flushEvents(10000);
@@ -148,7 +147,7 @@ public class ZoieUpdateHandler extends UpdateHandler {
 			throw new IOException("zoie home is not setup");
 		}
 		
-		ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion, Serializable> zoie = zoieHome.getZoieSystem();
+		ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion> zoie = zoieHome.getZoieSystem();
 		if (zoie==null){
 			throw new IOException("zoie is not setup");
 		}
@@ -181,7 +180,7 @@ public class ZoieUpdateHandler extends UpdateHandler {
 			throw new IOException("zoie home is not setup");
 		}
 		
-		ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion, Serializable> zoie = zoieHome.getZoieSystem();
+		ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion> zoie = zoieHome.getZoieSystem();
 		if (zoie==null){
 			throw new IOException("zoie is not setup");
 		}

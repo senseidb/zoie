@@ -90,12 +90,6 @@ public class InRangeDataInterpreterForTests implements
       {
         return String.valueOf(getUID()).getBytes();
       }
-
-      @Override
-      public boolean hasStoreData()
-      {
-        return true;
-      }
     };
   }
 

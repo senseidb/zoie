@@ -1,7 +1,6 @@
 package proj.zoie.solr;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.List;
 
 import org.apache.lucene.index.CorruptIndexException;
@@ -15,13 +14,13 @@ import org.apache.lucene.store.FSDirectory;
 import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieIndexReader;
 
-public class ZoieSolrMultiReader<T extends IndexReader, VALUE extends Serializable> extends MultiReader{
+public class ZoieSolrMultiReader<T extends IndexReader> extends MultiReader{
 
 	private ZoieIndexReader<T> _diskReader = null;
-	private final IndexReaderFactory<ZoieIndexReader<T>, VALUE> _readerFactory;
+	private final IndexReaderFactory<ZoieIndexReader<T>> _readerFactory;
 	private final List<ZoieIndexReader<T>> _subReaders;
 	
-	public ZoieSolrMultiReader(List<ZoieIndexReader<T>> subReaders,IndexReaderFactory<ZoieIndexReader<T>, VALUE> readerFactory) {
+	public ZoieSolrMultiReader(List<ZoieIndexReader<T>> subReaders,IndexReaderFactory<ZoieIndexReader<T>> readerFactory) {
 		super(subReaders.toArray(new ZoieIndexReader[subReaders.size()]),false);
 		_subReaders = subReaders;
 		_readerFactory = readerFactory;
@@ -63,7 +62,7 @@ public class ZoieSolrMultiReader<T extends IndexReader, VALUE extends Serializab
 			throw new IllegalStateException("Zoie readers must be read-only");
 		}
 		List<ZoieIndexReader<T>> readerList = _readerFactory.getIndexReaders();
-		IndexReader retReader = new ZoieSolrMultiReader<T, VALUE>(readerList,_readerFactory);
+		IndexReader retReader = new ZoieSolrMultiReader<T>(readerList,_readerFactory);
 		_readerFactory.returnIndexReaders(_subReaders);
 		return retReader;
 	}

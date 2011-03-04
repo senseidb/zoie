@@ -1,7 +1,6 @@
 package proj.zoie.solr;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.List;
 
 import org.apache.lucene.index.CorruptIndexException;
@@ -19,9 +18,9 @@ import proj.zoie.impl.indexing.ZoieSystem;
 /**
  * @param <VALUE> the type for the data to be put in the associated Key-Value store.
  */
-public class ZoieSolrIndexReaderFactory<VALUE extends Serializable> extends IndexReaderFactory
+public class ZoieSolrIndexReaderFactory extends IndexReaderFactory
 {
-	private ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion, VALUE> _zoieSystem = null;
+	private ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion> _zoieSystem = null;
 	private List<ZoieIndexReader<IndexReader>> _readerList = null; 
 	@Override
 	public void init(NamedList args)
@@ -29,7 +28,7 @@ public class ZoieSolrIndexReaderFactory<VALUE extends Serializable> extends Inde
 		super.init(args);
 	}
 	
-	public void setZoieSystem(ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion, VALUE> zoieSystem)
+	public void setZoieSystem(ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion> zoieSystem)
 	{
 		_zoieSystem = zoieSystem;
 	}
@@ -45,7 +44,7 @@ public class ZoieSolrIndexReaderFactory<VALUE extends Serializable> extends Inde
 			if (readerList!=null){
 				_zoieSystem.returnIndexReaders(_readerList);
 			}
-			reader = new ZoieSolrMultiReader<IndexReader, VALUE>(_readerList, _zoieSystem);
+			reader = new ZoieSolrMultiReader<IndexReader>(_readerList, _zoieSystem);
 		}
 		else{
 			reader = new InitialIndexReader(IndexReader.open(dir, null, readOnly, termInfosIndexDivisor));
@@ -85,7 +84,7 @@ public class ZoieSolrIndexReaderFactory<VALUE extends Serializable> extends Inde
 			}
 			else{
 				_readerList	= _zoieSystem.getIndexReaders();
-				return new ZoieSolrMultiReader<IndexReader, VALUE>(_readerList, _zoieSystem);
+				return new ZoieSolrMultiReader<IndexReader>(_readerList, _zoieSystem);
 			}
 		}
 

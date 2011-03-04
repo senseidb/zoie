@@ -53,10 +53,5 @@ public class LoopingIndexableInterpreter<V> implements ZoieIndexableInterpreter<
     public byte[] getStoreValue(){
       return _inner.getStoreValue();
     }
-  
-    @Override
-    public boolean hasStoreData(){
-      return _inner.hasStoreData();
-    }
   }
 }

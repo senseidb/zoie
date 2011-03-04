@@ -270,12 +270,6 @@ public class HourglassTest extends ZoieTestCaseBase {
 		public byte[] getStoreValue() {
 			return String.valueOf(getUID()).getBytes();
 		}
-
-		@Override
-		public boolean hasStoreData() {
-			return true;
-		}
-
 	}
 
 	public static class HourglassTestInterpreter implements

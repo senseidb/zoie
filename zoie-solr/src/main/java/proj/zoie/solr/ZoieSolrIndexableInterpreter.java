@@ -7,7 +7,7 @@ import proj.zoie.api.indexing.AbstractZoieIndexableInterpreter;
 /**
  * Does not support store data.
  */
-public class ZoieSolrIndexableInterpreter extends AbstractZoieIndexableInterpreter<DocumentWithID, Serializable>
+public class ZoieSolrIndexableInterpreter extends AbstractZoieIndexableInterpreter<DocumentWithID>
 {
 
 	@Override

@@ -74,17 +74,10 @@ public class DataInterpreterForTests implements ZoieIndexableInterpreter<String>
 				return false;
 			}
 
-      @Override
-      public byte[] getStoreValue()
-      {
-        return String.valueOf(getUID()).getBytes();
-      }
-
-      @Override
-      public boolean hasStoreData()
-      {
-        return true;
-      }
+            @Override
+            public byte[] getStoreValue(){
+                return String.valueOf(getUID()).getBytes();
+            }
 		};
 	}
 

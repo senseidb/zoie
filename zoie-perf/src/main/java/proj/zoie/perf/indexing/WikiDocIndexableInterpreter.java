@@ -87,13 +87,6 @@ public class WikiDocIndexableInterpreter implements ZoieIndexableInterpreter<Con
           // TODO Auto-generated method stub
           return null;
         }
-
-        @Override
-        public boolean hasStoreData(){
-         // TODO Auto-generated method stub
-         return false;
-        }
-		
 	}
 
 }

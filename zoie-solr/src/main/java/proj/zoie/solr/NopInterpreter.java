@@ -1,16 +1,15 @@
 package proj.zoie.solr;
 
-import java.io.Serializable;
 
 import proj.zoie.api.indexing.AbstractZoieIndexableInterpreter;
 import proj.zoie.api.indexing.ZoieIndexable;
 
-public class NopInterpreter<V, VALUE extends Serializable> extends AbstractZoieIndexableInterpreter<V, VALUE>
+public class NopInterpreter<V> extends AbstractZoieIndexableInterpreter<V>
 {
 
 	@Override
-	public ZoieIndexable<VALUE> convertAndInterpret(V src) {
-		return new ZoieIndexable<VALUE>(){
+	public ZoieIndexable convertAndInterpret(V src) {
+		return new ZoieIndexable(){
 
 			public IndexingReq[] buildIndexingReqs() {
 				return null;
@@ -28,18 +27,10 @@ public class NopInterpreter<V, VALUE extends Serializable> extends AbstractZoieI
 				return false;
 			}
 
-      @Override
-      public VALUE getStoreValue()
-      {
-        return null;
-      }
-
-      @Override
-      public boolean hasStoreData()
-      {
-        return false;
-      }
-			
+            @Override
+            public byte[] getStoreValue(){
+                return null;
+            }		
 		};
 	}
 

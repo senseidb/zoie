@@ -29,7 +29,7 @@ import proj.zoie.mbean.ZoieSystemAdmin;
 public class ZoieSystemHome {
 	private static Logger log = Logger.getLogger(ZoieSystemHome.class);
 	
-	private ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion, Serializable> _zoieSystem;
+	private ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion> _zoieSystem;
 	
 	private ZoieSystemHome(SolrCore core){
 		String idxDir = core.getIndexDir();
@@ -64,7 +64,7 @@ public class ZoieSystemHome {
 		zoieConfig.setBatchDelay(batchDelay);
 		zoieConfig.setRtIndexing(realtime);
 		
-		_zoieSystem = new ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion, Serializable>(idxFile,new ZoieSolrIndexableInterpreter(),new DefaultIndexReaderDecorator(),zoieConfig);
+		_zoieSystem = new ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion>(idxFile,new ZoieSolrIndexableInterpreter(),new DefaultIndexReaderDecorator(),zoieConfig);
 		
 		log.info("Zoie System loaded with: ");
 		log.info("zoie.batchSize: "+batchSize);
@@ -88,7 +88,7 @@ public class ZoieSystemHome {
 		}
 	}
 	
-	public ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion, Serializable> getZoieSystem(){
+	public ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion> getZoieSystem(){
 		return _zoieSystem;
 	}
 	

@@ -3,25 +3,25 @@
 <head>
   <meta charset='utf-8'>
 
-  <title>javasoze/zoie @ GitHub</title>
+  <title>Zoie</title>
 
   <style type="text/css">
     body {
       margin-top: 1.0em;
-      background-color: #035062;
+      background-color: #efefef;
       font-family: Helvetica, Arial, FreeSans, san-serif;
-      color: #ffffff;
+      color: black;
     }
     #container {
       margin: 0 auto;
       width: 700px;
     }
-    h1 { font-size: 3.8em; color: #fcaf9d; margin-bottom: 3px; }
+    h1 { font-size: 3.8em; color: black; margin-bottom: 3px; }
     h1 .small { font-size: 0.4em; }
     h1 a { text-decoration: none }
-    h2 { font-size: 1.5em; color: #fcaf9d; }
-    h3 { text-align: center; color: #fcaf9d; }
-    a { color: #fcaf9d; }
+    h2 { font-size: 1.5em; color: black; }
+    h3 { text-align: center; color: black; }
+    a { }
     .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
     .download { float: right; }
     pre { background: #000; color: #fff; padding: 15px;}
@@ -31,29 +31,87 @@
 </head>
 
 <body>
-  <a href="http://github.com/javasoze/zoie"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+<a href="http://github.com/javasoze/zoie"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+<div style="overflow: hidden; background-color: white;" >
+<div style='float: left; margin-right: 10px;  margin-left: 10px; margin-top: 7px'><img src="images/zoielogo_s.png"/></div><h2>Zoie</h2>
+<p>
+Zoie is a real-time search and indexing system built on <a href="http://lucene.apache.org">Apache Lucene</a>.
+</p>
+</div>
 
-  <div id="container">
+<p>
+Donated by LinkedIn.com on July 19, 2008, and has been deployed in a real-time large-scale consumer website: LinkedIn.com handling millions of searches as well as hundreds of thousands of updates daily.
+</p>
 
-    <div class="download">
-      <a href="http://github.com/javasoze/zoie/zipball/master">
-        <img border="0" width="90" src="http://github.com/images/modules/download/zip.png"></a>
-      <a href="http://github.com/javasoze/zoie/tarball/master">
-        <img border="0" width="90" src="http://github.com/images/modules/download/tar.png"></a>
-    </div>
+<p>
+<i>
+News: Zoie 2.0.0 is released (<a href="http://github.com/javasoze/zoie/downloads">here</a>) - Compatible with Lucene 2.9.x.
+</i>
+</p>
 
-    <h1><a href="http://github.com/javasoze/zoie">zoie</a>
-      <span class="small">by <a href="http://github.com/javasoze">javasoze</a></span></h1>
+<p>
+In a real-time search/indexing system, a document is made available as soon as it is added to the index. 
+This functionality is especially important to time-sensitive information such as news, job openings, tweets etc.
+</p>
+<p>
+<h2>
+Design Goals:
+</h2>
+</p>
+<ul>
+    <li> Additions of documents must be made available to searchers immediately
+    <li> Indexing must not affect search performance
+    <li> Additions of documents must not fragment the index (which hurts search performance)
+    <li> Deletes and/or updates of documents must not affect search performance.
+    <li> ... 
+</ul>
+<p>
+<h2>
+Other features:
+</h2>
+</p>
+<ul>
+    <li> fast lucene docid to uid mapping
+    <li> fast uid to lucene docid mapping (reverse id mapping)
+    <li> custom MergePolicy to produce balanced index segment management for handle realtime updates
+    <li> partial delete expunge for enhancing search performance without full optimize
+    <li> Automatic plugin to forward-rolling index
+    <li> full jmx console for indexing management/monitoring
+    <li> ... 
+</ul>
+<h2>
+Getting Started:
+</h2>
+Check out the following wikis:
+<ul>
+  <li> Code samples: <br/>
+      <a href="http://snaprojects.jira.com/wiki/display/ZOIE/Code+Samples">http://snaprojects.jira.com/wiki/display/ZOIE/Code+Samples</a>
+  <li> Running example/demo: <br/>
+      <a href="http://snaprojects.jira.com/wiki/display/ZOIE/Getting+Started+-+Zoie+Example">http://snaprojects.jira.com/wiki/display/ZOIE/Getting+Started+-+Zoie+Example</a>
+</ul>
 
-    <div class="description">
-      realtime search/indexing system
-    </div>
+<h2>
+Architecture Diagram:
+</h2>
+<p>
+<img src="images/zoie-graph.jpg"/>
+</p>  
 
-    <h2>Authors</h2>
-<p>John Wang (john.wang@gmail.com)<br/>Xiaoyang Gu (xiaoyanggu@gmail.com)<br/>Yasuhiro Matsuda (yasuhiro.matsuda@gmail.com)<br/><br/>      </p>
+
+<br/>      </p>
 <h2>Contact</h2>
-<p>John Wang (john.wang@gmail.com)<br/>      </p>
+<p>John Wang (john.wang@gmail.com)
+<br/>      
+Xiaoyang Gu (xiaoyanggu@gmail.com)
+</p>
 
+
+<div class="download">
+  <a href="http://github.com/javasoze/zoie/zipball/master">
+    <img border="0" width="90" src="http://github.com/images/modules/download/zip.png"></a>
+  <a href="http://github.com/javasoze/zoie/tarball/master">
+    <img border="0" width="90" src="http://github.com/images/modules/download/tar.png"></a>
+</div>
 
     <h2>Download</h2>
     <p>
@@ -69,8 +127,6 @@
     <div class="footer">
       get the source code on GitHub : <a href="http://github.com/javasoze/zoie">javasoze/zoie</a>
     </div>
-
-  </div>
 
   
 </body>

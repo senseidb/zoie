@@ -39,17 +39,17 @@ import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 
-public abstract class BaseSearchIndex<R extends IndexReader, V extends ZoieVersion> {
+public abstract class BaseSearchIndex<R extends IndexReader> {
 	  private static final Logger log = Logger.getLogger(BaseSearchIndex.class);
 	  
 	  private int _eventsHandled=0;
 	  protected MergeScheduler _mergeScheduler;
 	  protected IndexWriter _indexWriter = null;
 	  protected volatile LongOpenHashSet _delDocs = new LongOpenHashSet();
-	  protected final SearchIndexManager<R,V> _idxMgr;
+	  protected final SearchIndexManager<R> _idxMgr;
 	  protected boolean _closeWriterAfterUpdate;
 	  
-	  protected BaseSearchIndex(SearchIndexManager<R,V> idxMgr, boolean closeWriterAfterUpdate){
+	  protected BaseSearchIndex(SearchIndexManager<R> idxMgr, boolean closeWriterAfterUpdate){
 		  _idxMgr = idxMgr;
 		  _closeWriterAfterUpdate = closeWriterAfterUpdate;
 	  }
@@ -58,7 +58,7 @@ public abstract class BaseSearchIndex<R extends IndexReader, V extends ZoieVersi
 	   * gets index version, e.g. SCN
 	   * @return index version
 	   */
-	  abstract V getVersion();
+	  abstract String getVersion();
 	  
 	  /**
 	   * gets number of docs in the index, .e.g maxdoc - number of deleted docs
@@ -71,7 +71,7 @@ public abstract class BaseSearchIndex<R extends IndexReader, V extends ZoieVersi
 	   * @param version
 	   * @throws IOException
 	   */
-	  abstract public void setVersion(V version)
+	  abstract public void setVersion(String version)
 	      throws IOException;
 	  
 	  /**
@@ -214,7 +214,7 @@ public abstract class BaseSearchIndex<R extends IndexReader, V extends ZoieVersi
 	    }
 	  }
 	  
-	  public void loadFromIndex(BaseSearchIndex<R,V> index) throws IOException
+	  public void loadFromIndex(BaseSearchIndex<R> index) throws IOException
 	  {
 	    // hao: open readOnly ram index reader
 	    ZoieIndexReader<R> reader = index.openIndexReader();

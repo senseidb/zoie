@@ -18,36 +18,35 @@ package proj.zoie.impl.indexing.internal;
 import it.unimi.dsi.fastutil.longs.LongSet;
 
 import java.io.IOException;
+import java.util.Comparator;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Similarity;
 
-import proj.zoie.api.ZoieVersion;
-
-public class RAMLuceneIndexDataLoader<R extends IndexReader, V extends ZoieVersion> extends LuceneIndexDataLoader<R,V>
+public class RAMLuceneIndexDataLoader<R extends IndexReader> extends LuceneIndexDataLoader<R>
 {
 
-	public RAMLuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R,V> idxMgr)
+	public RAMLuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R> idxMgr,Comparator<String> comparator)
 	{
-		super(analyzer, similarity,idxMgr);
+		super(analyzer, similarity,idxMgr,comparator);
 	}
 
 	@Override
-	protected BaseSearchIndex<R,V> getSearchIndex() {
+	protected BaseSearchIndex<R> getSearchIndex() {
 		return _idxMgr.getCurrentWritableMemoryIndex();
 	}
 
 	@Override
 	protected void propagateDeletes(LongSet delDocs) throws IOException
 	{
-	  RAMSearchIndex<R,V> readOnlyMemoryIdx = _idxMgr.getCurrentReadOnlyMemoryIndex();
+	  RAMSearchIndex<R> readOnlyMemoryIdx = _idxMgr.getCurrentReadOnlyMemoryIndex();
 	  if(readOnlyMemoryIdx != null)
 	  {
 	    readOnlyMemoryIdx.markDeletes(delDocs);
 	  }
 	  
-	  DiskSearchIndex<R,V> diskIdx = _idxMgr.getDiskIndex();
+	  DiskSearchIndex<R> diskIdx = _idxMgr.getDiskIndex();
 	  if(diskIdx != null)
 	  {
 	    diskIdx.markDeletes(delDocs);
@@ -57,13 +56,13 @@ public class RAMLuceneIndexDataLoader<R extends IndexReader, V extends ZoieVersi
 	@Override
 	protected void commitPropagatedDeletes() throws IOException
 	{
-	  RAMSearchIndex<R,V> readOnlyMemoryIdx = _idxMgr.getCurrentReadOnlyMemoryIndex();
+	  RAMSearchIndex<R> readOnlyMemoryIdx = _idxMgr.getCurrentReadOnlyMemoryIndex();
 	  if(readOnlyMemoryIdx != null)
 	  {
 	    readOnlyMemoryIdx.commitDeletes();
 	  }
 	  
-	  DiskSearchIndex<R,V> diskIdx = _idxMgr.getDiskIndex();
+	  DiskSearchIndex<R> diskIdx = _idxMgr.getDiskIndex();
 	  if(diskIdx != null)
 	  {
 	    diskIdx.commitDeletes();

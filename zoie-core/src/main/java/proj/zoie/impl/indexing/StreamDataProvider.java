@@ -29,13 +29,13 @@ import proj.zoie.api.ZoieException;
 import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.mbean.DataProviderAdminMBean;
 
-public abstract class StreamDataProvider<D, V extends ZoieVersion> implements DataProvider<D>, DataProviderAdminMBean
+public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProviderAdminMBean
 {
   private static final Logger log = Logger.getLogger(StreamDataProvider.class);
 
   private int _batchSize;
-  private DataConsumer<D, V> _consumer;
-  private DataThread<D, V> _thread;
+  private DataConsumer<D> _consumer;
+  private DataThread<D> _thread;
 
   public StreamDataProvider()
   {
@@ -43,17 +43,17 @@ public abstract class StreamDataProvider<D, V extends ZoieVersion> implements Da
     _consumer = null;
   }
 
-  public void setDataConsumer(DataConsumer<D, V> consumer)
+  public void setDataConsumer(DataConsumer<D> consumer)
   {
     _consumer = consumer;
   }
 
-  public DataConsumer<D, V> getDataConsumer()
+  public DataConsumer<D> getDataConsumer()
   {
     return _consumer;
   }
 
-  public abstract DataEvent<D, V> next();
+  public abstract DataEvent<D> next();
 
   public abstract void reset();
 
@@ -64,7 +64,7 @@ public abstract class StreamDataProvider<D, V extends ZoieVersion> implements Da
 
   public long getEventsPerMinute()
   {
-    DataThread<D, V> thread = _thread;
+    DataThread<D> thread = _thread;
     if (thread == null)
       return 0;
     return thread.getEventsPerMinute();
@@ -82,7 +82,7 @@ public abstract class StreamDataProvider<D, V extends ZoieVersion> implements Da
   public void setMaxEventsPerMinute(long maxEventsPerMinute)
   {
     _maxEventsPerMinute = maxEventsPerMinute;
-    DataThread<D, V> thread = _thread;
+    DataThread<D> thread = _thread;
     if (thread == null)
       return;
     thread.setMaxEventsPerMinute(_maxEventsPerMinute);
@@ -91,7 +91,7 @@ public abstract class StreamDataProvider<D, V extends ZoieVersion> implements Da
 
   public String getStatus()
   {
-    DataThread<D, V> thread = _thread;
+    DataThread<D> thread = _thread;
     if (thread == null)
       return "dead";
     return thread.getStatus() + " : " + thread.getState();
@@ -120,7 +120,7 @@ public abstract class StreamDataProvider<D, V extends ZoieVersion> implements Da
 
   public long getEventCount()
   {
-    DataThread<D, V> thread = _thread;
+    DataThread<D> thread = _thread;
     if (thread != null)
       return _thread.getEventCount();
     else
@@ -148,28 +148,28 @@ public abstract class StreamDataProvider<D, V extends ZoieVersion> implements Da
     {
       reset();
 
-      _thread = new DataThread<D, V>(this);
+      _thread = new DataThread<D>(this);
       _thread.setMaxEventsPerMinute(_maxEventsPerMinute);
 
       _thread.start();
     }
   }
 
-  public void syncWithVersion(long timeToWait, V version) throws ZoieException
+  public void syncWithVersion(long timeToWait, String version) throws ZoieException
   {
     _thread.syncWthVersion(timeToWait, version);
   }
 
-  public void syncWthVersion(long timeInMillis, V version) throws ZoieException
+  public void syncWthVersion(long timeInMillis, String version) throws ZoieException
   {
     _thread.syncWthVersion(timeInMillis, version);
   }
 
-  private static final class DataThread<D, V extends ZoieVersion> extends Thread
+  private static final class DataThread<D> extends Thread
   {
-    private Collection<DataEvent<D, V>> _batch;
-    private V _currentVersion;
-    private final StreamDataProvider<D, V> _dataProvider;
+    private Collection<DataEvent<D>> _batch;
+    private String _currentVersion;
+    private final StreamDataProvider<D> _dataProvider;
     private boolean _paused;
     private boolean _stop;
     private volatile boolean _stopped = false;
@@ -194,7 +194,7 @@ public abstract class StreamDataProvider<D, V extends ZoieVersion> implements Da
       }
     }
 
-    DataThread(StreamDataProvider<D, V> dataProvider)
+    DataThread(StreamDataProvider<D> dataProvider)
     {
       super("Stream DataThread");
       setDaemon(false);
@@ -202,7 +202,7 @@ public abstract class StreamDataProvider<D, V extends ZoieVersion> implements Da
       _currentVersion = null;
       _paused = false;
       _stop = false;
-      _batch = new LinkedList<DataEvent<D, V>>();
+      _batch = new LinkedList<DataEvent<D>>();
     }
 
     @Override
@@ -252,9 +252,9 @@ public abstract class StreamDataProvider<D, V extends ZoieVersion> implements Da
     private void flush()
     {
       // FLUSH
-      Collection<DataEvent<D, V>> tmp;
+      Collection<DataEvent<D>> tmp;
       tmp = _batch;
-      _batch = new LinkedList<DataEvent<D, V>>();
+      _batch = new LinkedList<DataEvent<D>>();
 
       try
       {
@@ -288,7 +288,7 @@ public abstract class StreamDataProvider<D, V extends ZoieVersion> implements Da
       last60[currentslot] += count;
     }
 
-    public V getCurrentVersion()
+    public String getCurrentVersion()
     {
       synchronized (this)
       {
@@ -296,7 +296,7 @@ public abstract class StreamDataProvider<D, V extends ZoieVersion> implements Da
       }
     }
 
-    public void syncWthVersion(long timeInMillis, V version) throws ZoieException
+    public void syncWthVersion(long timeInMillis, String version) throws ZoieException
     {
       if (version == null) return;
       long now = System.currentTimeMillis();
@@ -331,7 +331,7 @@ public abstract class StreamDataProvider<D, V extends ZoieVersion> implements Da
 
     public void run()
     {
-      V version = _currentVersion;
+      String version = _currentVersion;
       while (!_stop)
       {
         updateStats();
@@ -352,7 +352,7 @@ public abstract class StreamDataProvider<D, V extends ZoieVersion> implements Da
         }
         if (!_stop)
         {
-          DataEvent<D, V> data = _dataProvider.next();
+          DataEvent<D> data = _dataProvider.next();
           if (data != null)
           {
             version = ZoieVersion.max(version, data.getVersion());

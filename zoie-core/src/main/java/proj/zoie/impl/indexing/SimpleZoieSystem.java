@@ -16,10 +16,10 @@ package proj.zoie.impl.indexing;
  * limitations under the License.
  */
 import java.io.File;
-import java.io.Serializable;
+
+import org.apache.lucene.index.IndexReader;
 
 import proj.zoie.api.ZoieVersion;
-import org.apache.lucene.index.IndexReader;
 import proj.zoie.api.ZoieVersionFactory;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 
@@ -27,7 +27,7 @@ import proj.zoie.api.indexing.ZoieIndexableInterpreter;
  * @deprecated use {@link ZoieSystem#buildDefaultInstance(File, ZoieIndexableInterpreter, int, long, boolean)}
  * @param <V>
  */
-public class SimpleZoieSystem<D, V extends ZoieVersion> extends ZoieSystem<IndexReader,D,V> {
+public class SimpleZoieSystem<D, V extends ZoieVersion> extends ZoieSystem<IndexReader,D> {
 
 	/**
 	 * @param idxDir

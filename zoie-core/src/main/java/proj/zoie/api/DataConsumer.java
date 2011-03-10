@@ -21,23 +21,23 @@ import java.util.Comparator;
 /**
  * interface for consuming a collection of data events
  */
-public interface DataConsumer<D, V extends ZoieVersion> {
+public interface DataConsumer<D> {
 	
 	/**
 	 * Data event abstraction.
 	 */
-	public static final class DataEvent<D, V extends ZoieVersion>
+	public static final class DataEvent<D>
 	{
-		static Comparator<DataEvent<?, ? extends ZoieVersion>> VERSION_COMPARATOR = new EventVersionComparator();
+		static Comparator<DataEvent<?>> VERSION_COMPARATOR = new EventVersionComparator();
 		private D _data;
-		private V _version;
+		private String _version;
 				
 		/**
 		 * Create a data event instance
 		 * @param version ZoieVersion of the event
 		 * @param data Data for the event
 		 */
-		public DataEvent(D data, V version)
+		public DataEvent(D data, String version)
 		{
 			_data=data;
 			_version=version;
@@ -47,7 +47,7 @@ public interface DataConsumer<D, V extends ZoieVersion> {
 		 * Gets the version.
 		 * @return ZoieVersion of the vent
 		 */
-		public V getVersion()
+		public String getVersion()
 		{
 			return _version;
 		}
@@ -61,14 +61,14 @@ public interface DataConsumer<D, V extends ZoieVersion> {
 			return _data;
 		}
 	    
-		static public Comparator<DataEvent<?, ? extends ZoieVersion>> getComparator()
+		static public Comparator<DataEvent<?>> getComparator()
 		{
 		  return VERSION_COMPARATOR;
 		}
 		
-	    static public class EventVersionComparator implements Comparator<DataEvent<?, ? extends ZoieVersion>>
+	    static public class EventVersionComparator implements Comparator<DataEvent<?>>
 	    {
-	      public int compare(DataEvent<?, ? extends ZoieVersion> o1, DataEvent<?, ? extends ZoieVersion> o2)
+	      public int compare(DataEvent<?> o1, DataEvent<?> o2)
           {
 	          if(o1==o2) return 0;
 	          if(o1==null) return -1;
@@ -78,7 +78,7 @@ public interface DataConsumer<D, V extends ZoieVersion> {
             //else if(o1._version > o2._version) return 1;
             //else return 0; 
           }
-	      public boolean equals(DataEvent<?, ? extends ZoieVersion> o1, DataEvent<?, ? extends ZoieVersion> o2)
+	      public boolean equals(DataEvent<?> o1, DataEvent<?> o2)
 	      {
 	        return (o1._version == o2._version);
 	      }
@@ -95,7 +95,7 @@ public interface DataConsumer<D, V extends ZoieVersion> {
 	 * @param data A collection of data to be consumed.
 	 * @throws ZoieException
 	 */
-	void consume(Collection<DataEvent<D,V>> data) throws ZoieException;
+	void consume(Collection<DataEvent<D>> data) throws ZoieException;
 
 	/**
 	 * This method is not meant to be Thread-Safe, since that could add significant
@@ -103,5 +103,5 @@ public interface DataConsumer<D, V extends ZoieVersion> {
 	 * should add external synchronization.
    * @return the version number of events that it has received but not necessarily processed.
    */
-	V getVersion();
+	String getVersion();
 }

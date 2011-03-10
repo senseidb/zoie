@@ -19,6 +19,7 @@ package proj.zoie.impl.indexing.internal;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Queue;
 
@@ -30,7 +31,6 @@ import org.apache.lucene.search.Similarity;
 import proj.zoie.api.DataConsumer;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieHealth;
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
@@ -42,28 +42,29 @@ import proj.zoie.impl.indexing.IndexUpdatedEvent;
  * @author ymatsuda, xgu
  *
  */
-public class RealtimeIndexDataLoader<R extends IndexReader, D, V extends ZoieVersion> extends BatchedIndexDataLoader<R,D,V>
+public class RealtimeIndexDataLoader<R extends IndexReader, D> extends BatchedIndexDataLoader<R,D>
 {
   private int _currentBatchSize;
-  private final DataConsumer<ZoieIndexable,V>  _ramConsumer;
-  private final DiskLuceneIndexDataLoader<R,V> _luceneDataLoader;
+  private final DataConsumer<ZoieIndexable>  _ramConsumer;
+  private final DiskLuceneIndexDataLoader<R> _luceneDataLoader;
   private final Analyzer                     _analyzer;
   private final Similarity                   _similarity;
   
   private static Logger log = Logger.getLogger(RealtimeIndexDataLoader.class);
   
-  public RealtimeIndexDataLoader(DiskLuceneIndexDataLoader<R,V> dataLoader, int batchSize,int maxBatchSize,long delay,
+  public RealtimeIndexDataLoader(DiskLuceneIndexDataLoader<R> dataLoader, int batchSize,int maxBatchSize,long delay,
                                  Analyzer analyzer,
                                  Similarity similarity,
-                                 SearchIndexManager<R,V> idxMgr,
+                                 SearchIndexManager<R> idxMgr,
                                  ZoieIndexableInterpreter<D> interpreter,
-                                 Queue<IndexingEventListener<V>> lsnrList)
+                                 Queue<IndexingEventListener> lsnrList,
+                                 Comparator<String> comparator)
   {
-    super((DataConsumer<ZoieIndexable,V>)dataLoader, batchSize, maxBatchSize, delay, idxMgr, interpreter, lsnrList);
+    super((DataConsumer<ZoieIndexable>)dataLoader, batchSize, maxBatchSize, delay, idxMgr, interpreter, lsnrList);
     _analyzer = analyzer;
     _similarity = similarity;
     _currentBatchSize = 0;
-    _ramConsumer = new RAMLuceneIndexDataLoader<R,V>(_analyzer, _similarity, _idxMgr);
+    _ramConsumer = new RAMLuceneIndexDataLoader<R>(_analyzer, _similarity, _idxMgr,comparator);
     _luceneDataLoader = dataLoader;
   }
   
@@ -71,23 +72,23 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D, V extends ZoieVer
    * @see proj.zoie.impl.indexing.internal.BatchedIndexDataLoader#consume(java.util.Collection)
    */
   @Override
-  public void consume(Collection<DataEvent<D,V>> events) throws ZoieException
+  public void consume(Collection<DataEvent<D>> events) throws ZoieException
   {
     if (events != null)
     {
-      ArrayList<DataEvent<ZoieIndexable,V>> indexableList =
-          new ArrayList<DataEvent<ZoieIndexable,V>>(events.size());
-      Iterator<DataEvent<D,V>> iter = events.iterator();
+      ArrayList<DataEvent<ZoieIndexable>> indexableList =
+          new ArrayList<DataEvent<ZoieIndexable>>(events.size());
+      Iterator<DataEvent<D>> iter = events.iterator();
       while (iter.hasNext())
       {
         try
         {
-          DataEvent<D,V> event = iter.next();
+          DataEvent<D> event = iter.next();
           ZoieIndexable indexable =
                 ((ZoieIndexableInterpreter<D>) _interpreter).convertAndInterpret(event.getData());
           
-          DataEvent<ZoieIndexable,V> newEvent =
-              new DataEvent<ZoieIndexable,V>(indexable,event.getVersion());
+          DataEvent<ZoieIndexable> newEvent =
+              new DataEvent<ZoieIndexable>(indexable,event.getVersion());
           indexableList.add(newEvent);
         }
         catch (Exception e)
@@ -137,7 +138,7 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D, V extends ZoieVer
   @Override
   protected synchronized void processBatch()
   {
-    RAMSearchIndex<R,V> readOnlyMemIndex = null;
+    RAMSearchIndex<R> readOnlyMemIndex = null;
     long now = System.currentTimeMillis();
     long duration = now - _lastFlushTime;
     int eventCount = 0;

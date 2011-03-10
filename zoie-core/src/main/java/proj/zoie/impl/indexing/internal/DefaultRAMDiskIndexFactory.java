@@ -8,7 +8,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
 
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
 /**
@@ -16,13 +15,13 @@ import proj.zoie.api.indexing.IndexReaderDecorator;
  * 
  * @param <R>
  */
-public class DefaultRAMDiskIndexFactory<R extends IndexReader, V extends ZoieVersion> extends RAMIndexFactory<R, V>
+public class DefaultRAMDiskIndexFactory<R extends IndexReader> extends RAMIndexFactory<R>
 {
   private static final Logger log = Logger.getLogger(DefaultRAMIndexFactory.class);
   private static int fold = 10000;
 
   @Override
-  public synchronized RAMSearchIndex<R, V> newInstance(V version, IndexReaderDecorator<R> decorator, SearchIndexManager<R, V> idxMgr)
+  public synchronized RAMSearchIndex<R> newInstance(String version, IndexReaderDecorator<R> decorator, SearchIndexManager<R> idxMgr)
   {
     Directory ramIdxDir;
     try
@@ -30,7 +29,7 @@ public class DefaultRAMDiskIndexFactory<R extends IndexReader, V extends ZoieVer
       File backingdir = new File("/tmp/ram" + fold);// /Volumes/ramdisk/
       ramIdxDir = new SimpleFSDirectory(backingdir);
       fold++;
-      return new RAMSearchIndex<R, V>(version, decorator, idxMgr, ramIdxDir, backingdir);
+      return new RAMSearchIndex<R>(version, decorator, idxMgr, ramIdxDir, backingdir);
     } catch (IOException e)
     {
       // TODO Auto-generated catch block

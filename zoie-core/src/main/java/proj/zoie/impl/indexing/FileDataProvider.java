@@ -24,10 +24,10 @@ import proj.zoie.api.ZoieVersionFactory;
 import proj.zoie.api.DefaultZoieVersion;
 import proj.zoie.api.DataConsumer.DataEvent;
 
-public class FileDataProvider extends StreamDataProvider<File, DefaultZoieVersion> implements ZoieVersionFactory<DefaultZoieVersion>
+public class FileDataProvider extends StreamDataProvider<File> implements ZoieVersionFactory<DefaultZoieVersion>
 {
 	private final File _dir;
-	private DefaultZoieVersion _currentVersion = new DefaultZoieVersion();
+	private String _currentVersion = null;
 	private Stack<Iterator<File>> _stack;
 	private Iterator<File> _currentIterator;
 	private boolean _looping;
@@ -48,17 +48,17 @@ public class FileDataProvider extends StreamDataProvider<File, DefaultZoieVersio
 		return _dir;
 	}
 
-	public DefaultZoieVersion getZoieVersion(String str)
+	public String getZoieVersion()
 	{
 	  return _currentVersion;
 	}
 	
-	public DefaultZoieVersion getMinZoieVersion()
+	public String getMinZoieVersion()
 	{
 	  return null;
 	}
 	
-	public DefaultZoieVersion nextZoieVersion()
+	public String nextZoieVersion()
 	{
 	  String desp = _currentVersion.encodeToString();
 	  DefaultZoieVersion dzv = getZoieVersion(_currentVersion.encodeToString());
@@ -86,7 +86,7 @@ public class FileDataProvider extends StreamDataProvider<File, DefaultZoieVersio
 	}
 	
 	@Override
-	public DataEvent<File,DefaultZoieVersion> next() {
+	public DataEvent<File> next() {
 		if(_currentIterator.hasNext())
 		{
 			File next=_currentIterator.next();
@@ -94,7 +94,7 @@ public class FileDataProvider extends StreamDataProvider<File, DefaultZoieVersio
 			{
 			  // ?? hao: how to implement version++
 				// new DataEvent<File>(next, _currentVersion++);
-				return new DataEvent<File,DefaultZoieVersion>(next,nextZoieVersion());
+				return new DataEvent<File>(next,nextZoieVersion());
 			}
 			else
 			{

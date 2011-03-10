@@ -31,7 +31,7 @@ import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 
-public class ThrottledLuceneNRTDataConsumer<D, V extends ZoieVersion> implements DataConsumer<D,V>,IndexReaderFactory<IndexReader>
+public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexReaderFactory<IndexReader>
 {
 	private static final Logger logger = Logger.getLogger(ThrottledLuceneNRTDataConsumer.class);
 
@@ -98,14 +98,14 @@ public class ThrottledLuceneNRTDataConsumer<D, V extends ZoieVersion> implements
 		}
 	}
 	
-	public void consume(Collection<proj.zoie.api.DataConsumer.DataEvent<D,V>> events)
+	public void consume(Collection<proj.zoie.api.DataConsumer.DataEvent<D>> events)
 			throws ZoieException {
 		if (_writer == null){
 			throw new ZoieException("Internal IndexWriter null, perhaps not started?");
 		}
 		
 		if (events.size() > 0){
-			for (DataEvent<D,V> event : events){
+			for (DataEvent<D> event : events){
 				ZoieIndexable indexable = _interpreter.convertAndInterpret(event.getData());
 				if (indexable.isSkip()) continue;
 				
@@ -229,7 +229,7 @@ public class ThrottledLuceneNRTDataConsumer<D, V extends ZoieVersion> implements
 		}
 	}
   
-  public V getVersion()
+  public String getVersion()
   {
     throw new UnsupportedOperationException();
   }

@@ -33,7 +33,7 @@ import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
-public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> implements IndexReaderFactory<ZoieIndexReader<R>>
+public class SearchIndexManager<R extends IndexReader> implements IndexReaderFactory<ZoieIndexReader<R>>
 {
     private static final Logger log = Logger.getLogger(SearchIndexManager.class);
     
@@ -42,26 +42,26 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
       Sleep, Working
     }
 
-	  private DirectoryManager<V> _dirMgr;
+	  private DirectoryManager _dirMgr;
 	  private final	IndexReaderDecorator<R>	_indexReaderDecorator;
 
 	  final DocIDMapperFactory _docIDMapperFactory;
-	  private final DiskSearchIndex<R,V> _diskIndex;
+	  private final DiskSearchIndex<R> _diskIndex;
 	  
 	  private volatile Status _diskIndexerStatus;
-	  private volatile Mem<R,V> _mem;
+	  private volatile Mem<R> _mem;
 	  /**
 	   * the access lock for _mem for the purpose of proper reference counting
 	   * for disk IndexReader
 	   */
 	  private final Object _memLock = new Object();
-	  private final RAMIndexFactory<R, V> _ramIndexFactory;
+	  private final RAMIndexFactory<R> _ramIndexFactory;
 	  
 	  /**
 	   * @param location 
 	   * @param indexReaderDecorator
 	   */
-	  public SearchIndexManager(DirectoryManager<V> dirMgr,IndexReaderDecorator<R> indexReaderDecorator,DocIDMapperFactory docIDMapperFactory, RAMIndexFactory<R, V> ramIndexFactory)
+	  public SearchIndexManager(DirectoryManager dirMgr,IndexReaderDecorator<R> indexReaderDecorator,DocIDMapperFactory docIDMapperFactory, RAMIndexFactory<R> ramIndexFactory)
 	  {
 	    _dirMgr = dirMgr;
 	    _docIDMapperFactory = docIDMapperFactory;
@@ -75,7 +75,7 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
 	      throw new IllegalArgumentException("indexReaderDecorator cannot be null");
 	    }
         _diskIndexerStatus = Status.Sleep;
-        _diskIndex = new DiskSearchIndex<R,V>(_dirMgr, _indexReaderDecorator,this); 
+        _diskIndex = new DiskSearchIndex<R>(_dirMgr, _indexReaderDecorator,this); 
         ZoieIndexReader<R> diskIndexReader = null;
         
         try
@@ -87,9 +87,9 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
           log.error(e.getMessage(),e);
           return;
         }
-        V version = _diskIndex.getVersion();
-        RAMSearchIndex<R,V> memIndexA = _ramIndexFactory.newInstance(version, _indexReaderDecorator,this);
-        Mem<R,V> mem = new Mem<R,V>(memIndexA, null, memIndexA, null, diskIndexReader);
+        String version = _diskIndex.getVersion();
+        RAMSearchIndex<R> memIndexA = _ramIndexFactory.newInstance(version, _indexReaderDecorator,this);
+        Mem<R> mem = new Mem<R>(memIndexA, null, memIndexA, null, diskIndexReader);
         if (diskIndexReader != null)
         {
           diskIndexReader.incZoieRef();
@@ -112,7 +112,7 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
 
 	  public int getRAMASegmentCount()
 	  {
-	    Mem<R,V> mem = _mem;
+	    Mem<R> mem = _mem;
 	    if (mem.get_memIndexA()==null) return -1;
 	    int ret;
       try
@@ -127,7 +127,7 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
 
 	  public int getRAMBSegmentCount()
 	  {
-      Mem<R,V> mem = _mem;
+      Mem<R> mem = _mem;
       if (mem.get_memIndexB()==null) return -1;
       int ret;
       try
@@ -219,9 +219,9 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
       {
 	      synchronized(_memLock)
 	      {
-	        Mem<R,V> mem = _mem;
-	        RAMSearchIndex<R,V> memIndexB = mem.get_memIndexB();
-	        RAMSearchIndex<R,V> memIndexA = mem.get_memIndexA();
+	        Mem<R> mem = _mem;
+	        RAMSearchIndex<R> memIndexB = mem.get_memIndexB();
+	        RAMSearchIndex<R> memIndexA = mem.get_memIndexA();
 
 	        // the following order, e.g. B,A,Disk matters, see ZoieIndexReader.getSubZoieReaderAccessor:
 	        // when doing UID->docid mapping, the freshest index needs to be first
@@ -289,14 +289,14 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
 	      
 	      if (status == Status.Working)
 	      { // sleeping to working
-	        V version = _diskIndex.getVersion();
-	        Mem<R,V> oldMem = _mem;
+	        String version = _diskIndex.getVersion();
+	        Mem<R> oldMem = _mem;
 
-	        RAMSearchIndex<R,V> memIndexA = oldMem.get_memIndexA();
+	        RAMSearchIndex<R> memIndexA = oldMem.get_memIndexA();
 	        if(memIndexA != null) memIndexA.closeIndexWriter();
 
-	        RAMSearchIndex<R,V> memIndexB = _ramIndexFactory.newInstance(version, _indexReaderDecorator,this);
-	        Mem<R,V> mem = new Mem<R,V>(memIndexA, memIndexB, memIndexB, memIndexA, oldMem.get_diskIndexReader());
+	        RAMSearchIndex<R> memIndexB = _ramIndexFactory.newInstance(version, _indexReaderDecorator,this);
+	        Mem<R> mem = new Mem<R>(memIndexA, memIndexB, memIndexB, memIndexA, oldMem.get_diskIndexReader());
 	        _mem = mem;
 	        log.info("Current writable index is B, new B created");
 	      }
@@ -314,8 +314,8 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
 	          log.error(e.getMessage(),e);
 	          return;
 	        }
-	        Mem<R,V> oldMem = _mem;
-	        Mem<R,V> mem = new Mem<R,V>(oldMem.get_memIndexB(), null, oldMem.get_memIndexB(), null, diskIndexReader);
+	        Mem<R> oldMem = _mem;
+	        Mem<R> mem = new Mem<R>(oldMem.get_memIndexB(), null, oldMem.get_memIndexB(), null, diskIndexReader);
 	        if (oldMem.get_memIndexA()!=null){oldMem.get_memIndexA().close();}
 	        lockAndSwapMem(diskIndexReader, oldMem.get_diskIndexReader(), mem);
 	        log.info("Current writable index is A, B is flushed");
@@ -324,17 +324,17 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
 	    }
 	  }
 
-	  public DiskSearchIndex<R,V> getDiskIndex()
+	  public DiskSearchIndex<R> getDiskIndex()
 	  {
 	    return _diskIndex;
 	  }
 
-	  public RAMSearchIndex<R,V> getCurrentWritableMemoryIndex()
+	  public RAMSearchIndex<R> getCurrentWritableMemoryIndex()
 	  {
 	    return _mem.get_currentWritable();
 	  }
 	  
-	  public RAMSearchIndex<R,V> getCurrentReadOnlyMemoryIndex()
+	  public RAMSearchIndex<R> getCurrentReadOnlyMemoryIndex()
 	  {
 	    return _mem.get_currentReadOnly();
 	  }
@@ -343,7 +343,7 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
 	   * Clean up
 	   */
 	  public void close(){
-	    Mem<R,V> mem = _mem;
+	    Mem<R> mem = _mem;
 	    if (mem.get_memIndexA()!=null)
 	    {
 	      mem.get_memIndexA().close();
@@ -367,7 +367,7 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
 	  }
 
 	  
-	  public V getCurrentDiskVersion() throws IOException
+	  public String getCurrentDiskVersion() throws IOException
 	  {
 	    return _diskIndex.getVersion();
 	  }
@@ -379,25 +379,25 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
 	  
 	  public int getRamAIndexSize()
 	  {
-        RAMSearchIndex<R,V> memIndexA = _mem.get_memIndexA();
+        RAMSearchIndex<R> memIndexA = _mem.get_memIndexA();
 	    return (memIndexA==null) ? 0 : memIndexA.getNumdocs();
 	  }
 	  
-	  public V getRamAVersion()
+	  public String getRamAVersion()
 	  {
-        RAMSearchIndex<R,V> memIndexA = _mem.get_memIndexA();
+        RAMSearchIndex<R> memIndexA = _mem.get_memIndexA();
 	    return (memIndexA==null) ? null : memIndexA.getVersion();
 	  }
 	  
 	  public int getRamBIndexSize()
 	  {
-        RAMSearchIndex<R,V> memIndexB = _mem.get_memIndexB();
+        RAMSearchIndex<R> memIndexB = _mem.get_memIndexB();
 	    return (memIndexB==null) ? 0 : memIndexB.getNumdocs();
 	  }
 	  
-	  public V getRamBVersion()
+	  public String getRamBVersion()
 	  {
-	    RAMSearchIndex<R,V> memIndexB = _mem.get_memIndexB();
+	    RAMSearchIndex<R> memIndexB = _mem.get_memIndexB();
 	    return (memIndexB==null) ? null : memIndexB.getVersion();
 	  }
 	  
@@ -444,8 +444,8 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
     _diskIndex.refresh();
     if (_mem.get_memIndexA()!=null){_mem.get_memIndexA().close();}
     if (_mem.get_memIndexB()!=null){_mem.get_memIndexB().close();}
-    RAMSearchIndex<R,V> memIndexA = _ramIndexFactory.newInstance(_diskIndex.getVersion(), _indexReaderDecorator, this);
-    Mem<R,V> mem = new Mem<R,V>(memIndexA, null, memIndexA, null, null);
+    RAMSearchIndex<R> memIndexA = _ramIndexFactory.newInstance(_diskIndex.getVersion(), _indexReaderDecorator, this);
+    Mem<R> mem = new Mem<R>(memIndexA, null, memIndexA, null, null);
     _mem = mem;
 
     log.info("index purged");
@@ -468,8 +468,8 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
 		    if(diskIndexReader != null) diskIndexReader.close();
 		    throw e;
 		  }
-		  Mem<R,V> oldMem = _mem;
-		  Mem<R,V> mem = new Mem<R,V>(oldMem.get_memIndexA(),
+		  Mem<R> oldMem = _mem;
+		  Mem<R> mem = new Mem<R>(oldMem.get_memIndexA(),
 		      oldMem.get_memIndexB(),
 		      oldMem.get_currentWritable(),
 		      oldMem.get_currentReadOnly(),
@@ -487,7 +487,7 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
    * @param oldDiskReader the old disk IndexReader from old mem
    * @param mem the new mem
    */
-  private void lockAndSwapMem(ZoieIndexReader<R> diskIndexReader, ZoieIndexReader<R>  oldDiskReader, Mem<R,V> mem)
+  private void lockAndSwapMem(ZoieIndexReader<R> diskIndexReader, ZoieIndexReader<R>  oldDiskReader, Mem<R> mem)
   {
     synchronized(_memLock)
     {
@@ -509,15 +509,15 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
     }
   }
 
-  private final static class Mem<R extends IndexReader, V extends ZoieVersion>
+  private final static class Mem<R extends IndexReader>
   {
-    private final RAMSearchIndex<R,V> _memIndexA;
-    private final RAMSearchIndex<R,V> _memIndexB;
-    private final RAMSearchIndex<R,V> _currentWritable;
-    private final RAMSearchIndex<R,V> _currentReadOnly;
+    private final RAMSearchIndex<R> _memIndexA;
+    private final RAMSearchIndex<R> _memIndexB;
+    private final RAMSearchIndex<R> _currentWritable;
+    private final RAMSearchIndex<R> _currentReadOnly;
     private final ZoieIndexReader<R> _diskIndexReader;
-    Mem(RAMSearchIndex<R,V> a, RAMSearchIndex<R,V> b, RAMSearchIndex<R,V> w, 
-    	RAMSearchIndex<R,V> r, ZoieIndexReader<R> d)
+    Mem(RAMSearchIndex<R> a, RAMSearchIndex<R> b, RAMSearchIndex<R> w, 
+    	RAMSearchIndex<R> r, ZoieIndexReader<R> d)
     {
       _memIndexA = a;
       _memIndexB = b;
@@ -526,22 +526,22 @@ public class SearchIndexManager<R extends IndexReader, V extends ZoieVersion> im
       _diskIndexReader = d;
     }
     
-    protected RAMSearchIndex<R,V> get_memIndexA()
+    protected RAMSearchIndex<R> get_memIndexA()
     {
       return _memIndexA;
     }
 
-    protected RAMSearchIndex<R,V> get_memIndexB()
+    protected RAMSearchIndex<R> get_memIndexB()
     {
       return _memIndexB;
     }
 
-    protected RAMSearchIndex<R,V> get_currentWritable()
+    protected RAMSearchIndex<R> get_currentWritable()
     {
       return _currentWritable;
     }
 
-    protected RAMSearchIndex<R,V> get_currentReadOnly()
+    protected RAMSearchIndex<R> get_currentReadOnly()
     {
       return _currentReadOnly;
     }

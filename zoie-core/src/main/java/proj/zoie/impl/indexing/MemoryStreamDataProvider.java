@@ -26,12 +26,12 @@ import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieVersion;
 
-public class MemoryStreamDataProvider<D, V extends ZoieVersion> extends StreamDataProvider<D, V>
+public class MemoryStreamDataProvider<D> extends StreamDataProvider<D>
 {
 
-  private List<DataEvent<D, V>> _list;
+  private List<DataEvent<D>> _list;
   private int _count;
-  private volatile V _maxVersion = null;
+  private volatile String _maxVersion = null;
   private boolean _stop;
 
   // private static final double DEFAULT_ITERS_PER_SECOND=100.0;
@@ -40,7 +40,7 @@ public class MemoryStreamDataProvider<D, V extends ZoieVersion> extends StreamDa
   public MemoryStreamDataProvider()
   {
     super();
-    _list = new LinkedList<DataEvent<D, V>>();
+    _list = new LinkedList<DataEvent<D>>();
     _count = 0;
     _stop = false;
   }
@@ -65,7 +65,7 @@ public class MemoryStreamDataProvider<D, V extends ZoieVersion> extends StreamDa
   {
     try
     {
-      V maxVersion = _maxVersion;
+      String maxVersion = _maxVersion;
       if (log.isDebugEnabled()){
         log.debug("flushing version: " + maxVersion);
       }
@@ -79,16 +79,16 @@ public class MemoryStreamDataProvider<D, V extends ZoieVersion> extends StreamDa
     }
   }
 
-  public void addEvents(List<DataEvent<D, V>> list)
+  public void addEvents(List<DataEvent<D>> list)
   {
     if (list != null && !list.isEmpty())
     {
-      Iterator<DataEvent<D, V>> iter = list.iterator();
+      Iterator<DataEvent<D>> iter = list.iterator();
       synchronized (this)
       {
         while (iter.hasNext())
         {
-          DataEvent<D, V> obj = iter.next();
+          DataEvent<D> obj = iter.next();
           _maxVersion = ZoieVersion.max(_maxVersion, obj.getVersion());
           _count++;
           _list.add(obj);
@@ -98,7 +98,7 @@ public class MemoryStreamDataProvider<D, V extends ZoieVersion> extends StreamDa
     }
   }
 
-  public void addEvent(DataEvent<D, V> event)
+  public void addEvent(DataEvent<D> event)
   {
     if (event != null)
     {
@@ -113,9 +113,9 @@ public class MemoryStreamDataProvider<D, V extends ZoieVersion> extends StreamDa
   }
 
   @Override
-  public DataEvent<D, V> next()
+  public DataEvent<D> next()
   {
-    DataEvent<D, V> obj = null;
+    DataEvent<D> obj = null;
     synchronized (this)
     {
       if (!_list.isEmpty())

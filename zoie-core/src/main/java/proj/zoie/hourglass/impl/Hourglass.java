@@ -289,6 +289,13 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
   }
   
   @Override
+  public void syncWthVersion(long timeInMillis, V version) throws ZoieException{
+	if (_currentZoie!=null){
+	  _currentZoie.syncWthVersion(timeInMillis, version);
+	}
+  }
+  
+  @Override
   public StandardMBean getStandardMBean(String name)
   {
     if (name.equals(HOURGLASSADMIN))

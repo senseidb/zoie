@@ -41,7 +41,8 @@ public class HourglassReaderManager<R extends IndexReader, D, V extends ZoieVers
   private final IndexReaderDecorator<R> _decorator;
   private volatile Box<R, D, V> box;
   private volatile boolean isShutdown = false;
-  private ExecutorService threadPool = Executors.newCachedThreadPool();
+  private final Thread maintenanceThread;
+  private final ExecutorService retireThreadPool = Executors.newCachedThreadPool();
   public HourglassReaderManager(final Hourglass<R, D, V> hourglass, HourglassDirectoryManagerFactory<V> dirMgrFactory,
       IndexReaderDecorator<R> decorator,
       List<ZoieIndexReader<R>> initArchives)
@@ -50,7 +51,8 @@ public class HourglassReaderManager<R extends IndexReader, D, V extends ZoieVers
     _dirMgrFactory = dirMgrFactory;
     _decorator = decorator;
     box = new Box<R, D, V>(initArchives, Collections.EMPTY_LIST, Collections.EMPTY_LIST, _decorator);
-    threadPool.execute(new Runnable(){
+    
+    maintenanceThread = new Thread(new Runnable(){
       final int trimThreshold = hourglass._scheduler.getTrimThreshold();
 
       @Override
@@ -60,7 +62,9 @@ public class HourglassReaderManager<R extends IndexReader, D, V extends ZoieVers
         {
           try
           {
-            Thread.sleep(60000);
+        	synchronized(this){
+              this.wait(60000);
+        	}
           } catch (InterruptedException e)
           {
             log.warn(e);
@@ -88,7 +92,7 @@ public class HourglassReaderManager<R extends IndexReader, D, V extends ZoieVers
             hourglass._shutdownLock.readLock().unlock();
           }
         }
-      }});
+      }},"Zoie Maintenanace Thread");
   }
   /**
    * consolidate the archived Index to one big optimized index and put in add
@@ -251,7 +255,7 @@ public class HourglassReaderManager<R extends IndexReader, D, V extends ZoieVers
     {
       actives.remove(old);
       retiring.add(old);
-      threadPool.execute(new Runnable()
+      retireThreadPool.execute(new Runnable()
       {
         @Override
         public void run()
@@ -284,8 +288,16 @@ public class HourglassReaderManager<R extends IndexReader, D, V extends ZoieVers
   private synchronized void preshutdown()
   {
     log.info("shutting down thread pool.");
-    threadPool.shutdown();
     isShutdown = true;
+    synchronized(maintenanceThread){
+      maintenanceThread.notifyAll();
+    }
+    try {
+		maintenanceThread.join(10000);
+	} catch (InterruptedException e) {
+		log.info("Maintenance thread interrpted");
+	}
+    retireThreadPool.shutdown();
   }
   public void shutdown()
   {
@@ -296,7 +308,7 @@ public class HourglassReaderManager<R extends IndexReader, D, V extends ZoieVers
       long t=10L;
       try
       {
-        if (threadPool.awaitTermination(t, unit)) break;
+        if (retireThreadPool.awaitTermination(t, unit)) break;
       } catch (InterruptedException e)
       {
         log.warn("Exception when trying to shutdown. Will retry.", e);

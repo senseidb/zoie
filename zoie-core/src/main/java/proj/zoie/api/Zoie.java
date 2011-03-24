@@ -10,5 +10,5 @@ public interface Zoie<R extends IndexReader, D, V extends ZoieVersion> extends D
   void shutdown();
   StandardMBean getStandardMBean(String name);
   String[] getStandardMBeanNames();
-  void syncWthVersion(long timeInMillis, V version) throws ZoieException;
+  void syncWithVersion(long timeInMillis, V version) throws ZoieException;
 }

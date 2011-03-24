@@ -167,9 +167,18 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
    */
   private void updateCachedReaders() throws IOException
   {
+	if (log.isDebugEnabled()){
+		log.debug("updating reader cache");
+	}
     List<ZoieIndexReader<R>> olist = list;
     returnIndexReaders(olist);
+    if (log.isDebugEnabled()){
+		log.debug("getting new reader from reader cache");
+	}
     list = _readerMgr.getIndexReaders();
+    if (log.isDebugEnabled()){
+		log.debug("reader updated with size: "+list.size());
+	}
     lastupdate = System.currentTimeMillis();
   }
   /**
@@ -289,7 +298,7 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
   }
   
   @Override
-  public void syncWthVersion(long timeInMillis, V version) throws ZoieException{
+  public void syncWithVersion(long timeInMillis, V version) throws ZoieException{
 	if (_currentZoie!=null){
 	  _currentZoie.syncWthVersion(timeInMillis, version);
 	}

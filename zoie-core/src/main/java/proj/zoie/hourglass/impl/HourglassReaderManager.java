@@ -325,18 +325,33 @@ public class HourglassReaderManager<R extends IndexReader, D, V extends ZoieVers
     // add the archived index readers
     for(ZoieIndexReader<R> r : box._archives)
     {
+     if (log.isDebugEnabled()){
+    	log.debug("add reader from box archives");
+      }
       r.incZoieRef();
       list.add(r);
     }
     // add the retiring index readers
     for(ZoieSystem<R, D, V> zoie : box._retiree)
     {
+
+      if (log.isDebugEnabled()){
+   	    log.debug("add reader from box retiree");
+      }
       list.addAll(zoie.getIndexReaders());
     }
     // add the active index readers
     for(ZoieSystem<R, D, V> zoie : box._actives)
     {
+
+      if (log.isDebugEnabled()){
+     	 log.debug("add reader from box actvies");
+      }
       list.addAll(zoie.getIndexReaders());
+    }
+
+    if (log.isDebugEnabled()){
+   	 log.debug("returning reader of size: "+list.size());
     }
     return list;
   }  

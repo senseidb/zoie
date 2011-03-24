@@ -1048,7 +1048,7 @@ extends AsyncDataConsumer<D, V> implements Zoie<R, D, V>
 
   public void syncWithVersion(long timeInMillis, V version) throws ZoieException
   {
-    super.syncWthVersion(timeInMillis, version);
+    super.syncWithVersion(timeInMillis, version);
     readercache.refreshCache(timeInMillis);
   }
 }

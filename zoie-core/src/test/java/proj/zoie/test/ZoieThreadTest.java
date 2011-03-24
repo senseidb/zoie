@@ -206,7 +206,7 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
 			}
 			memoryProvider.addEvents(list);
 			// idxSystem.syncWthVersion(100000, count - 1);
-			idxSystem.syncWthVersion(100000, zvt);
+			idxSystem.syncWithVersion(100000, zvt);
 			Future[] futures = new Future<?>[queryRunnables.length];
 			for (int x = 0; x < queryRunnables.length; x++) {
 				futures[x] = threadPool.submit(queryRunnables[x]);
@@ -230,7 +230,7 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
 
 					memoryProvider.addEvents(list);
 					// idxSystem.syncWthVersion(100000, version);
-					idxSystem.syncWthVersion(100000, zvt);
+					idxSystem.syncWithVersion(100000, zvt);
 				}
 				boolean stopNow = false;
 				for (QueryRunnable queryThread : queryRunnables)
@@ -442,7 +442,7 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
 						zvt));
 			}
 			memoryProvider.addEvents(list);
-			idxSystem.syncWthVersion(1000000, zvt);
+			idxSystem.syncWithVersion(1000000, zvt);
 
 			for (QueryThread queryThread : queryThreads)
 				queryThread.start();
@@ -457,7 +457,7 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
 					list.add(new DataEvent<String, DefaultZoieVersion>(
 							testdata[r.nextInt(testdata.length)], zvt));
 					memoryProvider.addEvents(list);
-					idxSystem.syncWthVersion(100000, zvt);
+					idxSystem.syncWithVersion(100000, zvt);
 					if (System.currentTimeMillis() > endtime)
 						break;
 				}

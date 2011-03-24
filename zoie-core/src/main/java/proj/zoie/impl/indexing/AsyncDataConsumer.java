@@ -159,7 +159,7 @@ public class AsyncDataConsumer<D, V extends ZoieVersion> implements DataConsumer
    */
   public void flushEvents(long timeout) throws ZoieException
   {
-    syncWthVersion(timeout, _bufferedVersion);
+    syncWithVersion(timeout, _bufferedVersion);
   }
   
   /**
@@ -168,7 +168,7 @@ public class AsyncDataConsumer<D, V extends ZoieVersion> implements DataConsumer
    * @param version the version of events which it waits for.
    * @throws ZoieException
    */
-  public void syncWthVersion(long timeInMillis, V version) throws ZoieException
+  public void syncWithVersion(long timeInMillis, V version) throws ZoieException
   {
     if(_consumerThread == null) throw new ZoieException("not running");
     if (version == null)

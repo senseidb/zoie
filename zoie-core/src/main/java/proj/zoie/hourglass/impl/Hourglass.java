@@ -300,7 +300,7 @@ public class Hourglass<R extends IndexReader, D, V extends ZoieVersion> implemen
   @Override
   public void syncWithVersion(long timeInMillis, V version) throws ZoieException{
 	if (_currentZoie!=null){
-	  _currentZoie.syncWthVersion(timeInMillis, version);
+	  _currentZoie.syncWithVersion(timeInMillis, version);
 	}
   }
   

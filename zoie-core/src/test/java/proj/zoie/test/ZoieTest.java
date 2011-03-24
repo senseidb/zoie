@@ -118,7 +118,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 		memoryProvider.addEvents(list);
 
 		memoryProvider.flush();
-		idxSystem.syncWthVersion(10000, zvt2);
+		idxSystem.syncWithVersion(10000, zvt2);
 		List<ZoieIndexReader<IndexReader>> readers = null;
 		Searcher searcher = null;
 		MultiReader reader = null;
@@ -304,7 +304,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 						DataForTests.testdata[i], zvt));
 			}
 			memoryProvider.addEvents(list);
-			idxSystem.syncWthVersion(10000, zvt);
+			idxSystem.syncWithVersion(10000, zvt);
 
 			int repeat = 20;
 			int idx = 0;
@@ -480,7 +480,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 					long start = System.currentTimeMillis();
 					while (!done) {
 						try {
-							asyncConsumer.syncWthVersion(timeout, zvt);
+							asyncConsumer.syncWithVersion(timeout, zvt);
 							done = true;
 						} catch (ZoieException e) {
 							if (!e.getMessage().contains("sync timed out"))
@@ -671,7 +671,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 						DataForTests.testdata[i], zvt));
 			}
 			memoryProvider.addEvents(list);
-			idxSystem.syncWthVersion(100000, zvt);
+			idxSystem.syncWithVersion(100000, zvt);
 
 			for (QueryThread queryThread : queryThreads)
 				queryThread.start();
@@ -686,7 +686,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 					list.add(new DataEvent<String, DefaultZoieVersion>(
 							DataForTests.testdata[i], zvt));
 					memoryProvider.addEvents(list);
-					idxSystem.syncWthVersion(100000, zvt);
+					idxSystem.syncWithVersion(100000, zvt);
 				}
 				boolean stopNow = false;
 				for (QueryThread queryThread : queryThreads)
@@ -749,7 +749,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 						DataForTests.testdata[i], zvt));
 			}
 			memoryProvider.addEvents(list);
-			idxSystem.syncWthVersion(10000, zvt);
+			idxSystem.syncWithVersion(10000, zvt);
 
 			QueryParser parser = new QueryParser(Version.LUCENE_CURRENT,
 					"contents", idxSystem.getAnalyzer());
@@ -814,7 +814,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 						DataForTests.testdata2[i], zvt));
 			}
 			memoryProvider.addEvents(list);
-			idxSystem.syncWthVersion(10000, zvt);
+			idxSystem.syncWithVersion(10000, zvt);
 
 			q = parser.parse("zoie");
 			readers = idxSystem.getIndexReaders();
@@ -935,7 +935,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 					DataForTests.testdata[i], zvt));
 		}
 		memoryProvider.addEvents(list);
-		idxSystem.syncWthVersion(10000, zvt);
+		idxSystem.syncWithVersion(10000, zvt);
 
 		List<ZoieIndexReader<IndexReader>> readerList = idxSystem
 				.getIndexReaders();
@@ -1002,7 +1002,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 			}
 			memoryProvider.addEvents(list);
 			idxSystem.flushEvents(10000);
-			idxSystem.syncWthVersion(10000, zvt);
+			idxSystem.syncWithVersion(10000, zvt);
 		}
 		List<ZoieIndexReader<IndexReader>> readerList = idxSystem
 				.getIndexReaders();

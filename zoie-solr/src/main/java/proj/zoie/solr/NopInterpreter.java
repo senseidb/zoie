@@ -26,11 +26,6 @@ public class NopInterpreter<V> extends AbstractZoieIndexableInterpreter<V>
 			public boolean isSkip() {
 				return false;
 			}
-
-            @Override
-            public byte[] getStoreValue(){
-                return null;
-            }		
 		};
 	}
 

@@ -58,11 +58,15 @@ public class ZoieSystemHome {
 		int batchSize = config.getInt("zoie.batchSize",1000);
 		long batchDelay = config.getInt("zoie.batchDelay",300000);
 		boolean realtime = config.getBool("zoie.realtime", true);
+		int freshness = config.getInt("zoie.freshness", 10000);
 		
 		ZoieConfig<DefaultZoieVersion> zoieConfig = new ZoieConfig<DefaultZoieVersion>(new DefaultZoieVersionFactory());
 		zoieConfig.setBatchSize(batchSize);
 		zoieConfig.setBatchDelay(batchDelay);
 		zoieConfig.setRtIndexing(realtime);
+		zoieConfig.setAnalyzer(analyzer);
+		zoieConfig.setSimilarity(similarity);
+		zoieConfig.setFreshness(freshness);
 		
 		_zoieSystem = new ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion>(idxFile,new ZoieSolrIndexableInterpreter(),new DefaultIndexReaderDecorator(),zoieConfig);
 		
@@ -70,6 +74,8 @@ public class ZoieSystemHome {
 		log.info("zoie.batchSize: "+batchSize);
 		log.info("zoie.batchDelay: "+batchDelay);
 		log.info("zoie.realtime: "+realtime);
+		log.info("zoie similarity: "+similarity.getClass());
+		log.info("zoie analyzer: "+analyzer.getClass());
 		
 		_zoieSystem.start();
 		

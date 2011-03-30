@@ -1,5 +1,7 @@
 package proj.zoie.dataprovider.jms;
 
+import java.util.Comparator;
+
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.Session;
@@ -11,11 +13,10 @@ import javax.jms.TopicSubscriber;
 
 import org.apache.log4j.Logger;
 
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.impl.indexing.StreamDataProvider;
 
-public class JMSStreamDataProvider<T, V extends ZoieVersion> extends StreamDataProvider<T, V> {
+public class JMSStreamDataProvider<T> extends StreamDataProvider<T> {
 	
 	private static final Logger logger = Logger.getLogger(JMSStreamDataProvider.class);
 
@@ -24,7 +25,7 @@ public class JMSStreamDataProvider<T, V extends ZoieVersion> extends StreamDataP
 	private final String clientID;
 	private final TopicConnectionFactory connectionFactory;
 	private final TopicFactory topicFactory;
-	private final DataEventBuilder<T, V> dataEventBuilder;
+	private final DataEventBuilder<T> dataEventBuilder;
 	private TopicSubscriber subscriber;
 	private TopicConnection connection;
 	
@@ -35,8 +36,8 @@ public class JMSStreamDataProvider<T, V extends ZoieVersion> extends StreamDataP
 
 	public JMSStreamDataProvider(String topicName, String clientID,
 			TopicConnectionFactory connectionFactory, TopicFactory topicFactory,
-			DataEventBuilder<T, V> dataEventBuilder) {
-		super();
+			DataEventBuilder<T> dataEventBuilder, Comparator<String> versionComparator) {
+		super(versionComparator);
 		this.topicName = topicName;
 		this.clientID = clientID;
 		this.connectionFactory = connectionFactory;
@@ -91,7 +92,7 @@ public class JMSStreamDataProvider<T, V extends ZoieVersion> extends StreamDataP
 	}
 
 	@Override
-	public DataEvent<T, V> next() {
+	public DataEvent<T> next() {
 		for (;;) {
 			if (subscriber == null) {
 				reconnect();

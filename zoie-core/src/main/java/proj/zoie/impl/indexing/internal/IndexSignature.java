@@ -23,26 +23,22 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
-import proj.zoie.api.ZoieVersion;
-import proj.zoie.api.ZoieVersionFactory;
-
 import org.apache.log4j.Logger;
 
-public class IndexSignature <V extends ZoieVersion>{
-	private static Logger log = Logger.getLogger(IndexSignature.class);
-	
+public class IndexSignature{
+  private static Logger log = Logger.getLogger(IndexSignature.class);
   
-    private V  _version;                     // current version
-    public IndexSignature(V version){
+    private String  _version;                     // current version
+    public IndexSignature(String version){
       _version = version;
     }   
     
-    public void updateVersion(V version)
+    public void updateVersion(String version)
     {
       _version = version;
     }
 
-    public V getVersion()
+    public String getVersion()
     {
       return _version;
     }
@@ -62,8 +58,8 @@ public class IndexSignature <V extends ZoieVersion>{
         }
         else
         {
-          //System.out.println("IndexSignature:save:_version: write " + _version.encodeToString());
-          writer.write(_version.encodeToString());          
+          //System.out.println("IndexSignature:save:_version: write " + _version);
+          writer.write(_version);          
         }
         writer.flush();
       } catch(IOException e)
@@ -75,7 +71,7 @@ public class IndexSignature <V extends ZoieVersion>{
       }
     }
     
-  public static <V extends ZoieVersion> IndexSignature<V> read(InputStream in, ZoieVersionFactory<V> zoieVersionFactory) throws IOException
+  public static IndexSignature read(InputStream in) throws IOException
   {
     BufferedReader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"));
     String line = null;
@@ -89,21 +85,13 @@ public class IndexSignature <V extends ZoieVersion>{
     {
       reader.close();
     }
-    if (line != null)
+    if (line != null && !line.equals("null"))
     {
-      V version = null;
-      try
-      {
-        version = zoieVersionFactory.getZoieVersion(line);
-      } catch (Exception e)
-      {
-        log.warn(e);
-        version = null;
-      }
-      return new IndexSignature<V>(version);
-    } else
+      return new IndexSignature(line);
+    }
+    else
     {
-      return null;
+      return new IndexSignature(null);
     }
   }
 }

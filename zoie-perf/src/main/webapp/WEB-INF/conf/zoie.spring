@@ -19,14 +19,14 @@
        <constructor-arg value="${zoie.perf.numDocs}"/>
 	</bean>
 
-	<bean id="versionfactory" class="proj.zoie.api.DefaultZoieVersion$DefaultZoieVersionFactory" />
+	<bean id="versionComparator" class="proj.zoie.impl.indexing.ZoieConfig.DEFAULT_VERSION_COMPARATOR" />
 
 	<bean id="indexingSystem.zoie" class="proj.zoie.impl.indexing.SimpleZoieSystem" init-method="start" destroy-method="shutdown">
 		<constructor-arg value="file:${index.dir}"/>
 		<constructor-arg ref="interpreter" />
 		<constructor-arg value="1000" />
 		<constructor-arg value="300000" />
-		<constructor-arg ref="versionfactory" />
+		<constructor-arg ref="versionComparator" />
 	</bean>
 	
 	<bean id="zoie-system-mbean" class="proj.zoie.mbean.ZoieSystemAdmin">

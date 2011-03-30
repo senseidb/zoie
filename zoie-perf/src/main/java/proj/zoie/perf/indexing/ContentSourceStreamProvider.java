@@ -6,19 +6,19 @@ import java.io.IOException;
 import org.apache.log4j.Logger;
 
 import proj.zoie.api.DataConsumer.DataEvent;
-import proj.zoie.api.DefaultZoieVersion;
-import proj.zoie.api.DefaultZoieVersion.DefaultZoieVersionFactory;
 import proj.zoie.impl.indexing.StreamDataProvider;
+import proj.zoie.impl.indexing.ZoieConfig;
 
-public class ContentSourceStreamProvider extends StreamDataProvider<ContentDoc, DefaultZoieVersion> {
+public class ContentSourceStreamProvider extends StreamDataProvider<ContentDoc> {
 	private static final Logger log = Logger.getLogger(ContentSourceStreamProvider.class);
 	private ContentSource _contentSource;
-	private DefaultZoieVersion _version;
+	private long _version;
 	private boolean _looping;
 	
 	public ContentSourceStreamProvider(ContentSource contentSource){
+    super(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		_contentSource = contentSource;
-		_version = null;
+		_version = 0L;
 	}
 	
 	public void setLooping(boolean looping){
@@ -26,8 +26,8 @@ public class ContentSourceStreamProvider extends StreamDataProvider<ContentDoc, 
 	}
 	
 	@Override
-	public DataEvent<ContentDoc, DefaultZoieVersion> next(){
-		DataEvent<ContentDoc, DefaultZoieVersion> event = next();
+	public DataEvent<ContentDoc> next(){
+		DataEvent<ContentDoc> event = next();
 		if (event == null && _looping){
 			reset();
 			return next();
@@ -36,14 +36,14 @@ public class ContentSourceStreamProvider extends StreamDataProvider<ContentDoc, 
 			return null;
 		}
 	}
-	private DataEvent<ContentDoc, DefaultZoieVersion> getNext() {
+	private DataEvent<ContentDoc> getNext() {
 		ContentDoc dataNode = null;
 		try{
 			dataNode = new ContentDoc();
 			dataNode = _contentSource.getNextDocData(dataNode);
 			
 			// for the purpose of perf test, ID's are normalized to version
-			dataNode.setID(_version.getVersionId());
+			dataNode.setID(_version);
 			if (dataNode == null) return null;
 		}
 		catch(EOFException eof){
@@ -51,9 +51,8 @@ public class ContentSourceStreamProvider extends StreamDataProvider<ContentDoc, 
 		} catch (IOException e) {
 			log.error(e.getMessage(),e);
 		}
-		DefaultZoieVersion v = new DefaultZoieVersion();
-		v.setVersionId(_version.getVersionId()+1);
-		DataEvent<ContentDoc,DefaultZoieVersion> event = new DataEvent<ContentDoc,DefaultZoieVersion>(dataNode, v);
+		String v = ""+(_version+1);
+		DataEvent<ContentDoc> event = new DataEvent<ContentDoc>(dataNode, v);
 		return event;
 	}
 

@@ -30,9 +30,8 @@ import org.mockito.stubbing.Answer;
 
 import proj.zoie.api.DataConsumer;
 import proj.zoie.api.DataConsumer.DataEvent;
-import proj.zoie.api.DefaultZoieVersion;
-import proj.zoie.api.DefaultZoieVersion.DefaultZoieVersionFactory;
 import proj.zoie.api.ZoieException;
+import proj.zoie.impl.indexing.ZoieConfig;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestJMSStreamDataProvider {
@@ -44,7 +43,7 @@ public class TestJMSStreamDataProvider {
 	TopicFactory topicFactory;
 	
 	@Mock
-	DataEventBuilder<Object, DefaultZoieVersion> dataEventBuilder;
+	DataEventBuilder<Object> dataEventBuilder;
 	
 	@Mock
 	TopicSubscriber subscriber;
@@ -58,27 +57,26 @@ public class TestJMSStreamDataProvider {
 	@Mock
 	Message message;
 	
-	JMSStreamDataProvider<Object, DefaultZoieVersion> provider;
+	JMSStreamDataProvider<Object> provider;
 	
 	@Before
 	public void setUpJMSStreamDataProvider() throws JMSException {
 		
-		final DefaultZoieVersionFactory zvf = new DefaultZoieVersionFactory();
 		final AtomicLong v = new AtomicLong(0);
 		
 		when(dataEventBuilder.buildDataEvent(any(Message.class)))
-		.thenAnswer(new Answer<DataEvent<Object, DefaultZoieVersion>>() {
+		.thenAnswer(new Answer<DataEvent<Object>>() {
 			@Override
-			public DataEvent<Object, DefaultZoieVersion> answer(
+			public DataEvent<Object> answer(
 					InvocationOnMock invocation) throws Throwable {
-				return new DataEvent<Object, DefaultZoieVersion>(new Object(),
-						zvf.getZoieVersion(String.valueOf(v.incrementAndGet())));
+				return new DataEvent<Object>(new Object(),
+						String.valueOf(v.incrementAndGet()));
 			}
 		});
 		
 		provider =
-			new JMSStreamDataProvider<Object, DefaultZoieVersion>("topic", "clientID", connectionFactory, 
-					topicFactory, dataEventBuilder);
+			new JMSStreamDataProvider<Object>("topic", "clientID", connectionFactory, 
+					topicFactory, dataEventBuilder, ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 	}
 	
 	/**
@@ -103,17 +101,17 @@ public class TestJMSStreamDataProvider {
 		
 		final AtomicBoolean failed = new AtomicBoolean(false);
 		
-		provider.setDataConsumer(new DataConsumer<Object, DefaultZoieVersion>() {
+		provider.setDataConsumer(new DataConsumer<Object>() {
 			
-			private volatile DefaultZoieVersion version = null;
+			private volatile String version = null;
 			private long v = 1;
 
 			@Override
 			public void consume(
-					Collection<proj.zoie.api.DataConsumer.DataEvent<Object, DefaultZoieVersion>> data)
+					Collection<proj.zoie.api.DataConsumer.DataEvent<Object>> data)
 					throws ZoieException {
-				for (DataEvent<Object, DefaultZoieVersion> e : data) {
-					if (e.getVersion().getVersionId() != v) {
+				for (DataEvent<Object> e : data) {
+					if (Long.valueOf(e.getVersion()) != v) {
 						failed.set(true);
 					}
 					v++;
@@ -122,7 +120,7 @@ public class TestJMSStreamDataProvider {
 			}
 
 			@Override
-			public DefaultZoieVersion getVersion() {
+			public String getVersion() {
 				return version;
 			}
 		}
@@ -130,8 +128,7 @@ public class TestJMSStreamDataProvider {
 		
 		provider.start();
 		
-		DefaultZoieVersion versionToSync = new DefaultZoieVersion();
-		versionToSync.setVersionId(100);
+		String versionToSync = "100";
 		
 		provider.syncWithVersion(5000, versionToSync);
 		
@@ -180,17 +177,17 @@ public class TestJMSStreamDataProvider {
 		
 		final AtomicBoolean failed = new AtomicBoolean(false);
 		
-		provider.setDataConsumer(new DataConsumer<Object, DefaultZoieVersion>() {
+		provider.setDataConsumer(new DataConsumer<Object>() {
 			
-			private volatile DefaultZoieVersion version = null;
+			private volatile String version = null;
 			private long v = 1;
 
 			@Override
 			public void consume(
-					Collection<proj.zoie.api.DataConsumer.DataEvent<Object, DefaultZoieVersion>> data)
+					Collection<proj.zoie.api.DataConsumer.DataEvent<Object>> data)
 					throws ZoieException {
-				for (DataEvent<Object, DefaultZoieVersion> e : data) {
-					if (e.getVersion().getVersionId() != v) {
+				for (DataEvent<Object> e : data) {
+					if (Long.valueOf(e.getVersion()) != v) {
 						failed.set(true);
 					}
 					v++;
@@ -199,7 +196,7 @@ public class TestJMSStreamDataProvider {
 			}
 
 			@Override
-			public DefaultZoieVersion getVersion() {
+			public String getVersion() {
 				return version;
 			}
 		}
@@ -207,8 +204,7 @@ public class TestJMSStreamDataProvider {
 		
 		provider.start();
 		
-		DefaultZoieVersion versionToSync = new DefaultZoieVersion();
-		versionToSync.setVersionId(100);
+		String versionToSync = "100";
 		
 		provider.syncWithVersion(5000, versionToSync);
 		

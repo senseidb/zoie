@@ -173,7 +173,7 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
         //System.out.println("disk vesion from the commit data" + commitData);  
         
         //V newVersion = idx.getVersion().compareTo(ramIndex.getVersion()) < 0 ? ramIndex.getVersion(): idx.getVersion();
-        String newVersion = idx.getVersion() == null ? ramIndex.getVersion() : (idx.getVersion().compareTo(ramIndex.getVersion()) < 0 ? ramIndex.getVersion(): idx.getVersion());
+        String newVersion = idx.getVersion() == null ? ramIndex.getVersion() : (_versionComparator.compare(idx.getVersion(), ramIndex.getVersion()) < 0 ? ramIndex.getVersion(): idx.getVersion());
         idx.setVersion(newVersion);
         //System.out.println("disk verson from the signature" + newVersion.toString());        
                

@@ -16,6 +16,7 @@ package proj.zoie.impl.indexing;
  * limitations under the License.
  */
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedList;
 
 import org.apache.log4j.Logger;
@@ -47,6 +48,7 @@ public class AsyncDataConsumer<D> implements DataConsumer<D>
   private volatile DataConsumer<D> _consumer;
   private String _currentVersion;
   private volatile String _bufferedVersion;
+  private final Comparator<String> _versionComparator;
   private LinkedList<DataEvent<D>> _batch;
   /**
    * The 'soft' size limit of each event batch. If the events are coming in too fast and
@@ -56,12 +58,13 @@ public class AsyncDataConsumer<D> implements DataConsumer<D>
    */
   private int _batchSize;
 
-  public AsyncDataConsumer()
+  public AsyncDataConsumer(Comparator<String> versionComparator)
   {
     //_currentVersion = -1L;
     //_bufferedVersion = -1L;
     _currentVersion = null;
     _bufferedVersion = null;
+    _versionComparator = versionComparator;
     _batch = new LinkedList<DataEvent<D>>();
     _batchSize = 1; // default
     _consumerThread = null;
@@ -178,7 +181,7 @@ public class AsyncDataConsumer<D> implements DataConsumer<D>
     synchronized(this)
     {
       long timeRemaining = Long.MAX_VALUE;
-      while(_currentVersion==null || _currentVersion.compareTo(version) < 0)
+      while(_currentVersion==null || _versionComparator.compare(_currentVersion, version) < 0)
       {
         if (log.isDebugEnabled())
         {
@@ -244,7 +247,7 @@ public class AsyncDataConsumer<D> implements DataConsumer<D>
       }
       for(DataEvent<D> event : data)
       {
-        _bufferedVersion = (_bufferedVersion == null) ? event.getVersion() : (_bufferedVersion.compareTo(event.getVersion()) < 0? event.getVersion() : _bufferedVersion);
+        _bufferedVersion = (_bufferedVersion == null) ? event.getVersion() : (_versionComparator.compare(_bufferedVersion, event.getVersion()) < 0 ? event.getVersion() : _bufferedVersion);
         _batch.add(event);
       }
       if (log.isDebugEnabled())
@@ -274,7 +277,7 @@ public class AsyncDataConsumer<D> implements DataConsumer<D>
         {
         }
       }
-      version = _currentVersion == null ? _bufferedVersion : ((_currentVersion.compareTo(_bufferedVersion) < 0) ? _bufferedVersion : _currentVersion);
+      version = _currentVersion == null ? _bufferedVersion : ((_versionComparator.compare(_currentVersion, _bufferedVersion) < 0) ? _bufferedVersion : _currentVersion);
       currentBatch = _batch;
       _batch = new LinkedList<DataEvent<D>>();
       this.notifyAll(); // wake up the thread waiting in consume(...)

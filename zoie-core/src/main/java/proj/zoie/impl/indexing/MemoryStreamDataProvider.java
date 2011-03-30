@@ -17,6 +17,7 @@ package proj.zoie.impl.indexing;
  * limitations under the License.
  */
 import java.util.Iterator;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -24,7 +25,6 @@ import org.apache.log4j.Logger;
 
 import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.api.ZoieException;
-import proj.zoie.api.ZoieVersion;
 
 public class MemoryStreamDataProvider<D> extends StreamDataProvider<D>
 {
@@ -37,9 +37,9 @@ public class MemoryStreamDataProvider<D> extends StreamDataProvider<D>
   // private static final double DEFAULT_ITERS_PER_SECOND=100.0;
   private static final Logger log = Logger.getLogger(MemoryStreamDataProvider.class);
 
-  public MemoryStreamDataProvider()
+  public MemoryStreamDataProvider(Comparator<String> versionComparator)
   {
-    super();
+    super(versionComparator);
     _list = new LinkedList<DataEvent<D>>();
     _count = 0;
     _stop = false;
@@ -89,7 +89,7 @@ public class MemoryStreamDataProvider<D> extends StreamDataProvider<D>
         while (iter.hasNext())
         {
           DataEvent<D> obj = iter.next();
-          _maxVersion = ZoieVersion.max(_maxVersion, obj.getVersion());
+          _maxVersion = _versionComparator.compare(_maxVersion, obj.getVersion())>=0 ? _maxVersion:obj.getVersion();
           _count++;
           _list.add(obj);
         }
@@ -104,7 +104,7 @@ public class MemoryStreamDataProvider<D> extends StreamDataProvider<D>
     {
       synchronized (this)
       {
-        _maxVersion = ZoieVersion.max(_maxVersion, event.getVersion());
+        _maxVersion = _versionComparator.compare(_maxVersion, event.getVersion())>=0 ? _maxVersion:event.getVersion();
         _count++;
         _list.add(event);
         this.notifyAll();

@@ -32,7 +32,6 @@ import org.apache.lucene.store.Directory;
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieIndexReader;
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.impl.ZoieMergePolicy;
 import proj.zoie.api.impl.ZoieMergePolicy.MergePolicyParams;
 import proj.zoie.api.impl.util.IndexUtil;

@@ -30,7 +30,6 @@ import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieIndexReader;
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
 public class SearchIndexManager<R extends IndexReader> implements IndexReaderFactory<ZoieIndexReader<R>>

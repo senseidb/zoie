@@ -6,9 +6,8 @@ import org.apache.log4j.Logger;
 
 import proj.zoie.api.DataConsumer;
 import proj.zoie.api.ZoieException;
-import proj.zoie.api.ZoieVersion;
 
-public class MockDataLoader<D, V extends ZoieVersion> implements DataConsumer<D,V> {
+public class MockDataLoader<D> implements DataConsumer<D> {
 	private static final Logger log = Logger.getLogger(MockDataLoader.class);
 	
 	private long _delay;
@@ -45,7 +44,7 @@ public class MockDataLoader<D, V extends ZoieVersion> implements DataConsumer<D,
 		return _count;
 	}
 	
-	public void consume(Collection<DataEvent<D,V>> data) throws ZoieException
+	public void consume(Collection<DataEvent<D>> data) throws ZoieException
 	{	
 	    _numCalls++;
 	    if(data != null)
@@ -56,7 +55,7 @@ public class MockDataLoader<D, V extends ZoieVersion> implements DataConsumer<D,
 	    
 		if (data!=null && data.size()>0)
 		{
-			for (DataEvent<D,V> event : data)
+			for (DataEvent<D> event : data)
 			{
 				_lastConsumed=event.getData();
 			}
@@ -87,7 +86,7 @@ public class MockDataLoader<D, V extends ZoieVersion> implements DataConsumer<D,
       return _maxBatch;
     }
     
-  public V getVersion()
+  public String getVersion()
   {
     throw new UnsupportedOperationException();
   }

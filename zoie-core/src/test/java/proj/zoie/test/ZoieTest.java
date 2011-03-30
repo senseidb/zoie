@@ -43,13 +43,12 @@ import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.api.DocIDMapper.DocIDArray;
 
-import proj.zoie.api.DefaultZoieVersion;
-import proj.zoie.api.DefaultZoieVersion.DefaultZoieVersionFactory;
 import proj.zoie.api.impl.DocIDMapperImpl;
 import proj.zoie.api.impl.InRangeDocIDMapperFactory;
 import proj.zoie.impl.indexing.AsyncDataConsumer;
 import proj.zoie.impl.indexing.MemoryStreamDataProvider;
 import proj.zoie.impl.indexing.ZoieSystem;
+import proj.zoie.impl.indexing.ZoieConfig;
 import proj.zoie.impl.indexing.internal.IndexSignature;
 import proj.zoie.test.data.DataForTests;
 import proj.zoie.test.mock.MockDataLoader;
@@ -61,7 +60,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 	}
 
 	private static int countHits(
-			ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem,
+			ZoieSystem<IndexReader, String> idxSystem,
 			Query q) throws IOException {
 		Searcher searcher = null;
 		MultiReader reader = null;
@@ -93,32 +92,25 @@ public class ZoieTest extends ZoieTestCaseBase {
 	@Test
 	public void testIndexWithAnalyzer() throws ZoieException, IOException {
 		File idxDir = getIdxDir();
-		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createZoie(
+		ZoieSystem<IndexReader, String> idxSystem = createZoie(
 				idxDir, true, 20, new WhitespaceAnalyzer(), null,
-				defaultZoieVersionFactory);
+				ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		idxSystem.start();
 
-		MemoryStreamDataProvider<String, DefaultZoieVersion> memoryProvider = new MemoryStreamDataProvider<String, DefaultZoieVersion>();
+		MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
 		memoryProvider.setDataConsumer(idxSystem);
 		memoryProvider.start();
 
-		List<DataEvent<String, DefaultZoieVersion>> list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
+		List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(
 				2);
 
-		DefaultZoieVersion zvt1 = new DefaultZoieVersion();
-		zvt1.setVersionId(0);
-
-		DefaultZoieVersion zvt2 = new DefaultZoieVersion();
-		zvt2.setVersionId(1);
-
-		list.add(new DataEvent<String, DefaultZoieVersion>("hao,yan 0", zvt1));
-		list.add(new DataEvent<String, DefaultZoieVersion>("hao,yan 1", zvt2));
+		list.add(new DataEvent<String>("hao,yan 0", "0"));
+		list.add(new DataEvent<String>("hao,yan 1", "1"));
 		memoryProvider.addEvents(list);
 
 		memoryProvider.flush();
-		idxSystem.syncWthVersion(10000, zvt2);
+		idxSystem.syncWthVersion(10000, "1");
 		List<ZoieIndexReader<IndexReader>> readers = null;
 		Searcher searcher = null;
 		MultiReader reader = null;
@@ -132,7 +124,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 				// reader.getCommitUserData(ir.directory()); // = new
 				// HashMap<String,String>();
 				// System.out.println("ZoieTest: directory: " + ir.directory());
-				// System.out.println("ZoieTest: commitData(ZoieVersion): " +
+				// System.out.println("ZoieTest: commitData: " +
 				// commitData);
 			}
 			// Map<String, String> commitData =
@@ -147,7 +139,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 			// System.out.println("i:" + i + "ZoieTest: directory: " +
 			// ir.directory());
 			// System.out.println("i:" + i +
-			// "ZoieTest: commitData(ZoieVersion): " + commitData);
+			// "ZoieTest: commitData: " + commitData);
 			// }
 
 			// Map<String, String> commitData =
@@ -224,26 +216,22 @@ public class ZoieTest extends ZoieTestCaseBase {
 	@Test
 	public void testRealtime2() throws ZoieException {
 		File idxDir = getIdxDir();
-		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createZoie(
-				idxDir, true, defaultZoieVersionFactory);
+		ZoieSystem<IndexReader, String> idxSystem = createZoie(
+				idxDir, true, ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		idxSystem.start();
 
-		MemoryStreamDataProvider<String, DefaultZoieVersion> memoryProvider = new MemoryStreamDataProvider<String, DefaultZoieVersion>();
+		MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
 		memoryProvider.setDataConsumer(idxSystem);
 		memoryProvider.start();
 
 		try {
 			int count = DataForTests.testdata.length;
-			List<DataEvent<String, DefaultZoieVersion>> list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
+			List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(
 					count);
-			DefaultZoieVersion zvt = null;
 			for (int i = 0; i < count; ++i) {
-				zvt = new DefaultZoieVersion();
-				zvt.setVersionId(i);
-				list.add(new DataEvent<String, DefaultZoieVersion>(
-						DataForTests.testdata[i], zvt));
+				list.add(new DataEvent<String>(
+						DataForTests.testdata[i], ""+i));
 			}
 			memoryProvider.addEvents(list);
 			memoryProvider.flush();
@@ -273,9 +261,8 @@ public class ZoieTest extends ZoieTestCaseBase {
 	@Test
 	public void testRealtime() throws ZoieException {
 		File idxDir = getIdxDir();
-		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createZoie(
-				idxDir, true, defaultZoieVersionFactory);
+		ZoieSystem<IndexReader, String> idxSystem = createZoie(
+				idxDir, true, ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		idxSystem.start();
 		String query = "zoie";
 		QueryParser parser = new QueryParser(Version.LUCENE_CURRENT,
@@ -286,25 +273,21 @@ public class ZoieTest extends ZoieTestCaseBase {
 		} catch (ParseException e) {
 			throw new ZoieException(e.getMessage(), e);
 		}
-		MemoryStreamDataProvider<String, DefaultZoieVersion> memoryProvider = new MemoryStreamDataProvider<String, DefaultZoieVersion>();
+		MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
 		memoryProvider.setDataConsumer(idxSystem);
 		memoryProvider.start();
 		try {
 			int count = DataForTests.testdata.length;
-			List<DataEvent<String, DefaultZoieVersion>> list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
+			List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(
 					count);
 
-			DefaultZoieVersion zvt = null;
 			for (int i = 0; i < count; ++i) {
-				zvt = new DefaultZoieVersion();
-				zvt.setVersionId(i);
-
-				list.add(new DataEvent<String, DefaultZoieVersion>(
-						DataForTests.testdata[i], zvt));
+				list.add(new DataEvent<String>(
+						DataForTests.testdata[i], ""+i));
 			}
 			memoryProvider.addEvents(list);
-			idxSystem.syncWthVersion(10000, zvt);
+			idxSystem.syncWthVersion(10000, "" + (count - 1));
 
 			int repeat = 20;
 			int idx = 0;
@@ -332,7 +315,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 					// System.out.println("j:" + j + "ZoieTest: directory: " +
 					// ir.directory());
 					// System.out.println("j:" + j +
-					// "ZoieTest: commitData(ZoieVersion): " + commitData);
+					// "ZoieTest: commitData: " + commitData);
 					// }
 
 					searcher = new IndexSearcher(reader);
@@ -372,27 +355,23 @@ public class ZoieTest extends ZoieTestCaseBase {
 
 	@Test
 	public void testStreamDataProvider() throws ZoieException {
-		MockDataLoader<Integer, DefaultZoieVersion> consumer = new MockDataLoader<Integer, DefaultZoieVersion>();
-		MemoryStreamDataProvider<Integer, DefaultZoieVersion> memoryProvider = new MemoryStreamDataProvider<Integer, DefaultZoieVersion>();
+		MockDataLoader<Integer> consumer = new MockDataLoader<Integer>();
+		MemoryStreamDataProvider<Integer> memoryProvider = new MemoryStreamDataProvider<Integer>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
 		memoryProvider.setDataConsumer(consumer);
 		memoryProvider.start();
 		try {
 			int count = 10;
 
-			List<DataEvent<Integer, DefaultZoieVersion>> list = new ArrayList<DataEvent<Integer, DefaultZoieVersion>>(
+			List<DataEvent<Integer>> list = new ArrayList<DataEvent<Integer>>(
 					count);
-			DefaultZoieVersion zvt = null;
 			for (int i = 0; i < count; ++i) {
-				zvt = new DefaultZoieVersion();
-				zvt.setVersionId(i);
-				// list.add(new DataEvent<Integer,DefaultZoieVersion>(i,i));
-				list.add(new DataEvent<Integer, DefaultZoieVersion>(i, zvt));
+				list.add(new DataEvent<Integer>(i, ""+i));
 			}
 			memoryProvider.addEvents(list);
 
 			// memoryProvider.syncWthVersion(10000, count-1);
-			memoryProvider.syncWthVersion(10000, zvt);
+			memoryProvider.syncWthVersion(10000, ""+(count-1));
 			int num = consumer.getCount();
 			assertEquals(num, count);
 		} finally {
@@ -402,8 +381,8 @@ public class ZoieTest extends ZoieTestCaseBase {
 
 	@Test
 	public void testStreamDataProviderFlush() throws ZoieException {
-		MockDataLoader<Integer, DefaultZoieVersion> consumer = new MockDataLoader<Integer, DefaultZoieVersion>();
-		MemoryStreamDataProvider<Integer, DefaultZoieVersion> memoryProvider = new MemoryStreamDataProvider<Integer, DefaultZoieVersion>();
+		MockDataLoader<Integer> consumer = new MockDataLoader<Integer>();
+		MemoryStreamDataProvider<Integer> memoryProvider = new MemoryStreamDataProvider<Integer>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		memoryProvider.setBatchSize(100);
 		memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
 		memoryProvider.setDataConsumer(consumer);
@@ -411,14 +390,10 @@ public class ZoieTest extends ZoieTestCaseBase {
 		try {
 			int count = 10;
 
-			List<DataEvent<Integer, DefaultZoieVersion>> list = new ArrayList<DataEvent<Integer, DefaultZoieVersion>>(
+			List<DataEvent<Integer>> list = new ArrayList<DataEvent<Integer>>(
 					count);
-			DefaultZoieVersion zvt = null;
 			for (int i = 0; i < count; ++i) {
-				zvt = new DefaultZoieVersion();
-				zvt.setVersionId(i);
-				// list.add(new DataEvent<Integer,DefaultZoieVersion>(i,i));
-				list.add(new DataEvent<Integer, DefaultZoieVersion>(i, zvt));
+				list.add(new DataEvent<Integer>(i, ""+i));
 			}
 			memoryProvider.addEvents(list);
 
@@ -447,32 +422,29 @@ public class ZoieTest extends ZoieTestCaseBase {
 					continue; // skip this combination. it will take too long.
 				}
 
-				MockDataLoader<Integer, DefaultZoieVersion> mockLoader = new MockDataLoader<Integer, DefaultZoieVersion>();
+				MockDataLoader<Integer> mockLoader = new MockDataLoader<Integer>();
 				mockLoader.setDelay(delay);
 
-				AsyncDataConsumer<Integer, DefaultZoieVersion> asyncConsumer = new AsyncDataConsumer<Integer, DefaultZoieVersion>();
+				AsyncDataConsumer<Integer> asyncConsumer = new AsyncDataConsumer<Integer>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 				asyncConsumer.setDataConsumer(mockLoader);
 				asyncConsumer.setBatchSize(batchSize);
 				asyncConsumer.start();
 
-				MemoryStreamDataProvider<Integer, DefaultZoieVersion> memoryProvider = new MemoryStreamDataProvider<Integer, DefaultZoieVersion>();
+				MemoryStreamDataProvider<Integer> memoryProvider = new MemoryStreamDataProvider<Integer>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 				memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
 
 				memoryProvider.setDataConsumer(asyncConsumer);
 				memoryProvider.start();
 				memoryProvider.setBatchSize(batchSize);
 				try {
-					List<DataEvent<Integer, DefaultZoieVersion>> list = new ArrayList<DataEvent<Integer, DefaultZoieVersion>>(
+					List<DataEvent<Integer>> list = new ArrayList<DataEvent<Integer>>(
 							count);
-					DefaultZoieVersion zvt = null;
 					for (int i = 0; i < count; ++i) {
 						// System.out.println("ZoieTest.java:testAsyncDataConsumer():delay:"
 						// + delay + ", batchSize:" + batchSize +
 						// ",forloop: i: " + i);
-						zvt = new DefaultZoieVersion();
-						zvt.setVersionId(i);
-						list.add(new DataEvent<Integer, DefaultZoieVersion>(i,
-								zvt));
+						list.add(new DataEvent<Integer>(i,
+								""+i));
 					}
 					memoryProvider.addEvents(list);
 
@@ -480,7 +452,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 					long start = System.currentTimeMillis();
 					while (!done) {
 						try {
-							asyncConsumer.syncWthVersion(timeout, zvt);
+							asyncConsumer.syncWthVersion(timeout, ""+(count-1));
 							done = true;
 						} catch (ZoieException e) {
 							if (!e.getMessage().contains("sync timed out"))
@@ -518,9 +490,8 @@ public class ZoieTest extends ZoieTestCaseBase {
 
 	private void testDelSetImpl() throws ZoieException {
 		File idxDir = getIdxDir();
-		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		final ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createZoie(
-				idxDir, true, 100, defaultZoieVersionFactory);
+		final ZoieSystem<IndexReader, String> idxSystem = createZoie(
+				idxDir, true, 100, ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		idxSystem.getAdminMBean().setFreshness(50);
 		idxSystem.start();
 		final String query = "zoie";
@@ -651,7 +622,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 			queryThreads[i].setDaemon(true);
 		}
 
-		MemoryStreamDataProvider<String, DefaultZoieVersion> memoryProvider = new MemoryStreamDataProvider<String, DefaultZoieVersion>();
+		MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
 		memoryProvider.setDataConsumer(idxSystem);
 		memoryProvider.start();
@@ -659,34 +630,29 @@ public class ZoieTest extends ZoieTestCaseBase {
 			idxSystem.setBatchSize(10);
 
 			final int count = DataForTests.testdata.length;
-			List<DataEvent<String, DefaultZoieVersion>> list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
+			List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(
 					count);
-			DefaultZoieVersion zvt = null;
 			for (int i = 0; i < count; i++) {
-				zvt = new DefaultZoieVersion();
-				zvt.setVersionId(i);
-				// list.add(new DataEvent<String,DefaultZoieVersion>(i,
+				// list.add(new DataEvent<String>(i,
 				// TestData.testdata[i]));
-				list.add(new DataEvent<String, DefaultZoieVersion>(
-						DataForTests.testdata[i], zvt));
+				list.add(new DataEvent<String>(
+						DataForTests.testdata[i], ""+i));
 			}
 			memoryProvider.addEvents(list);
-			idxSystem.syncWthVersion(100000, zvt);
+			idxSystem.syncWthVersion(100000, ""+(count-1));
 
 			for (QueryThread queryThread : queryThreads)
 				queryThread.start();
 
 			for (int n = 1; n <= 3; n++) {
 				for (int i = 0; i < count; i++) {
-					zvt = new DefaultZoieVersion();
 					long version = n * count + i;
-					zvt.setVersionId(version);
-					list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
+					list = new ArrayList<DataEvent<String>>(
 							1);
-					list.add(new DataEvent<String, DefaultZoieVersion>(
-							DataForTests.testdata[i], zvt));
+					list.add(new DataEvent<String>(
+							DataForTests.testdata[i], ""+version));
 					memoryProvider.addEvents(list);
-					idxSystem.syncWthVersion(100000, zvt);
+					idxSystem.syncWthVersion(100000, ""+version);
 				}
 				boolean stopNow = false;
 				for (QueryThread queryThread : queryThreads)
@@ -722,13 +688,12 @@ public class ZoieTest extends ZoieTestCaseBase {
 	@Test
 	public void testUpdates() throws ZoieException, ParseException, IOException {
 		File idxDir = getIdxDir();
-		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		final ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createZoie(
-				idxDir, true, defaultZoieVersionFactory);
+		final ZoieSystem<IndexReader, String> idxSystem = createZoie(
+				idxDir, true, ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		idxSystem.start();
 		final String query = "zoie";
 
-		MemoryStreamDataProvider<String, DefaultZoieVersion> memoryProvider = new MemoryStreamDataProvider<String, DefaultZoieVersion>();
+		MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
 		memoryProvider.setDataConsumer(idxSystem);
 		memoryProvider.start();
@@ -736,20 +701,17 @@ public class ZoieTest extends ZoieTestCaseBase {
 			idxSystem.setBatchSize(10);
 
 			long version = 0;
-			DefaultZoieVersion zvt = null;
 			final int count = DataForTests.testdata.length;
-			List<DataEvent<String, DefaultZoieVersion>> list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
+			List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(
 					count);
 			for (int i = 0; i < count; i++) {
 				// version = i;
-				zvt = new DefaultZoieVersion();
-				zvt.setVersionId(i);
 				// list.add(new DataEvent<String>(i, TestData.testdata[i]));
-				list.add(new DataEvent<String, DefaultZoieVersion>(
-						DataForTests.testdata[i], zvt));
+				list.add(new DataEvent<String>(
+						DataForTests.testdata[i], ""+i));
 			}
 			memoryProvider.addEvents(list);
-			idxSystem.syncWthVersion(10000, zvt);
+			idxSystem.syncWthVersion(10000, ""+(count-1));
 
 			QueryParser parser = new QueryParser(Version.LUCENE_CURRENT,
 					"contents", idxSystem.getAnalyzer());
@@ -770,7 +732,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 				System.out.println("i:" + i + "ZoieTest: directory: "
 						+ ir.directory());
 				System.out.println("i:" + i
-						+ "ZoieTest: commitData(ZoieVersion): " + commitData);
+						+ "ZoieTest: commitData: " + commitData);
 			}
 
 			if (2 > 1)
@@ -804,17 +766,15 @@ public class ZoieTest extends ZoieTestCaseBase {
 			reader.close();
 			idxSystem.returnIndexReaders(readers);
 
-			list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
+			list = new ArrayList<DataEvent<String>>(
 					DataForTests.testdata2.length);
 			for (int i = 0; i < DataForTests.testdata2.length; i++) {
 				version = count + i;
-				zvt = new DefaultZoieVersion();
-				zvt.setVersionId(version);
-				list.add(new DataEvent<String, DefaultZoieVersion>(
-						DataForTests.testdata2[i], zvt));
+				list.add(new DataEvent<String>(
+						DataForTests.testdata2[i], ""+version));
 			}
 			memoryProvider.addEvents(list);
-			idxSystem.syncWthVersion(10000, zvt);
+			idxSystem.syncWthVersion(10000, ""+version);
 
 			q = parser.parse("zoie");
 			readers = idxSystem.getIndexReaders();
@@ -857,47 +817,43 @@ public class ZoieTest extends ZoieTestCaseBase {
 	@Test
 	public void testIndexSignature() throws ZoieException, IOException {
 		File idxDir = getIdxDir();
-		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createZoie(
-				idxDir, true, defaultZoieVersionFactory);
+		ZoieSystem<IndexReader, String> idxSystem = createZoie(
+				idxDir, true, ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		idxSystem.start();
-		DefaultDirectoryManager<DefaultZoieVersion> dirMgr = new DefaultDirectoryManager<DefaultZoieVersion>(
-				idxDir, defaultZoieVersionFactory);
+		DefaultDirectoryManager dirMgr = new DefaultDirectoryManager(
+				idxDir);
 		try {
 			int count = DataForTests.testdata.length;
-			List<DataEvent<String, DefaultZoieVersion>> list;
-			IndexSignature<DefaultZoieVersion> sig;
+			List<DataEvent<String>> list;
+			IndexSignature sig;
 
-			list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(count);
+			list = new ArrayList<DataEvent<String>>(count);
 			for (int i = 0; i < count / 2; ++i) {
-				DefaultZoieVersion zvt = new DefaultZoieVersion();
-				zvt.setVersionId(i);
-				list.add(new DataEvent<String, DefaultZoieVersion>(
-						DataForTests.testdata[i], zvt));
+				list.add(new DataEvent<String>(
+						DataForTests.testdata[i], ""+i));
 			}
 			idxSystem.consume(list);
 			idxSystem.flushEvents(100000);
 			sig = dirMgr.getCurrentIndexSignature();
 
-			DefaultZoieVersion dzv = (DefaultZoieVersion) (sig.getVersion());
+			String dzv = sig.getVersion();
+      //System.out.println("count: " + count + ", dzv: " + dzv);
 			assertEquals("index version mismatch after first flush",
-					(count / 2 - 1), dzv.getVersionId());
+					(count / 2 - 1), (long)Long.valueOf(dzv));
 
-			list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(count);
+			list = new ArrayList<DataEvent<String>>(count);
 			for (int i = count / 2; i < count; ++i) {
-				DefaultZoieVersion zvt = new DefaultZoieVersion();
-				zvt.setVersionId(i);
-				list.add(new DataEvent<String, DefaultZoieVersion>(
-						DataForTests.testdata[i], zvt));
+				list.add(new DataEvent<String>(
+						DataForTests.testdata[i], ""+i));
 			}
 			idxSystem.consume(list);
 			idxSystem.flushEvents(100000);
 			sig = dirMgr.getCurrentIndexSignature();
 
-			dzv = (DefaultZoieVersion) (sig.getVersion());
-			System.out.println("count: " + count);
+			dzv = sig.getVersion();
+      //System.out.println("count: " + count + ", dzv: " + dzv);
 			assertEquals("index version mismatch after second flush",
-					(count - 1), dzv.getVersionId());
+					(count - 1), (long)Long.valueOf(dzv));
 		} catch (ZoieException e) {
 			throw e;
 		} finally {
@@ -910,13 +866,12 @@ public class ZoieTest extends ZoieTestCaseBase {
 	public void testDocIDMapperFactory() throws Exception {
 
 		File idxDir = getIdxDir();
-		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createZoie(
+		ZoieSystem<IndexReader, String> idxSystem = createZoie(
 				idxDir, true, new InRangeDocIDMapperFactory(0, 1000000),
-				defaultZoieVersionFactory);
+				ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		idxSystem.start();
 		int numDiskIdx = 0;
-		MemoryStreamDataProvider<String, DefaultZoieVersion> memoryProvider = new MemoryStreamDataProvider<String, DefaultZoieVersion>();
+		MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
 		memoryProvider.setDataConsumer(idxSystem);
 		memoryProvider.start();
@@ -924,18 +879,15 @@ public class ZoieTest extends ZoieTestCaseBase {
 
 		// long version = 0;
 		final int count = DataForTests.testdata.length;
-		List<DataEvent<String, DefaultZoieVersion>> list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
+		List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(
 				count);
-		DefaultZoieVersion zvt = null;
 		for (int i = 0; i < count; i++) {
-			zvt = new DefaultZoieVersion();
-			zvt.setVersionId(i);
 			// version = i;
-			list.add(new DataEvent<String, DefaultZoieVersion>(
-					DataForTests.testdata[i], zvt));
+			list.add(new DataEvent<String>(
+					DataForTests.testdata[i], ""+i));
 		}
 		memoryProvider.addEvents(list);
-		idxSystem.syncWthVersion(10000, zvt);
+		idxSystem.syncWthVersion(10000, ""+(count-1));
 
 		List<ZoieIndexReader<IndexReader>> readerList = idxSystem
 				.getIndexReaders();
@@ -956,13 +908,12 @@ public class ZoieTest extends ZoieTestCaseBase {
 	@Test
 	public void testShutdown() throws Exception {
 		File idxDir = getIdxDir();
-		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createInRangeZoie(
+		ZoieSystem<IndexReader, String> idxSystem = createInRangeZoie(
 				idxDir, true, new InRangeDocIDMapperFactory(0, 1000000, 0),
-				defaultZoieVersionFactory);
+				ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		idxSystem.start();
 		int numDiskIdx = 0;
-		MemoryStreamDataProvider<String, DefaultZoieVersion> memoryProvider = new MemoryStreamDataProvider<String, DefaultZoieVersion>();
+		MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
 		memoryProvider.setDataConsumer(idxSystem);
 		memoryProvider.start();
@@ -975,34 +926,30 @@ public class ZoieTest extends ZoieTestCaseBase {
 	@Test
 	public void testInRangeDocIDMapperFactory() throws Exception {
 		File idxDir = getIdxDir();
-		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createInRangeZoie(
+		ZoieSystem<IndexReader, String> idxSystem = createInRangeZoie(
 				idxDir, true, new InRangeDocIDMapperFactory(0, 1000000, 0),
-				defaultZoieVersionFactory);
+				ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		idxSystem.start();
 		int numDiskIdx = 0;
-		MemoryStreamDataProvider<String, DefaultZoieVersion> memoryProvider = new MemoryStreamDataProvider<String, DefaultZoieVersion>();
+		MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
 		memoryProvider.setDataConsumer(idxSystem);
 		memoryProvider.start();
 		idxSystem.setBatchSize(5);
 
 		long version = 0;
-		DefaultZoieVersion zvt = null;
 		for (int rep = 0; rep < 5; rep++) {
 			final int count = DataForTests.testdata.length;
-			List<DataEvent<String, DefaultZoieVersion>> list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
+			List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(
 					count);
 			for (int i = 0; i < count; i++) {
 				version = i + rep * count;
-				zvt = new DefaultZoieVersion();
-				zvt.setVersionId(version);
-				list.add(new DataEvent<String, DefaultZoieVersion>(
-						DataForTests.testdata[i], zvt));
+				list.add(new DataEvent<String>(
+						DataForTests.testdata[i], ""+version));
 			}
 			memoryProvider.addEvents(list);
 			idxSystem.flushEvents(10000);
-			idxSystem.syncWthVersion(10000, zvt);
+			idxSystem.syncWthVersion(10000, ""+version);
 		}
 		List<ZoieIndexReader<IndexReader>> readerList = idxSystem
 				.getIndexReaders();
@@ -1120,13 +1067,11 @@ public class ZoieTest extends ZoieTestCaseBase {
 	@Test
 	public void testExportImport() throws ZoieException, IOException {
 		File idxDir = getIdxDir();
-		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		final ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createZoie(
-				idxDir, true, defaultZoieVersionFactory);
+		final ZoieSystem<IndexReader, String> idxSystem = createZoie(
+				idxDir, true, ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		idxSystem.start();
 
-		DirectoryManager dirMgr = new DefaultDirectoryManager(idxDir,
-				defaultZoieVersionFactory);
+		DirectoryManager dirMgr = new DefaultDirectoryManager(idxDir);
 
 		String query = "zoie";
 		QueryParser parser = new QueryParser(Version.LUCENE_CURRENT,
@@ -1139,25 +1084,19 @@ public class ZoieTest extends ZoieTestCaseBase {
 		}
 
 		try {
-			List<DataEvent<String, DefaultZoieVersion>> list;
-			DefaultZoieVersion zvt = null;
+			List<DataEvent<String>> list;
 
-			list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
+			list = new ArrayList<DataEvent<String>>(
 					DataForTests.testdata.length);
 			for (int i = 0; i < DataForTests.testdata.length; ++i) {
-				zvt = new DefaultZoieVersion();
-				zvt.setVersionId(i);
-				list.add(new DataEvent<String, DefaultZoieVersion>(
-						DataForTests.testdata[i], zvt));
+				list.add(new DataEvent<String>(
+						DataForTests.testdata[i], ""+i));
 			}
 			idxSystem.consume(list);
 			idxSystem.flushEvents(100000);
 
-			DefaultZoieVersion versionExported = new DefaultZoieVersion();
-			versionExported.setVersionId(zvt.getVersionId());
-
 			assertEquals("index version mismatch after first flush",
-					DataForTests.testdata.length - 1, zvt.getVersionId());
+					DataForTests.testdata.length - 1, DataForTests.testdata.length-1);
 
 			int hits = countHits(idxSystem, q);
 
@@ -1173,21 +1112,19 @@ public class ZoieTest extends ZoieTestCaseBase {
 			exportFile = null;
 			channel = null;
 
-			list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
+			list = new ArrayList<DataEvent<String>>(
 					DataForTests.testdata2.length);
 			for (int i = 0; i < DataForTests.testdata2.length; ++i) {
-				zvt = new DefaultZoieVersion();
-				zvt.setVersionId(DataForTests.testdata.length + i);
 
-				list.add(new DataEvent<String, DefaultZoieVersion>(
-						DataForTests.testdata.length + DataForTests.testdata2[i], zvt));
+				list.add(new DataEvent<String>(
+						DataForTests.testdata.length + DataForTests.testdata2[i], ""+(DataForTests.testdata.length+i)));
 			}
 			idxSystem.consume(list);
 			idxSystem.flushEvents(100000);
-			zvt = (DefaultZoieVersion) dirMgr.getVersion();
+			String zvt = dirMgr.getVersion();
 			assertEquals("index version mismatch after second flush",
 					DataForTests.testdata.length + DataForTests.testdata2.length - 1,
-					zvt.getVersionId());
+					(long)Long.valueOf(zvt));
 			assertEquals("should have no hits", 0, countHits(idxSystem, q));
 
 			exportFile = new RandomAccessFile(new File(getTmpDir(),
@@ -1199,10 +1136,6 @@ public class ZoieTest extends ZoieTestCaseBase {
 			exportFile.close();
 
 			assertEquals("count is wrong", hits, countHits(idxSystem, q));
-
-			zvt = (DefaultZoieVersion) dirMgr.getVersion();
-			assertEquals("imported version is wrong",
-					versionExported.getVersionId(), zvt.getVersionId());
 		}
 
 		catch (ZoieException e) {

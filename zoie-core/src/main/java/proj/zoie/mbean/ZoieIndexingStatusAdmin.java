@@ -17,7 +17,6 @@ package proj.zoie.mbean;
  */
 import java.util.Date;
 
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.impl.indexing.IndexUpdatedEvent;
 import proj.zoie.impl.indexing.ZoieSystem;

@@ -45,8 +45,6 @@ import proj.zoie.api.Zoie;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieIndexReader;
-import proj.zoie.api.ZoieVersion;
-import proj.zoie.api.ZoieVersionFactory;
 import proj.zoie.api.impl.DefaultDocIDMapperFactory;
 import proj.zoie.api.impl.util.FileUtil;
 import proj.zoie.api.impl.util.SearchUtil;
@@ -117,7 +115,7 @@ extends AsyncDataConsumer<D> implements Zoie<R, D>
   public ZoieSystem(File idxDir, ZoieIndexableInterpreter<D> interpreter,
       IndexReaderDecorator<R> indexReaderDecorator, Analyzer analyzer,
       Similarity similarity, int batchSize, long batchDelay,
-      boolean rtIndexing, Comparable<String> versionComparator)
+      boolean rtIndexing, Comparator<String> versionComparator)
   {
     this(new DefaultDirectoryManager(idxDir),
         interpreter, indexReaderDecorator, analyzer, similarity, batchSize,
@@ -146,7 +144,8 @@ extends AsyncDataConsumer<D> implements Zoie<R, D>
         .getDocidMapperFactory(), zoieConfig.getAnalyzer(), zoieConfig
         .getSimilarity(), zoieConfig.getBatchSize(),
         zoieConfig.getBatchDelay(), zoieConfig.isRtIndexing(), zoieConfig
-        .getMaxBatchSize(), zoieConfig.getReadercachefactory(), zoieConfig.getRamIndexFactory(),zoieConfig.getVersionComparator());
+        .getMaxBatchSize(), zoieConfig.getReadercachefactory(),
+        (RAMIndexFactory<R>)zoieConfig.getRamIndexFactory(),zoieConfig.getVersionComparator());
     readercache.setFreshness(zoieConfig.getFreshness());
   }
 
@@ -171,7 +170,8 @@ extends AsyncDataConsumer<D> implements Zoie<R, D>
         zoieConfig.getDocidMapperFactory(), zoieConfig.getAnalyzer(),
         zoieConfig.getSimilarity(), zoieConfig.getBatchSize(), zoieConfig
         .getBatchDelay(), zoieConfig.isRtIndexing(), zoieConfig
-        .getMaxBatchSize(), zoieConfig.getReadercachefactory(), zoieConfig.getRamIndexFactory(),zoieConfig.getVersionComparator());
+        .getMaxBatchSize(), zoieConfig.getReadercachefactory(),
+        (RAMIndexFactory<R>)zoieConfig.getRamIndexFactory(),zoieConfig.getVersionComparator());
     readercache.setFreshness(zoieConfig.getFreshness());
   }
 
@@ -364,14 +364,19 @@ extends AsyncDataConsumer<D> implements Zoie<R, D>
       DocIDMapperFactory docidMapperFactory, Analyzer analyzer,
       Similarity similarity, int batchSize, long batchDelay,
       boolean rtIndexing, int maxBatchSize,
-      ReaderCacheFactory readercachefactory, RAMIndexFactory<R> ramIndexFactory,Comparator<String> versionComparator)
+      ReaderCacheFactory readercachefactory, RAMIndexFactory<R> ramIndexFactory,
+      Comparator<String> versionComparator)
   {
+    super(versionComparator);
     if (dirMgr == null)
       throw new IllegalArgumentException("null directory manager.");
     _dirMgr = dirMgr;
 
     if (interpreter == null)
       throw new IllegalArgumentException("null interpreter.");
+
+    if (versionComparator == null)
+      throw new IllegalArgumentException("null versionComparator.");
 
     docidMapperFactory = docidMapperFactory == null ? new DefaultDocIDMapperFactory()
     : docidMapperFactory;
@@ -422,18 +427,16 @@ extends AsyncDataConsumer<D> implements Zoie<R, D>
     log.info("using readerCache: " + readercache);
   }
 
-  public static <D, V extends ZoieVersion> ZoieSystem<IndexReader, D> buildDefaultInstance(File idxDir, ZoieIndexableInterpreter<D> interpreter,
+  public static <D> ZoieSystem<IndexReader, D> buildDefaultInstance(File idxDir, ZoieIndexableInterpreter<D> interpreter,
       int batchSize, long batchDelay, boolean realtime, Comparator<String> versionComparator)
   {
-    return buildDefaultInstance(idxDir, interpreter, new StandardAnalyzer(Version.LUCENE_CURRENT), new DefaultSimilarity(), batchSize, batchDelay, realtime,
-    		versionComparator);
+    return buildDefaultInstance(idxDir, interpreter, new StandardAnalyzer(Version.LUCENE_CURRENT), new DefaultSimilarity(), batchSize, batchDelay, realtime, versionComparator);
   }
 
   public static <D> ZoieSystem<IndexReader, D> buildDefaultInstance(File idxDir, ZoieIndexableInterpreter<D> interpreter,
       Analyzer analyzer, Similarity similarity, int batchSize, long batchDelay, boolean realtime, Comparator<String> versionComparator)
   {
-    return new ZoieSystem<IndexReader, D>(idxDir, interpreter, new DefaultIndexReaderDecorator(), analyzer, similarity, batchSize, batchDelay, realtime,
-    		versionComparator);
+    return new ZoieSystem<IndexReader, D>(idxDir, interpreter, new DefaultIndexReaderDecorator(), analyzer, similarity, batchSize, batchDelay, realtime, versionComparator);
   }
 
   public void addIndexingEventListener(IndexingEventListener lsnr)

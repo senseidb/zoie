@@ -28,7 +28,6 @@ import proj.zoie.hourglass.mbean.HourglassAdmin;
 import proj.zoie.hourglass.mbean.HourglassAdminMBean;
 import proj.zoie.impl.indexing.ZoieConfig;
 import proj.zoie.impl.indexing.ZoieSystem;
-import proj.zoie.api.ZoieVersion;
 
 public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
 {
@@ -54,7 +53,7 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
     _dirMgrFactory.clearRecentlyChanged();
     _interpreter = interpreter;
     _decorator = readerDecorator;
-    _readerMgr = new HourglassReaderManager<R, D>(this, _dirMgrFactory, _decorator, loadArchives());
+    _readerMgr = new HourglassReaderManager<R, D>(this, _dirMgrFactory, _decorator, loadArchives(),zoieConfig.getVersionComparator());
     _currentVersion = _dirMgrFactory.getArchivedVersion();
     _currentZoie = _readerMgr.retireAndNew(null);
     _currentZoie.start();
@@ -276,7 +275,7 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
       }
       else
       {
-        _currentVersion = _currentZoie.getCurrentVersion().compareTo(_currentVersion) < 0 ? _currentVersion : _currentZoie.getCurrentVersion();
+        _currentVersion = _zConfig.getVersionComparator().compare(_currentZoie.getCurrentVersion(), _currentVersion) < 0 ? _currentVersion : _currentZoie.getCurrentVersion();
       }
     }
       

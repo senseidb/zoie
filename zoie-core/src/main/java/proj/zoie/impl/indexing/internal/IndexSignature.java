@@ -26,8 +26,7 @@ import java.io.OutputStreamWriter;
 import org.apache.log4j.Logger;
 
 public class IndexSignature{
-	private static Logger log = Logger.getLogger(IndexSignature.class);
-	
+  private static Logger log = Logger.getLogger(IndexSignature.class);
   
     private String  _version;                     // current version
     public IndexSignature(String version){
@@ -59,7 +58,7 @@ public class IndexSignature{
         }
         else
         {
-          //System.out.println("IndexSignature:save:_version: write " + _version.encodeToString());
+          //System.out.println("IndexSignature:save:_version: write " + _version);
           writer.write(_version);          
         }
         writer.flush();
@@ -86,12 +85,13 @@ public class IndexSignature{
     {
       reader.close();
     }
-    if (line != null)
+    if (line != null && !line.equals("null"))
     {
       return new IndexSignature(line);
-    } else
+    }
+    else
     {
-      return null;
+      return new IndexSignature(null);
     }
   }
 }

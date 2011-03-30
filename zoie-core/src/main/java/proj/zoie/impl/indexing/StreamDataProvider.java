@@ -17,13 +17,13 @@ package proj.zoie.impl.indexing;
  * limitations under the License.
  */
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.log4j.Logger;
 
 import proj.zoie.api.DataConsumer;
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.DataProvider;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.DataConsumer.DataEvent;
@@ -37,10 +37,14 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
   private DataConsumer<D> _consumer;
   private DataThread<D> _thread;
 
-  public StreamDataProvider()
+  protected final Comparator<String> _versionComparator;
+
+  public StreamDataProvider(Comparator<String> versionComparator)
   {
     _batchSize = 1;
     _consumer = null;
+
+    _versionComparator = versionComparator;
   }
 
   public void setDataConsumer(DataConsumer<D> consumer)
@@ -176,6 +180,7 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
     private AtomicLong _eventCount = new AtomicLong(0);
     private volatile long _throttle = 40000;// Long.MAX_VALUE;
     private boolean _flushing = false;
+    private final Comparator<String> _versionComparator;
 
     private void resetEventTimer()
     {
@@ -203,6 +208,7 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
       _paused = false;
       _stop = false;
       _batch = new LinkedList<DataEvent<D>>();
+      _versionComparator = dataProvider._versionComparator;
     }
 
     @Override
@@ -305,7 +311,7 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
       {
         try
         {
-          while (_currentVersion == null || _currentVersion.compareTo(version) < 0)
+          while (_currentVersion == null || _versionComparator.compare(_currentVersion, version) < 0)
           {
             if (now >= due)
             {
@@ -355,7 +361,7 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
           DataEvent<D> data = _dataProvider.next();
           if (data != null)
           {
-            version = ZoieVersion.max(version, data.getVersion());
+            version = _versionComparator.compare(version, data.getVersion())>=0 ? version:data.getVersion();
             synchronized (this)
             {
               _batch.add(data);

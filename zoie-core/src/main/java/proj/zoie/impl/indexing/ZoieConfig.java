@@ -38,6 +38,11 @@ public class ZoieConfig
    */
   public static final int DEFAULT_MAX_BATCH_SIZE = 10000;
 
+  /**
+   * Default version comparator
+   */
+  public static final Comparator<String> DEFAULT_VERSION_COMPARATOR = new DefaultVersionComparator();
+
   DocIDMapperFactory docidMapperFactory = null;
   Comparator<String> versionComparator= null;
   Analyzer analyzer = null;
@@ -52,6 +57,16 @@ public class ZoieConfig
 
   /**
    * Default constructor. Set the size of batch and batch delay to default value
+   * 10000 events and 5 minutes respectively. Indexing mode default to realtime.
+   * Using the default version comparator.
+   */
+  public ZoieConfig()
+  {
+    this(DEFAULT_VERSION_COMPARATOR);
+  }
+
+  /**
+   * Constructor. Set the size of batch and batch delay to default value
    * 10000 events and 5 minutes respectively. Indexing mode default to realtime.
    */
   public ZoieConfig(Comparator<String> versionComparator)
@@ -79,7 +94,7 @@ public class ZoieConfig
     return versionComparator;
   }
 
-  public void setZoieVersionFactory(Comparator<String> versionComparator)
+  public void setVersionComparator(Comparator<String> versionComparator)
   {
     this.versionComparator = versionComparator;
   }
@@ -136,11 +151,11 @@ public class ZoieConfig
   }
 
   public int getMaxBatchSize() {
-	return maxBatchSize;
+    return maxBatchSize;
   }
 
   public void setMaxBatchSize(int maxBatchSize) {
-	this.maxBatchSize = maxBatchSize;
+    this.maxBatchSize = maxBatchSize;
   }
 
   public long getFreshness()
@@ -181,4 +196,21 @@ public class ZoieConfig
     this.ramIndexFactory = ramIndexFactory;
   }
 
+  public static class DefaultVersionComparator implements Comparator<String>
+  {
+    public int compare(String s1, String s2)
+      {
+        if(s1==s2) return 0;
+        if(s1==null) return -1;
+        if(s2==null) return 1;
+        if (s1.length() == s2.length())
+          return s1.compareTo(s2);
+        else
+          return s1.length() - s2.length();
+      }
+    public boolean equals(String s1, String s2)
+    {
+      return (compare(s1, s2) == 0);
+    }
+  }
 }

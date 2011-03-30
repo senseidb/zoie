@@ -20,7 +20,6 @@ import org.apache.lucene.store.SimpleFSDirectory;
 import proj.zoie.api.DefaultDirectoryManager;
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DirectoryManager.DIRECTORY_MODE;
-import proj.zoie.api.ZoieVersionFactory;
 import proj.zoie.api.impl.util.FileUtil;
 import proj.zoie.impl.indexing.internal.IndexSignature;
 /**
@@ -51,11 +50,10 @@ public class HourglassDirectoryManagerFactory
     }
   }; 
   private volatile Calendar _nextUpdateTime = Calendar.getInstance();
-  ZoieVersionFactory _zoieVersionFactory;
-  public HourglassDirectoryManagerFactory(File root, HourGlassScheduler scheduler, ZoieVersionFactory zoieVersionFactory)
+
+  public HourglassDirectoryManagerFactory(File root, HourGlassScheduler scheduler)
   {
     _root = root;
-    _zoieVersionFactory = zoieVersionFactory;
     _scheduler = scheduler;
     _mode = DIRECTORY_MODE.SIMPLE;
     log.info("starting HourglassDirectoryManagerFactory at " + root + " --- index rolling scheduler: " + _scheduler + " mode: " + _mode);
@@ -115,7 +113,7 @@ public class HourglassDirectoryManagerFactory
     {
       log.error(e);
     }
-    _currentDirMgr = new DefaultDirectoryManager(_location, _zoieVersionFactory, _mode);
+    _currentDirMgr = new DefaultDirectoryManager(_location, _mode);
     isRecentlyChanged = true;
     setNextUpdateTime();
     return isRecentlyChanged;
@@ -233,7 +231,7 @@ public class HourglassDirectoryManagerFactory
   public IndexSignature getIndexSignature(File file)
   {
     File directoryFile = new File(file, DirectoryManager.INDEX_DIRECTORY);
-    IndexSignature sig = DefaultDirectoryManager.readSignature(directoryFile, _zoieVersionFactory);
+    IndexSignature sig = DefaultDirectoryManager.readSignature(directoryFile);
     return sig;
   }
   

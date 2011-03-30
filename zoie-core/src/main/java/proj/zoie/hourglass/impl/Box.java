@@ -9,11 +9,10 @@ import org.apache.lucene.index.IndexReader;
 
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.impl.indexing.ZoieSystem;
 
-public class Box<R extends IndexReader, D, V extends ZoieVersion>
+public class Box<R extends IndexReader, D>
 {
   public static final Logger log = Logger.getLogger(Box.class.getName());
   List<ZoieIndexReader<R>> _archives;

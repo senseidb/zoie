@@ -6,6 +6,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -26,30 +27,33 @@ import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieMultiReader;
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.impl.util.FileUtil;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.impl.indexing.ZoieSystem;
 import proj.zoie.impl.indexing.internal.IndexSignature;
 import proj.zoie.impl.indexing.internal.ZoieIndexDeletionPolicy;
 
-public class HourglassReaderManager<R extends IndexReader, D, V extends ZoieVersion>
+public class HourglassReaderManager<R extends IndexReader, D>
 {
   public static final Logger log = Logger.getLogger(HourglassReaderManager.class.getName());
   private final HourglassDirectoryManagerFactory _dirMgrFactory;
   private final Hourglass<R, D> hg;
   private final IndexReaderDecorator<R> _decorator;
-  private volatile Box<R, D, V> box;
+  private volatile Box<R, D> box;
   private volatile boolean isShutdown = false;
   private ExecutorService threadPool = Executors.newCachedThreadPool();
+  private final Comparator<String> _versionComparator;
+
   public HourglassReaderManager(final Hourglass<R, D> hourglass, HourglassDirectoryManagerFactory dirMgrFactory,
       IndexReaderDecorator<R> decorator,
-      List<ZoieIndexReader<R>> initArchives)
+      List<ZoieIndexReader<R>> initArchives,
+      Comparator<String> versionComparator)
   {
     hg = hourglass;
     _dirMgrFactory = dirMgrFactory;
     _decorator = decorator;
-    box = new Box<R, D, V>(initArchives, Collections.EMPTY_LIST, Collections.EMPTY_LIST, _decorator);
+    box = new Box<R, D>(initArchives, Collections.EMPTY_LIST, Collections.EMPTY_LIST, _decorator);
+    _versionComparator = versionComparator;
     threadPool.execute(new Runnable(){
       final int trimThreshold = hourglass._scheduler.getTrimThreshold();
 
@@ -184,10 +188,11 @@ public class HourglassReaderManager<R extends IndexReader, D, V extends ZoieVers
             FileUtil.rmDir(dir.getFile());
             log.info(dir.getFile() + "---" + (dir.getFile().exists()?" not deleted ":" deleted"));
           }
-          V tgtversion = null;
+          String tgtversion = null;
           for(int i = sigs.length - 1; i >= 0; i--)
           { // get the largest version so far
-            if (tgtversion ==null || sigs[i].getVersion().compareTo(tgtversion)>0) tgtversion = sigs[i].getVersion();
+            if (tgtversion ==null || _versionComparator.compare(sigs[i].getVersion(), tgtversion)>0)
+              tgtversion = sigs[i].getVersion();
           }
           // save the version to target
           IndexSignature tgtsig = _dirMgrFactory.getIndexSignature(target.getFile());
@@ -237,7 +242,7 @@ public class HourglassReaderManager<R extends IndexReader, D, V extends ZoieVers
         log.debug("remove time " + r.directory() + " refCount: " + r.getRefCount());
       }
     }
-    Box<R, D, V> newbox = new Box<R, D, V>(archives, box._retiree, box._actives, _decorator);
+    Box<R, D> newbox = new Box<R, D>(archives, box._retiree, box._actives, _decorator);
     box = newbox;
   }
   public synchronized ZoieSystem<R, D> retireAndNew(final ZoieSystem<R, D> old)
@@ -260,7 +265,7 @@ public class HourglassReaderManager<R extends IndexReader, D, V extends ZoieVers
         }});
     }
     actives.add(newzoie);
-    Box<R, D, V> newbox = new Box<R, D, V>(box._archives, retiring, actives, _decorator);
+    Box<R, D> newbox = new Box<R, D>(box._archives, retiring, actives, _decorator);
     box = newbox;
     return newzoie;
   }
@@ -278,7 +283,7 @@ public class HourglassReaderManager<R extends IndexReader, D, V extends ZoieVers
     {
       _archives.add(reader);
     }
-    Box<R, D, V> newbox = new Box<R, D, V>(_archives, retiring, actives, _decorator);
+    Box<R, D> newbox = new Box<R, D>(_archives, retiring, actives, _decorator);
     box = newbox;
   }
   private synchronized void preshutdown()

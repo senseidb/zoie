@@ -28,7 +28,6 @@ public interface DataConsumer<D> {
 	 */
 	public static final class DataEvent<D>
 	{
-		static Comparator<DataEvent<?>> VERSION_COMPARATOR = new EventVersionComparator();
 		private D _data;
 		private String _version;
 				
@@ -60,29 +59,6 @@ public interface DataConsumer<D> {
 		{
 			return _data;
 		}
-	    
-		static public Comparator<DataEvent<?>> getComparator()
-		{
-		  return VERSION_COMPARATOR;
-		}
-		
-	    static public class EventVersionComparator implements Comparator<DataEvent<?>>
-	    {
-	      public int compare(DataEvent<?> o1, DataEvent<?> o2)
-          {
-	          if(o1==o2) return 0;
-	          if(o1==null) return -1;
-	          if(o2==null) return 1;
-	          return o1._version.compareTo(o2._version);
-            //if(o1._version < o2._version) return -1;
-            //else if(o1._version > o2._version) return 1;
-            //else return 0; 
-          }
-	      public boolean equals(DataEvent<?> o1, DataEvent<?> o2)
-	      {
-	        return (o1._version == o2._version);
-	      }
-	    }
 	}
 	
 	/**

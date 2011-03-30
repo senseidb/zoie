@@ -8,7 +8,6 @@ import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
-import java.util.Comparator;
 import java.util.Date;
 
 import org.apache.log4j.Logger;
@@ -34,7 +33,7 @@ public class DefaultDirectoryManager implements DirectoryManager
     _location = location;
     _mode = DIRECTORY_MODE.SIMPLE;
   }
-  public DefaultDirectoryManager(File location, Comparator<String> versionComparator, DIRECTORY_MODE mode)
+  public DefaultDirectoryManager(File location, DIRECTORY_MODE mode)
   {
     if (location==null) throw new IllegalArgumentException("null index directory.");
     _location = location;

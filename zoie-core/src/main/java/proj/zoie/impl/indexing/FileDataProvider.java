@@ -122,4 +122,9 @@ public class FileDataProvider extends StreamDataProvider<File, DefaultZoieVersio
 			}
 		}
 	}
+
+	@Override
+	public void setStartingOffset(DefaultZoieVersion version) {
+		throw new UnsupportedOperationException("");
+	}
 }

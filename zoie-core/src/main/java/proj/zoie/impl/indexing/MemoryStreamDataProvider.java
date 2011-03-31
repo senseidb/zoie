@@ -44,6 +44,7 @@ public class MemoryStreamDataProvider<D, V extends ZoieVersion> extends StreamDa
     _count = 0;
     _stop = false;
   }
+  
 
   @Override
   public void reset()
@@ -149,5 +150,11 @@ public class MemoryStreamDataProvider<D, V extends ZoieVersion> extends StreamDa
     {
       super.stop();
     }
+  }
+
+
+  @Override
+  public void setStartingOffset(V version) {
+    throw new UnsupportedOperationException("not supported");
   }
 }

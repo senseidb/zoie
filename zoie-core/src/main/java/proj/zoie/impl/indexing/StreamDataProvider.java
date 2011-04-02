@@ -55,6 +55,8 @@ public abstract class StreamDataProvider<D, V extends ZoieVersion> implements Da
 
   public abstract DataEvent<D, V> next();
 
+  public abstract void setStartingOffset(V version);
+  
   public abstract void reset();
 
   public int getBatchSize()

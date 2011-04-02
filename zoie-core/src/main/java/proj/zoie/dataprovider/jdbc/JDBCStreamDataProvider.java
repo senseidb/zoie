@@ -74,7 +74,13 @@ public class JDBCStreamDataProvider<T, V extends ZoieVersion> extends StreamData
     return event;
   }
 
+  
   @Override
+  public void setStartingOffset(V version) {
+	_version = version;
+  }
+
+@Override
   public void reset() {
     if (_res!=null){
       try{
@@ -92,16 +98,6 @@ public class JDBCStreamDataProvider<T, V extends ZoieVersion> extends StreamData
         }
       }
     }
-
-    DataConsumer<T,V> dc = getDataConsumer(); 
-    if (dc == null)
-    {
-      // ? Hao: needs to fix later
-      _version = null;
-      log.warn("problem opening index, maynot exist, defaulting version to null");
-      //log.warn("problem opening index, maynot exist, defaulting version to 0");
-    } else
-      _version = dc.getVersion();
     if (_conn == null){
       try {
         _conn = _connFactory.getConnection();

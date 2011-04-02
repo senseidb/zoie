@@ -170,8 +170,8 @@ public abstract class StreamDataProvider<D, V extends ZoieVersion> implements Da
     private Collection<DataEvent<D, V>> _batch;
     private V _currentVersion;
     private final StreamDataProvider<D, V> _dataProvider;
-    private boolean _paused;
-    private boolean _stop;
+    private volatile boolean _paused;
+    private volatile boolean _stop;
     private volatile boolean _stopped = false;
     private AtomicLong _eventCount = new AtomicLong(0);
     private volatile long _throttle = 40000;// Long.MAX_VALUE;
@@ -214,29 +214,15 @@ public abstract class StreamDataProvider<D, V extends ZoieVersion> implements Da
 
     void terminate()
     {
-      synchronized (this)
-      {
-        _stop = true;
-        while (!_stopped)
-        {
-          this.notifyAll();
-          try
-          {
-            this.wait(100);
-          } catch (InterruptedException e)
-          {
-            Thread.interrupted();
-          }
-        }
+      _stop = true;
+      synchronized (this){
+        this.notifyAll();
       }
     }
 
     void pauseDataFeed()
     {
-      synchronized (this)
-      {
         _paused = true;
-      }
     }
 
     void resumeDataFeed()

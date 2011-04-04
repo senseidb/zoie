@@ -15,7 +15,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.sna-projects.zoie</groupId>
+	<groupId>com.linkedin.zoie</groupId>
 	<artifactId>zoie-parent</artifactId>
 	<version>2.5.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
@@ -34,7 +34,7 @@
 
 	<inceptionYear>2007</inceptionYear>
 
-	<url>http://sna-projects.com/zoie</url>
+	<url>http://javasoze.github.com/zoie</url>
 
 	<licenses>
 		<license>

@@ -136,8 +136,13 @@ public class JMSStreamDataProvider<T, V extends ZoieVersion> extends StreamDataP
 	}
 
 	@Override
-	public void reset() {
-		
+	public void reset() {	
+	  logger.error("reset called, not implemented by JMS data provider...");
+	}
+	
+	@Override
+	public void setStartingOffset(V version){
+	  logger.error("starting offset called, not implemented by JMS data provider...");
 	}
 	
 	@Override

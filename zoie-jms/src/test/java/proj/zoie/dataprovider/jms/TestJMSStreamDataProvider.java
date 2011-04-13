@@ -8,6 +8,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -123,6 +124,11 @@ public class TestJMSStreamDataProvider {
 			public String getVersion() {
 				return version;
 			}
+
+			@Override
+			public Comparator<String> getVersionComparator() {
+				return ZoieConfig.DEFAULT_VERSION_COMPARATOR;
+			}
 		}
 		);
 		
@@ -198,6 +204,11 @@ public class TestJMSStreamDataProvider {
 			@Override
 			public String getVersion() {
 				return version;
+			}
+
+			@Override
+			public Comparator<String> getVersionComparator() {
+				return ZoieConfig.DEFAULT_VERSION_COMPARATOR;
 			}
 		}
 		);

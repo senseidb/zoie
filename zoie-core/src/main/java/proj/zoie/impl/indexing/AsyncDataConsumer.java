@@ -344,4 +344,11 @@ public class AsyncDataConsumer<D> implements DataConsumer<D>
   public String getVersion(){
     return _bufferedVersion;
   }
+
+	/**
+   * @return the version comparator.
+   */
+	public Comparator<String> getVersionComparator() {
+    return _versionComparator;
+  }
 }

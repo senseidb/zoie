@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -280,6 +281,13 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
     }
       
     return _currentVersion;
+  }
+
+  /* (non-Javadoc)
+   * @see proj.zoie.api.DataConsumer#getVersionComparator()
+   */
+	public Comparator<String> getVersionComparator() {
+    return _zConfig.getVersionComparator();
   }
 
   public long getSizeBytes()

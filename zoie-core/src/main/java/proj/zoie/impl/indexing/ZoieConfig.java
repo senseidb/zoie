@@ -1,6 +1,7 @@
 package proj.zoie.impl.indexing;
 
 import java.util.Comparator;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -198,16 +199,25 @@ public class ZoieConfig
 
   public static class DefaultVersionComparator implements Comparator<String>
   {
+    private static final Pattern _numPattern = Pattern.compile("[0-9]+");
+
     public int compare(String s1, String s2)
+    {
+      if(s1==s2) return 0;
+      if(s1==null) return -1;
+      if(s2==null) return 1;
+
+      if (_numPattern.matcher(s1).matches() && _numPattern.matcher(s2).matches())
       {
-        if(s1==s2) return 0;
-        if(s1==null) return -1;
-        if(s2==null) return 1;
-        if (s1.length() == s2.length())
-          return s1.compareTo(s2);
-        else
-          return s1.length() - s2.length();
+        try
+        {
+          return Long.valueOf(s1).compareTo(Long.valueOf(s2));
+        }
+        catch(Throwable t){}
       }
+      return s1.compareTo(s2);
+    }
+
     public boolean equals(String s1, String s2)
     {
       return (compare(s1, s2) == 0);

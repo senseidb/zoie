@@ -84,5 +84,5 @@ public interface ZoieIndexable
 	 * The method that returns the Data to be put in a Data Store associated with zoie. The Key is UID.
 	 * @return the Data to be put into the data store.
 	 */
-	byte[] getStoreValue();
+	//byte[] getStoreValue();
 }

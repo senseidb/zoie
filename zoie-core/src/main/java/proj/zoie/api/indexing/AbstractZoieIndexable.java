@@ -32,9 +32,10 @@ public abstract class AbstractZoieIndexable implements ZoieIndexable
 		return false;
 	}
 
+	/*
 	@Override
-  public byte[] getStoreValue()
-  {
-    return null;
-  }
+    public byte[] getStoreValue(){
+      return null;
+    }
+*/
 }

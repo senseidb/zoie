@@ -10,6 +10,7 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 
 import proj.zoie.api.indexing.ZoieIndexable;
+import proj.zoie.api.indexing.AbstractZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 
 /**
@@ -43,7 +44,7 @@ public class InRangeDataInterpreterForTests implements
   {
     String[] parts = src.split(" ");
     final long id = Long.parseLong(parts[parts.length - 1]);
-    return new ZoieIndexable()
+    return new AbstractZoieIndexable()
     {
       public Document buildDocument()
       {
@@ -83,12 +84,6 @@ public class InRangeDataInterpreterForTests implements
       public boolean isSkip()
       {
         return false;
-      }
-
-      @Override
-      public byte[] getStoreValue()
-      {
-        return String.valueOf(getUID()).getBytes();
       }
     };
   }

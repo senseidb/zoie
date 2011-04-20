@@ -20,8 +20,8 @@ Issues are tracked at:
 
 ### Release
 
-Latest Version: 2.5.1
+Maven:
 
-<groupId>com.linkedin.zoie</groupId>
-<artifactId>zoie-core</artifactId>
-<version>${latest.version}</version>
+groupId: com.linkedin.zoie
+artifactId: zoie-core
+Latest Version: 2.5.1

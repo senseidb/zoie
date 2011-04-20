@@ -4,26 +4,27 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Comparator;
 
 import org.apache.log4j.Logger;
 
 import proj.zoie.api.DataConsumer;
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.impl.indexing.StreamDataProvider;
 
-public class JDBCStreamDataProvider<T, V extends ZoieVersion> extends StreamDataProvider<T,V> {
+public class JDBCStreamDataProvider<T> extends StreamDataProvider<T> {
   private static final Logger log = Logger.getLogger(JDBCStreamDataProvider.class);
   private static final long DEFAULT_PULL_TIME = 1000;
   private final JDBCConnectionFactory _connFactory;
-  private final PreparedStatementBuilder<T,V> _stmtBuilder;
-  private V _version;
+  private final PreparedStatementBuilder<T> _stmtBuilder;
+  private String _version;
   private Connection _conn;
   private PreparedStatement _stmt;
   private ResultSet _res;
   private long _pullTime;
 
-  public JDBCStreamDataProvider(JDBCConnectionFactory connFactory,PreparedStatementBuilder<T,V> stmtBuilder){
+  public JDBCStreamDataProvider(JDBCConnectionFactory connFactory, PreparedStatementBuilder<T> stmtBuilder, Comparator<String> versionComparator) {
+    super(versionComparator);
     _connFactory = connFactory;
     _stmtBuilder = stmtBuilder;
     _version = null;
@@ -42,8 +43,8 @@ public class JDBCStreamDataProvider<T, V extends ZoieVersion> extends StreamData
   }
 
   @Override
-  public DataEvent<T,V> next() {
-    DataEvent<T,V> event = null;
+  public DataEvent<T> next() {
+    DataEvent<T> event = null;
     try
     {
       if(!_res.next())
@@ -76,7 +77,7 @@ public class JDBCStreamDataProvider<T, V extends ZoieVersion> extends StreamData
 
   
   @Override
-  public void setStartingOffset(V version) {
+  public void setStartingOffset(String version) {
 	_version = version;
   }
 
@@ -97,6 +98,17 @@ public class JDBCStreamDataProvider<T, V extends ZoieVersion> extends StreamData
           log.error(e.getMessage(),e);
         }
       }
+    }
+
+    DataConsumer<T> dc = getDataConsumer(); 
+    if (dc == null)
+    {
+      // ? Hao: needs to fix later
+      _version = null;
+      log.warn("problem opening index, maynot exist, defaulting version to null");
+      //log.warn("problem opening index, maynot exist, defaulting version to 0");
+    } else{
+      _version = dc.getVersion();
     }
     if (_conn == null){
       try {

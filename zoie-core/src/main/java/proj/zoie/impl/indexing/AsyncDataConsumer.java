@@ -16,12 +16,12 @@ package proj.zoie.impl.indexing;
  * limitations under the License.
  */
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedList;
 
 import org.apache.log4j.Logger;
 
 import proj.zoie.api.DataConsumer;
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieHealth;
 
@@ -40,15 +40,16 @@ import proj.zoie.api.ZoieHealth;
  * 
  * @param <V>
  */
-public class AsyncDataConsumer<D, V extends ZoieVersion> implements DataConsumer<D, V> 
+public class AsyncDataConsumer<D> implements DataConsumer<D> 
 {
   private static final Logger log = Logger.getLogger(AsyncDataConsumer.class);
   
   private volatile ConsumerThread _consumerThread;
-  private volatile DataConsumer<D, V> _consumer;
-  private V _currentVersion;
-  private volatile V _bufferedVersion;
-  private LinkedList<DataEvent<D,V>> _batch;
+  private volatile DataConsumer<D> _consumer;
+  private String _currentVersion;
+  private volatile String _bufferedVersion;
+  private final Comparator<String> _versionComparator;
+  private LinkedList<DataEvent<D>> _batch;
   /**
    * The 'soft' size limit of each event batch. If the events are coming in too fast and
    * it already accumulate this many, then we block the incoming events until the number of
@@ -57,13 +58,14 @@ public class AsyncDataConsumer<D, V extends ZoieVersion> implements DataConsumer
    */
   private int _batchSize;
 
-  public AsyncDataConsumer()
+  public AsyncDataConsumer(Comparator<String> versionComparator)
   {
     //_currentVersion = -1L;
     //_bufferedVersion = -1L;
     _currentVersion = null;
     _bufferedVersion = null;
-    _batch = new LinkedList<DataEvent<D,V>>();
+    _versionComparator = versionComparator;
+    _batch = new LinkedList<DataEvent<D>>();
     _batchSize = 1; // default
     _consumerThread = null;
   }
@@ -95,7 +97,7 @@ public class AsyncDataConsumer<D, V extends ZoieVersion> implements DataConsumer
    * Set the background DataConsumer.
    * @param consumer the DataConsumer that actually consumes the data events.
    */
-  public void setDataConsumer(DataConsumer<D,V> consumer)
+  public void setDataConsumer(DataConsumer<D> consumer)
   {
     synchronized(this)
     {
@@ -144,7 +146,7 @@ public class AsyncDataConsumer<D, V extends ZoieVersion> implements DataConsumer
     }
   }
   
-  public V getCurrentVersion()
+  public String getCurrentVersion()
   {
     synchronized(this)
     {
@@ -168,7 +170,7 @@ public class AsyncDataConsumer<D, V extends ZoieVersion> implements DataConsumer
    * @param version the version of events which it waits for.
    * @throws ZoieException
    */
-  public void syncWithVersion(long timeInMillis, V version) throws ZoieException
+  public void syncWithVersion(long timeInMillis, String version) throws ZoieException
   {
     if(_consumerThread == null) throw new ZoieException("not running");
     if (version == null)
@@ -179,7 +181,7 @@ public class AsyncDataConsumer<D, V extends ZoieVersion> implements DataConsumer
     synchronized(this)
     {
       long timeRemaining = Long.MAX_VALUE;
-      while(_currentVersion==null || _currentVersion.compareTo(version) < 0)
+      while(_currentVersion==null || _versionComparator.compare(_currentVersion, version) < 0)
       {
         if (log.isDebugEnabled())
         {
@@ -221,7 +223,7 @@ public class AsyncDataConsumer<D, V extends ZoieVersion> implements DataConsumer
    * @see proj.zoie.api.DataConsumer#consume(java.util.Collection)
    * 
    */
-  public void consume(Collection<DataEvent<D,V>> data) throws ZoieException
+  public void consume(Collection<DataEvent<D>> data) throws ZoieException
   {
     if (data == null || data.size() == 0) return;
     
@@ -243,9 +245,9 @@ public class AsyncDataConsumer<D, V extends ZoieVersion> implements DataConsumer
         {
         }
       }
-      for(DataEvent<D,V> event : data)
+      for(DataEvent<D> event : data)
       {
-        _bufferedVersion = (_bufferedVersion == null) ? event.getVersion() : (_bufferedVersion.compareTo(event.getVersion()) < 0? event.getVersion() : _bufferedVersion);
+        _bufferedVersion = (_bufferedVersion == null) ? event.getVersion() : (_versionComparator.compare(_bufferedVersion, event.getVersion()) < 0 ? event.getVersion() : _bufferedVersion);
         _batch.add(event);
       }
       if (log.isDebugEnabled())
@@ -258,8 +260,8 @@ public class AsyncDataConsumer<D, V extends ZoieVersion> implements DataConsumer
   
   protected final void flushBuffer()
   {
-    V version;
-    LinkedList<DataEvent<D,V>> currentBatch;
+    String version;
+    LinkedList<DataEvent<D>> currentBatch;
     
     synchronized(this)
     {
@@ -275,9 +277,9 @@ public class AsyncDataConsumer<D, V extends ZoieVersion> implements DataConsumer
         {
         }
       }
-      version = _currentVersion == null ? _bufferedVersion : ((_currentVersion.compareTo(_bufferedVersion) < 0) ? _bufferedVersion : _currentVersion);
+      version = _currentVersion == null ? _bufferedVersion : ((_versionComparator.compare(_currentVersion, _bufferedVersion) < 0) ? _bufferedVersion : _currentVersion);
       currentBatch = _batch;
-      _batch = new LinkedList<DataEvent<D,V>>();
+      _batch = new LinkedList<DataEvent<D>>();
       this.notifyAll(); // wake up the thread waiting in consume(...)
     }
     if (log.isDebugEnabled())
@@ -339,7 +341,7 @@ public class AsyncDataConsumer<D, V extends ZoieVersion> implements DataConsumer
    * @return the version number of events that it has received but not necessarily processed.
    * @see proj.zoie.api.DataConsumer#getVersion()
    */
-  public V getVersion(){
+  public String getVersion(){
     return _bufferedVersion;
   }
 }

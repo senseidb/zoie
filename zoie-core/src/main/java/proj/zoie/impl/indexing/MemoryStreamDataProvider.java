@@ -17,6 +17,7 @@ package proj.zoie.impl.indexing;
  * limitations under the License.
  */
 import java.util.Iterator;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -24,23 +25,22 @@ import org.apache.log4j.Logger;
 
 import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.api.ZoieException;
-import proj.zoie.api.ZoieVersion;
 
-public class MemoryStreamDataProvider<D, V extends ZoieVersion> extends StreamDataProvider<D, V>
+public class MemoryStreamDataProvider<D> extends StreamDataProvider<D>
 {
 
-  private List<DataEvent<D, V>> _list;
+  private List<DataEvent<D>> _list;
   private int _count;
-  private volatile V _maxVersion = null;
+  private volatile String _maxVersion = null;
   private boolean _stop;
 
   // private static final double DEFAULT_ITERS_PER_SECOND=100.0;
   private static final Logger log = Logger.getLogger(MemoryStreamDataProvider.class);
 
-  public MemoryStreamDataProvider()
+  public MemoryStreamDataProvider(Comparator<String> versionComparator)
   {
-    super();
-    _list = new LinkedList<DataEvent<D, V>>();
+    super(versionComparator);
+    _list = new LinkedList<DataEvent<D>>();
     _count = 0;
     _stop = false;
   }
@@ -66,7 +66,7 @@ public class MemoryStreamDataProvider<D, V extends ZoieVersion> extends StreamDa
   {
     try
     {
-      V maxVersion = _maxVersion;
+      String maxVersion = _maxVersion;
       if (log.isDebugEnabled()){
         log.debug("flushing version: " + maxVersion);
       }
@@ -80,17 +80,17 @@ public class MemoryStreamDataProvider<D, V extends ZoieVersion> extends StreamDa
     }
   }
 
-  public void addEvents(List<DataEvent<D, V>> list)
+  public void addEvents(List<DataEvent<D>> list)
   {
     if (list != null && !list.isEmpty())
     {
-      Iterator<DataEvent<D, V>> iter = list.iterator();
+      Iterator<DataEvent<D>> iter = list.iterator();
       synchronized (this)
       {
         while (iter.hasNext())
         {
-          DataEvent<D, V> obj = iter.next();
-          _maxVersion = ZoieVersion.max(_maxVersion, obj.getVersion());
+          DataEvent<D> obj = iter.next();
+          _maxVersion = _versionComparator.compare(_maxVersion, obj.getVersion())>=0 ? _maxVersion:obj.getVersion();
           _count++;
           _list.add(obj);
         }
@@ -99,13 +99,13 @@ public class MemoryStreamDataProvider<D, V extends ZoieVersion> extends StreamDa
     }
   }
 
-  public void addEvent(DataEvent<D, V> event)
+  public void addEvent(DataEvent<D> event)
   {
     if (event != null)
     {
       synchronized (this)
       {
-        _maxVersion = ZoieVersion.max(_maxVersion, event.getVersion());
+        _maxVersion = _versionComparator.compare(_maxVersion, event.getVersion())>=0 ? _maxVersion:event.getVersion();
         _count++;
         _list.add(event);
         this.notifyAll();
@@ -114,9 +114,9 @@ public class MemoryStreamDataProvider<D, V extends ZoieVersion> extends StreamDa
   }
 
   @Override
-  public DataEvent<D, V> next()
+  public DataEvent<D> next()
   {
-    DataEvent<D, V> obj = null;
+    DataEvent<D> obj = null;
     synchronized (this)
     {
       if (!_list.isEmpty())
@@ -154,7 +154,7 @@ public class MemoryStreamDataProvider<D, V extends ZoieVersion> extends StreamDa
 
 
   @Override
-  public void setStartingOffset(V version) {
+  public void setStartingOffset(String version) {
     throw new UnsupportedOperationException("not supported");
   }
 }

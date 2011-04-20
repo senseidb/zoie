@@ -8,14 +8,14 @@
 	
 	<bean id="fileInterpreter" class="proj.zoie.impl.indexing.FileIndexableInterpreter" />
 	
-	<bean id="versionFactory" class="proj.zoie.api.DefaultZoieVersion.DefaultZoieVersionFactory" />
+	<bean id="versionComparator" class="proj.zoie.impl.indexing.ZoieConfig.DEFAULT_VERSION_COMPARATOR" />
 	
 	<bean id="indexingSystem" class="proj.zoie.impl.indexing.SimpleZoieSystem" init-method="start" destroy-method="shutdown">
 		<constructor-arg value="file:${index.dir}"/>
 		<constructor-arg ref="fileInterpreter" />
 		<constructor-arg value="1000" />
 		<constructor-arg value="300000" />
-		<constructor-arg ref="versionFactory" />
+		<constructor-arg ref="versionComparator" />
 	</bean>
 	
 	<bean id="zoie-system-mbean" class="proj.zoie.mbean.ZoieSystemAdmin">

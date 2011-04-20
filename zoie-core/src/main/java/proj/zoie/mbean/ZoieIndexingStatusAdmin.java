@@ -17,22 +17,21 @@ package proj.zoie.mbean;
  */
 import java.util.Date;
 
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.impl.indexing.IndexUpdatedEvent;
 import proj.zoie.impl.indexing.ZoieSystem;
 
-public class ZoieIndexingStatusAdmin<V extends ZoieVersion>implements ZoieIndexingStatusAdminMBean<V>,IndexingEventListener<V>{
-	private final ZoieSystem<?,?,V> _zoieSystem;
+public class ZoieIndexingStatusAdmin implements ZoieIndexingStatusAdminMBean,IndexingEventListener{
+	private final ZoieSystem<?,?> _zoieSystem;
 	private long _endTime;
 	private long _startTime;
 	private int _leftOver;
 	private int _size;
 	private long _totalTime;
 	private int _totalSize;
-	private V _diskVersion;
+	private String _diskVersion;
 	
-	public ZoieIndexingStatusAdmin(ZoieSystem<?,?,V> zoieSystem){
+	public ZoieIndexingStatusAdmin(ZoieSystem<?,?> zoieSystem){
 		_zoieSystem = zoieSystem;
 		_zoieSystem.addIndexingEventListener(this);
 		_startTime = 0L;
@@ -82,11 +81,11 @@ public class ZoieIndexingStatusAdmin<V extends ZoieVersion>implements ZoieIndexi
 		}	
 	}
 
-	public void handleUpdatedDiskVersion(V version) {
+	public void handleUpdatedDiskVersion(String version) {
 		_diskVersion = version;
 	}
 
-	public V getCurrentDiskVersion() {
+	public String getCurrentDiskVersion() {
 		return _diskVersion;
 	}
 }

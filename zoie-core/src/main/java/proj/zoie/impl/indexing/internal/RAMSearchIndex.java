@@ -26,12 +26,11 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieMultiReader;
@@ -41,9 +40,9 @@ import proj.zoie.api.impl.util.FileUtil;
 import proj.zoie.api.impl.util.IndexUtil;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
-public class RAMSearchIndex<R extends IndexReader, V extends ZoieVersion> extends BaseSearchIndex<R, V>
+public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
 {
-  private V _version;
+  private String _version;
   private final Directory _directory;
   private final File _backingdir;
   private final IndexReaderDecorator<R> _decorator;
@@ -54,7 +53,7 @@ public class RAMSearchIndex<R extends IndexReader, V extends ZoieVersion> extend
 
   public static final Logger log = Logger.getLogger(RAMSearchIndex.class);
 
-  public RAMSearchIndex(V version, IndexReaderDecorator<R> decorator, SearchIndexManager<R, V> idxMgr, Directory ramIdxDir,
+  public RAMSearchIndex(String version, IndexReaderDecorator<R> decorator, SearchIndexManager<R> idxMgr, Directory ramIdxDir,
       File backingdir)
   {
     super(idxMgr, true);
@@ -91,12 +90,12 @@ public class RAMSearchIndex<R extends IndexReader, V extends ZoieVersion> extend
     }
   }
 
-  public V getVersion()
+  public String getVersion()
   {
     return _version;
   }
 
-  public void setVersion(V version) throws IOException
+  public void setVersion(String version) throws IOException
   {
     _version = version;
   }

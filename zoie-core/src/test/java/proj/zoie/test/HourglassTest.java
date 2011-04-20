@@ -45,8 +45,6 @@ import proj.zoie.hourglass.impl.HourglassDirectoryManagerFactory;
 import proj.zoie.hourglass.mbean.HourglassAdmin;
 import proj.zoie.impl.indexing.MemoryStreamDataProvider;
 import proj.zoie.impl.indexing.ZoieConfig;
-import proj.zoie.api.DefaultZoieVersion;
-import proj.zoie.api.DefaultZoieVersion.DefaultZoieVersionFactory;
 
 /**
  * @author "Xiaoyang Gu<xgu@linkedin.com>"
@@ -100,17 +98,14 @@ public class HourglassTest extends ZoieTestCaseBase {
 
 	private void oneTest(File idxDir, String schedule, long numTestContent)
 			throws IOException, InterruptedException {
-		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		HourglassDirectoryManagerFactory<DefaultZoieVersion> factory = new HourglassDirectoryManagerFactory<DefaultZoieVersion>(
+		HourglassDirectoryManagerFactory factory = new HourglassDirectoryManagerFactory(
 				idxDir, new HourGlassScheduler(
-						HourGlassScheduler.FREQUENCY.MINUTELY, schedule, 100),
-				defaultZoieVersionFactory);
-		ZoieConfig<DefaultZoieVersion> zConfig = new ZoieConfig<DefaultZoieVersion>(
-				defaultZoieVersionFactory);
+						HourGlassScheduler.FREQUENCY.MINUTELY, schedule, 100));
+		ZoieConfig zConfig = new ZoieConfig();
 		zConfig.setBatchSize(3);
 		zConfig.setBatchDelay(10);
 		zConfig.setFreshness(10);
-		Hourglass<IndexReader, String, DefaultZoieVersion> hourglass = new Hourglass<IndexReader, String, DefaultZoieVersion>(
+		Hourglass<IndexReader, String> hourglass = new Hourglass<IndexReader, String>(
 				factory, new HourglassTestInterpreter(),
 				new IndexReaderDecorator<IndexReader>() {
 
@@ -140,7 +135,7 @@ public class HourglassTest extends ZoieTestCaseBase {
 		} catch (Exception e) {
 			System.out.println(e);
 		}
-		MemoryStreamDataProvider<String, DefaultZoieVersion> memoryProvider = new MemoryStreamDataProvider<String, DefaultZoieVersion>();
+		MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
 		memoryProvider.setDataConsumer(hourglass);
 		memoryProvider.start();
@@ -149,11 +144,9 @@ public class HourglassTest extends ZoieTestCaseBase {
 
 		long accumulatedTime = 0;
 		for (int i = initNumDocs; i < initNumDocs + numTestContent; i++) {
-			List<DataEvent<String, DefaultZoieVersion>> list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
+			List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(
 					2);
-			DefaultZoieVersion dzv = new DefaultZoieVersion();
-			dzv.setVersionId(i);
-			list.add(new DataEvent<String, DefaultZoieVersion>("" + i, dzv));
+			list.add(new DataEvent<String>("" + i, "" + i));
 			memoryProvider.addEvents(list);
 			if (i % 113 != 0)
 				continue;
@@ -211,7 +204,7 @@ public class HourglassTest extends ZoieTestCaseBase {
 	}
 
 	private int getTotalNumDocs(
-			Hourglass<IndexReader, String, DefaultZoieVersion> hourglass) {
+			Hourglass<IndexReader, String> hourglass) {
 		int numDocs = 0;
 		List<ZoieIndexReader<IndexReader>> readers = null;
 		try {

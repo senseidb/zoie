@@ -18,23 +18,22 @@ package proj.zoie.impl.indexing;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Comparator;
 import java.util.Stack;
 
-import proj.zoie.api.ZoieVersionFactory;
-import proj.zoie.api.DefaultZoieVersion;
 import proj.zoie.api.DataConsumer.DataEvent;
 
-public class FileDataProvider extends StreamDataProvider<File, DefaultZoieVersion> implements ZoieVersionFactory<DefaultZoieVersion>
+public class FileDataProvider extends StreamDataProvider<File>
 {
 	private final File _dir;
-	private DefaultZoieVersion _currentVersion = new DefaultZoieVersion();
+	private long _currentVersion = 0L;
 	private Stack<Iterator<File>> _stack;
 	private Iterator<File> _currentIterator;
 	private boolean _looping;
 		
-	public FileDataProvider(File dir)
+	public FileDataProvider(File dir, Comparator<String> versionComparator)
 	{
-		super();
+		super(versionComparator);
 		if (!dir.exists())
 			throw new IllegalArgumentException("dir: "+dir+" does not exist.");
 		_dir=dir;
@@ -48,23 +47,19 @@ public class FileDataProvider extends StreamDataProvider<File, DefaultZoieVersio
 		return _dir;
 	}
 
-	public DefaultZoieVersion getZoieVersion(String str)
+	public String getZoieVersion()
 	{
-	  return _currentVersion;
+	  return Long.toString(_currentVersion);
 	}
 	
-	public DefaultZoieVersion getMinZoieVersion()
+	public String getMinZoieVersion()
 	{
-	  return null;
+	  return Long.toString(0L);
 	}
 	
-	public DefaultZoieVersion nextZoieVersion()
+	public String nextZoieVersion()
 	{
-	  String desp = _currentVersion.encodeToString();
-	  DefaultZoieVersion dzv = getZoieVersion(_currentVersion.encodeToString());
-	  dzv.setVersionId(dzv.getVersionId()+1);  
-	  
-	  return dzv;	
+    return Long.toString(_currentVersion + 1L);
 	}
 	
 	@Override
@@ -86,7 +81,7 @@ public class FileDataProvider extends StreamDataProvider<File, DefaultZoieVersio
 	}
 	
 	@Override
-	public DataEvent<File,DefaultZoieVersion> next() {
+	public DataEvent<File> next() {
 		if(_currentIterator.hasNext())
 		{
 			File next=_currentIterator.next();
@@ -94,7 +89,7 @@ public class FileDataProvider extends StreamDataProvider<File, DefaultZoieVersio
 			{
 			  // ?? hao: how to implement version++
 				// new DataEvent<File>(next, _currentVersion++);
-				return new DataEvent<File,DefaultZoieVersion>(next,nextZoieVersion());
+				return new DataEvent<File>(next,nextZoieVersion());
 			}
 			else
 			{
@@ -124,7 +119,7 @@ public class FileDataProvider extends StreamDataProvider<File, DefaultZoieVersio
 	}
 
 	@Override
-	public void setStartingOffset(DefaultZoieVersion version) {
+	public void setStartingOffset(String version) {
 		throw new UnsupportedOperationException("");
 	}
 }

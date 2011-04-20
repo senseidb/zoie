@@ -17,18 +17,16 @@ import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.SimpleFSDirectory;
 
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.DefaultDirectoryManager;
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DirectoryManager.DIRECTORY_MODE;
 import proj.zoie.api.impl.util.FileUtil;
 import proj.zoie.impl.indexing.internal.IndexSignature;
-import proj.zoie.api.ZoieVersionFactory;
 /**
  * @author "Xiaoyang Gu<xgu@linkedin.com>"
  *
  */
-public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
+public class HourglassDirectoryManagerFactory
 {
   public static final Logger log = Logger.getLogger(HourglassDirectoryManagerFactory.class);
 
@@ -40,7 +38,7 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
     return _scheduler;
   }
   private volatile File _location;
-  private volatile DirectoryManager<V> _currentDirMgr = null;
+  private volatile DirectoryManager _currentDirMgr = null;
   private volatile boolean isRecentlyChanged = false;
   public static final String dateFormatString = "yyyy-MM-dd-HH-mm-ss";
   private final DIRECTORY_MODE _mode; 
@@ -52,11 +50,10 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
     }
   }; 
   private volatile Calendar _nextUpdateTime = Calendar.getInstance();
-  ZoieVersionFactory<V> _zoieVersionFactory;
-  public HourglassDirectoryManagerFactory(File root, HourGlassScheduler scheduler, ZoieVersionFactory<V> zoieVersionFactory)
+
+  public HourglassDirectoryManagerFactory(File root, HourGlassScheduler scheduler)
   {
     _root = root;
-    _zoieVersionFactory = zoieVersionFactory;
     _scheduler = scheduler;
     _mode = DIRECTORY_MODE.SIMPLE;
     log.info("starting HourglassDirectoryManagerFactory at " + root + " --- index rolling scheduler: " + _scheduler + " mode: " + _mode);
@@ -70,7 +67,7 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
     log.info("starting HourglassDirectoryManagerFactory at " + root + " --- index rolling scheduler: " + _scheduler + " mode: " + _mode);
     updateDirectoryManager();
   }
-  public DirectoryManager<V> getDirectoryManager()
+  public DirectoryManager getDirectoryManager()
   {
     return _currentDirMgr;
   }
@@ -116,7 +113,7 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
     {
       log.error(e);
     }
-    _currentDirMgr = new DefaultDirectoryManager<V>(_location, _zoieVersionFactory, _mode);
+    _currentDirMgr = new DefaultDirectoryManager(_location, _mode);
     isRecentlyChanged = true;
     setNextUpdateTime();
     return isRecentlyChanged;
@@ -191,10 +188,10 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
   /**
    * @return the max version from all the archived index
    */
-  public V getArchivedVersion()
+  public String getArchivedVersion()
   {
     if (!_root.exists()) return null;
-    V version = null;
+    String version = null;
     File[] files = _root.listFiles();
     Arrays.sort(files);
     for(File file : files)
@@ -207,7 +204,7 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
         long time = dateFormatter.get().parse(name).getTime();
         if (!file.equals(_location))
         { // don't count the current one
-          IndexSignature<V> sig = getIndexSignature(file);
+          IndexSignature sig = getIndexSignature(file);
           if (sig!=null)
           {
             if(sig.getVersion() != null)
@@ -231,14 +228,14 @@ public class HourglassDirectoryManagerFactory<V extends ZoieVersion>
     }
     return version;
   }
-  public IndexSignature<V> getIndexSignature(File file)
+  public IndexSignature getIndexSignature(File file)
   {
     File directoryFile = new File(file, DirectoryManager.INDEX_DIRECTORY);
-    IndexSignature<V> sig = DefaultDirectoryManager.readSignature(directoryFile, _zoieVersionFactory);
+    IndexSignature sig = DefaultDirectoryManager.readSignature(directoryFile);
     return sig;
   }
   
-  public void saveIndexSignature(File tgt, IndexSignature<V> sig) throws IOException
+  public void saveIndexSignature(File tgt, IndexSignature sig) throws IOException
   {
     File tgtFile = new File(tgt, DirectoryManager.INDEX_DIRECTORY);
     DefaultDirectoryManager.saveSignature(sig, tgtFile);

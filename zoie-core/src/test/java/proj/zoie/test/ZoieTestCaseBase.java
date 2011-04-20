@@ -3,6 +3,7 @@ package proj.zoie.test;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.util.Comparator;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -13,10 +14,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.DocIdSet;
 import org.junit.After;
 
-import proj.zoie.api.DefaultZoieVersion;
 import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.ZoieIndexReader;
-import proj.zoie.api.ZoieVersionFactory;
 import proj.zoie.api.impl.InRangeDocIDMapperFactory;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.impl.indexing.ZoieSystem;
@@ -89,9 +88,9 @@ public class ZoieTestCaseBase
     return new File(System.getProperty("java.io.tmpdir"));
   }
 
-  protected static ZoieSystem<IndexReader,String, DefaultZoieVersion> createZoie(File idxDir,boolean realtime, ZoieVersionFactory<DefaultZoieVersion> zoieVersionFactory)
+  protected static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime, Comparator<String> versionComparator)
   {
-    return createZoie(idxDir, realtime, 20,zoieVersionFactory);
+    return createZoie(idxDir, realtime, 20, versionComparator);
   }
   
   /**
@@ -101,14 +100,14 @@ public class ZoieTestCaseBase
    * @param zoieVersionFactory
    * @return
    */
-  protected static ZoieSystem<IndexReader,String, DefaultZoieVersion> createZoie(File idxDir,boolean realtime, long delay, ZoieVersionFactory<DefaultZoieVersion> zoieVersionFactory)
+  protected static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime, long delay, Comparator<String> versionComparator)
   {
-    return createZoie(idxDir,realtime,delay,null,null,zoieVersionFactory);
+    return createZoie(idxDir,realtime,delay,null,null,versionComparator);
   }
 
-  protected static ZoieSystem<IndexReader,String, DefaultZoieVersion> createZoie(File idxDir,boolean realtime,DocIDMapperFactory docidMapperFactory,ZoieVersionFactory<DefaultZoieVersion> zoieVersionFactory)
+  protected static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime,DocIDMapperFactory docidMapperFactory, Comparator<String> versionComparator)
   {
-    return createZoie(idxDir, realtime, 2,null,docidMapperFactory, zoieVersionFactory);
+    return createZoie(idxDir, realtime, 2,null,docidMapperFactory, versionComparator);
   }
 
   /**
@@ -120,10 +119,10 @@ public class ZoieTestCaseBase
    * @param zoieVersionFactory
    * @return
    */
-  protected static ZoieSystem<IndexReader,String, DefaultZoieVersion> createZoie(File idxDir,boolean realtime, long delay,Analyzer analyzer,DocIDMapperFactory docidMapperFactory, ZoieVersionFactory<DefaultZoieVersion> zoieVersionFactory)
+  protected static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime, long delay,Analyzer analyzer,DocIDMapperFactory docidMapperFactory, Comparator<String> versionComparator)
   {
-    ZoieSystem<IndexReader,String,DefaultZoieVersion> idxSystem=new ZoieSystem<IndexReader, String, DefaultZoieVersion>(idxDir,new DataInterpreterForTests(delay,analyzer),
-        new TestIndexReaderDecorator(),docidMapperFactory, null,null,50,2000,realtime,zoieVersionFactory);
+    ZoieSystem<IndexReader,String> idxSystem=new ZoieSystem<IndexReader, String>(idxDir,new DataInterpreterForTests(delay,analyzer),
+        new TestIndexReaderDecorator(),docidMapperFactory, null,null,50,2000,realtime,versionComparator);
     return idxSystem;
   }
 
@@ -144,10 +143,10 @@ public class ZoieTestCaseBase
     }
   }
 
-  protected static ZoieSystem<IndexReader,String,DefaultZoieVersion> createInRangeZoie(File idxDir,boolean realtime, InRangeDocIDMapperFactory docidMapperFactory, ZoieVersionFactory<DefaultZoieVersion> zoieVersionFactory)
+  protected static ZoieSystem<IndexReader,String> createInRangeZoie(File idxDir,boolean realtime, InRangeDocIDMapperFactory docidMapperFactory, Comparator<String> versionComparator)
   {
-    ZoieSystem<IndexReader,String,DefaultZoieVersion> idxSystem=new ZoieSystem<IndexReader, String,DefaultZoieVersion>(idxDir,new InRangeDataInterpreterForTests(20,null),
-        new TestIndexReaderDecorator(),docidMapperFactory,null,null,50,2000,realtime,zoieVersionFactory);
+    ZoieSystem<IndexReader,String> idxSystem=new ZoieSystem<IndexReader, String>(idxDir,new InRangeDataInterpreterForTests(20,null),
+        new TestIndexReaderDecorator(),docidMapperFactory,null,null,50,2000,realtime,versionComparator);
     return idxSystem;
   } 
   protected static boolean deleteDirectory(File path) {

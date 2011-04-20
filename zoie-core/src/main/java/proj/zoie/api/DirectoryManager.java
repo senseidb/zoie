@@ -5,12 +5,9 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.Date;
 
-import proj.zoie.api.ZoieVersion;
-import proj.zoie.api.ZoieVersionFactory;
-
 import org.apache.lucene.store.Directory;
 
-public interface DirectoryManager<V extends ZoieVersion>
+public interface DirectoryManager
 {
   static final String INDEX_DIRECTORY = "index.directory";
 
@@ -18,8 +15,8 @@ public interface DirectoryManager<V extends ZoieVersion>
   
   Directory getDirectory(boolean create) throws IOException;
   
-  V getVersion() throws IOException;  
-  void setVersion(V version) throws IOException;
+  String getVersion() throws IOException;  
+  void setVersion(String version) throws IOException;
   
   //ZoieVersionFactory<V> getVersionFactory();
   //void setVersionFactory(ZoieVersionFactory<V> zoieVersionFactory);

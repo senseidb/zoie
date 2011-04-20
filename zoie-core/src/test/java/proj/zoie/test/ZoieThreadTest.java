@@ -28,11 +28,10 @@ import org.junit.Test;
 
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
-import proj.zoie.api.DefaultZoieVersion;
-import proj.zoie.api.DefaultZoieVersion.DefaultZoieVersionFactory;
 import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.impl.indexing.MemoryStreamDataProvider;
 import proj.zoie.impl.indexing.ZoieSystem;
+import proj.zoie.impl.indexing.ZoieConfig;
 import proj.zoie.test.data.DataForTests;
 
 public class ZoieThreadTest extends ZoieTestCaseBase {
@@ -51,9 +50,8 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
 	@Test
 	public void testThreadDelImpl() throws ZoieException {
 		File idxDir = getIdxDir();
-		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		final ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createZoie(
-				idxDir, true, 100, defaultZoieVersionFactory);
+		final ZoieSystem<IndexReader, String> idxSystem = createZoie(
+				idxDir, true, 100, ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		for (String bname : idxSystem.getStandardMBeanNames()) {
 			registerMBean(idxSystem.getStandardMBean(bname), bname);
 		}
@@ -185,7 +183,7 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
 			};
 		}
 
-		MemoryStreamDataProvider<String, DefaultZoieVersion> memoryProvider = new MemoryStreamDataProvider<String, DefaultZoieVersion>();
+		MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
 		memoryProvider.setDataConsumer(idxSystem);
 		memoryProvider.start();
@@ -194,19 +192,16 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
 			idxSystem.setBatchSize(10);
 
 			final int count = DataForTests.testdata.length;
-			DefaultZoieVersion zvt = null;
-			List<DataEvent<String, DefaultZoieVersion>> list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
+			List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(
 					count);
 			for (int i = 0; i < count; i++) {
 				// list.add(new DataEvent<String>(i, TestData.testdata[i]));
-				zvt = new DefaultZoieVersion();
-				zvt.setVersionId(i);
-				list.add(new DataEvent<String, DefaultZoieVersion>(
-						DataForTests.testdata[i], zvt));
+				list.add(new DataEvent<String>(
+						DataForTests.testdata[i], ""+i));
 			}
 			memoryProvider.addEvents(list);
-			// idxSystem.syncWthVersion(100000, count - 1);
-			idxSystem.syncWithVersion(100000, zvt);
+
+			idxSystem.syncWithVersion(100000, "" + (count - 1));
 			Future[] futures = new Future<?>[queryRunnables.length];
 			for (int x = 0; x < queryRunnables.length; x++) {
 				futures[x] = threadPool.submit(queryRunnables[x]);
@@ -219,18 +214,17 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
 					// list.add(new DataEvent<String>(version,
 					// TestData.testdata[i]));
 
-					zvt = new DefaultZoieVersion();
 					long version = n * count + i;
-					zvt.setVersionId(version);
 
-					list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
+					list = new ArrayList<DataEvent<String>>(
 							1);
-					list.add(new DataEvent<String, DefaultZoieVersion>(
-							DataForTests.testdata[i], zvt));
+					list.add(new DataEvent<String>(
+							DataForTests.testdata[i], ""+version));
 
 					memoryProvider.addEvents(list);
 					// idxSystem.syncWthVersion(100000, version);
-					idxSystem.syncWithVersion(100000, zvt);
+
+					idxSystem.syncWithVersion(100000, ""+version);
 				}
 				boolean stopNow = false;
 				for (QueryRunnable queryThread : queryRunnables)
@@ -287,9 +281,8 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
 		for (int i = 0; i < datacount; i++) {
 			testdata[i] = "zoie " + (i % 2 == 0 ? "even " : "odd ") + i;
 		}
-		DefaultZoieVersionFactory defaultZoieVersionFactory = new DefaultZoieVersionFactory();
-		final ZoieSystem<IndexReader, String, DefaultZoieVersion> idxSystem = createZoie(
-				idxDir, true, 2, defaultZoieVersionFactory);
+		final ZoieSystem<IndexReader, String> idxSystem = createZoie(
+				idxDir, true, 2, ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		for (String bname : idxSystem.getStandardMBeanNames()) {
 			registerMBean(idxSystem.getStandardMBean(bname), bname);
 		}
@@ -423,7 +416,7 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
 			queryThreads[i].setDaemon(true);
 		}
 
-		MemoryStreamDataProvider<String, DefaultZoieVersion> memoryProvider = new MemoryStreamDataProvider<String, DefaultZoieVersion>();
+		MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
 		memoryProvider.setBatchSize(membatchsize);
 		memoryProvider.setDataConsumer(idxSystem);
@@ -432,32 +425,29 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
 			idxSystem.setBatchSize(10);
 
 			final int count = testdata.length;
-			List<DataEvent<String, DefaultZoieVersion>> list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
+			List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(
 					count);
-			DefaultZoieVersion zvt = null;
 			for (int i = 0; i < count; i++) {
-				zvt = new DefaultZoieVersion();
-				zvt.setVersionId(i);
-				list.add(new DataEvent<String, DefaultZoieVersion>(testdata[i],
-						zvt));
+				list.add(new DataEvent<String>(testdata[i],
+						""+i));
 			}
 			memoryProvider.addEvents(list);
-			idxSystem.syncWithVersion(1000000, zvt);
+
+			idxSystem.syncWithVersion(1000000, ""+(count-1));
 
 			for (QueryThread queryThread : queryThreads)
 				queryThread.start();
 
 			for (int n = 1; n <= 3; n++) {
 				for (int i = 0; i < count; i++) {
-					zvt = new DefaultZoieVersion();
 					long version = n * count + i;
-					zvt.setVersionId(version);
-					list = new ArrayList<DataEvent<String, DefaultZoieVersion>>(
+					list = new ArrayList<DataEvent<String>>(
 							1);
-					list.add(new DataEvent<String, DefaultZoieVersion>(
-							testdata[r.nextInt(testdata.length)], zvt));
+					list.add(new DataEvent<String>(
+							testdata[r.nextInt(testdata.length)], ""+version));
 					memoryProvider.addEvents(list);
-					idxSystem.syncWithVersion(100000, zvt);
+
+					idxSystem.syncWithVersion(100000, ""+version);
 					if (System.currentTimeMillis() > endtime)
 						break;
 				}

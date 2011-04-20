@@ -40,12 +40,11 @@ import org.apache.lucene.util.Version;
 import proj.zoie.api.DataConsumer;
 import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieException;
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 
-public class LuceneNRTDataConsumer<D, V extends ZoieVersion> implements DataConsumer<D, V>, IndexReaderFactory<IndexReader>
+public class LuceneNRTDataConsumer<D> implements DataConsumer<D>, IndexReaderFactory<IndexReader>
 {
   private static final Logger logger = Logger.getLogger(LuceneNRTDataConsumer.class);
 
@@ -102,7 +101,7 @@ public class LuceneNRTDataConsumer<D, V extends ZoieVersion> implements DataCons
     }
   }
 
-  public void consume(Collection<proj.zoie.api.DataConsumer.DataEvent<D, V>> events) throws ZoieException
+  public void consume(Collection<proj.zoie.api.DataConsumer.DataEvent<D>> events) throws ZoieException
   {
     if (_writer == null)
     {
@@ -111,7 +110,7 @@ public class LuceneNRTDataConsumer<D, V extends ZoieVersion> implements DataCons
 
     if (events.size() > 0)
     {
-      for (DataEvent<D, V> event : events)
+      for (DataEvent<D> event : events)
       {
         ZoieIndexable indexable = _interpreter.convertAndInterpret(event.getData());
         if (indexable.isSkip())
@@ -204,7 +203,7 @@ public class LuceneNRTDataConsumer<D, V extends ZoieVersion> implements DataCons
     }
   }
 
-  public V getVersion()
+  public String getVersion()
   {
     throw new UnsupportedOperationException();
   }

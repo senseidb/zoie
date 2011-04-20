@@ -1,22 +1,22 @@
 package proj.zoie.impl.indexing;
 
+import java.util.Comparator;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.Version;
 
-import proj.zoie.api.ZoieVersion;
 import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.impl.DefaultDocIDMapperFactory;
-import proj.zoie.api.ZoieVersionFactory;
 import proj.zoie.impl.indexing.internal.DefaultRAMIndexFactory;
 import proj.zoie.impl.indexing.internal.RAMIndexFactory;
 
 /**
  * Configuration parameters for building a ZoieSystem.
  */
-public class ZoieConfig<V extends ZoieVersion>
+public class ZoieConfig
 {
   /**
    * Default real-time setting: true
@@ -38,8 +38,13 @@ public class ZoieConfig<V extends ZoieVersion>
    */
   public static final int DEFAULT_MAX_BATCH_SIZE = 10000;
 
+  /**
+   * Default version comparator
+   */
+  public static final Comparator<String> DEFAULT_VERSION_COMPARATOR = new DefaultVersionComparator();
+
   DocIDMapperFactory docidMapperFactory = null;
-  ZoieVersionFactory<V> zoieVersionFactory = null;
+  Comparator<String> versionComparator= null;
   Analyzer analyzer = null;
   Similarity similarity = null;
   int batchSize;
@@ -48,19 +53,29 @@ public class ZoieConfig<V extends ZoieVersion>
   int maxBatchSize;
   long _freshness = 10000;
   ReaderCacheFactory readercachefactory = null;
-  RAMIndexFactory ramIndexFactory = null;
+  RAMIndexFactory<?> ramIndexFactory = null;
 
   /**
    * Default constructor. Set the size of batch and batch delay to default value
    * 10000 events and 5 minutes respectively. Indexing mode default to realtime.
+   * Using the default version comparator.
    */
-  public ZoieConfig(ZoieVersionFactory<V> zoieVersionFactory)
+  public ZoieConfig()
+  {
+    this(DEFAULT_VERSION_COMPARATOR);
+  }
+
+  /**
+   * Constructor. Set the size of batch and batch delay to default value
+   * 10000 events and 5 minutes respectively. Indexing mode default to realtime.
+   */
+  public ZoieConfig(Comparator<String> versionComparator)
   {
     this.batchSize = DEFAULT_SETTING_BATCHSIZE;
     this.batchDelay = DEFAULT_SETTING_BATCHDELAY;
     this.rtIndexing = true;
     this.maxBatchSize = DEFAULT_MAX_BATCH_SIZE;
-    this.zoieVersionFactory = zoieVersionFactory;
+    this.versionComparator = versionComparator;
   }
 
   public DocIDMapperFactory getDocidMapperFactory()
@@ -74,14 +89,14 @@ public class ZoieConfig<V extends ZoieVersion>
     this.docidMapperFactory = docidMapperFactory;
   }
   
-  public ZoieVersionFactory<V> getZoieVersionFactory()
+  public Comparator<String> getVersionComparator()
   {
-    return zoieVersionFactory;
+    return versionComparator;
   }
 
-  public void setZoieVersionFactory(ZoieVersionFactory<V> zoieVersionFactory)
+  public void setVersionComparator(Comparator<String> versionComparator)
   {
-    this.zoieVersionFactory = zoieVersionFactory;
+    this.versionComparator = versionComparator;
   }
 
   public Analyzer getAnalyzer()
@@ -136,11 +151,11 @@ public class ZoieConfig<V extends ZoieVersion>
   }
 
   public int getMaxBatchSize() {
-	return maxBatchSize;
+    return maxBatchSize;
   }
 
   public void setMaxBatchSize(int maxBatchSize) {
-	this.maxBatchSize = maxBatchSize;
+    this.maxBatchSize = maxBatchSize;
   }
 
   public long getFreshness()
@@ -170,15 +185,32 @@ public class ZoieConfig<V extends ZoieVersion>
   /**
    * @return the RAMIndexFactory in this ZoieConfig. If the value is null, return the DefaultRAMIndexFactory Factory.
    */
-  public RAMIndexFactory getRamIndexFactory()
+  public RAMIndexFactory<?> getRamIndexFactory()
   {
     if (ramIndexFactory == null) return new DefaultRAMIndexFactory();
     return ramIndexFactory;
   }
 
-  public void setRamIndexFactory(RAMIndexFactory ramIndexFactory)
+  public void setRamIndexFactory(RAMIndexFactory<?> ramIndexFactory)
   {
     this.ramIndexFactory = ramIndexFactory;
   }
 
+  public static class DefaultVersionComparator implements Comparator<String>
+  {
+    public int compare(String s1, String s2)
+      {
+        if(s1==s2) return 0;
+        if(s1==null) return -1;
+        if(s2==null) return 1;
+        if (s1.length() == s2.length())
+          return s1.compareTo(s2);
+        else
+          return s1.length() - s2.length();
+      }
+    public boolean equals(String s1, String s2)
+    {
+      return (compare(s1, s2) == 0);
+    }
+  }
 }

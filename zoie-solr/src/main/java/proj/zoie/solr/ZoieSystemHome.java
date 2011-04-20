@@ -18,9 +18,7 @@ import org.apache.solr.core.IndexReaderFactory;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 
-import proj.zoie.api.DefaultZoieVersion;
 import proj.zoie.api.ZoieException;
-import proj.zoie.api.DefaultZoieVersion.DefaultZoieVersionFactory;
 import proj.zoie.impl.indexing.ZoieConfig;
 import proj.zoie.impl.indexing.DefaultIndexReaderDecorator;
 import proj.zoie.impl.indexing.ZoieSystem;
@@ -29,7 +27,7 @@ import proj.zoie.mbean.ZoieSystemAdmin;
 public class ZoieSystemHome {
 	private static Logger log = Logger.getLogger(ZoieSystemHome.class);
 	
-	private ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion> _zoieSystem;
+	private ZoieSystem<IndexReader,DocumentWithID> _zoieSystem;
 	
 	private ZoieSystemHome(SolrCore core){
 		String idxDir = core.getIndexDir();
@@ -60,7 +58,7 @@ public class ZoieSystemHome {
 		boolean realtime = config.getBool("zoie.realtime", true);
 		int freshness = config.getInt("zoie.freshness", 10000);
 		
-		ZoieConfig<DefaultZoieVersion> zoieConfig = new ZoieConfig<DefaultZoieVersion>(new DefaultZoieVersionFactory());
+		ZoieConfig zoieConfig = new ZoieConfig();
 		zoieConfig.setBatchSize(batchSize);
 		zoieConfig.setBatchDelay(batchDelay);
 		zoieConfig.setRtIndexing(realtime);
@@ -68,7 +66,7 @@ public class ZoieSystemHome {
 		zoieConfig.setSimilarity(similarity);
 		zoieConfig.setFreshness(freshness);
 		
-		_zoieSystem = new ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion>(idxFile,new ZoieSolrIndexableInterpreter(),new DefaultIndexReaderDecorator(),zoieConfig);
+		_zoieSystem = new ZoieSystem<IndexReader,DocumentWithID>(idxFile,new ZoieSolrIndexableInterpreter(),new DefaultIndexReaderDecorator(),zoieConfig);
 		
 		log.info("Zoie System loaded with: ");
 		log.info("zoie.batchSize: "+batchSize);
@@ -94,7 +92,7 @@ public class ZoieSystemHome {
 		}
 	}
 	
-	public ZoieSystem<IndexReader,DocumentWithID, DefaultZoieVersion> getZoieSystem(){
+	public ZoieSystem<IndexReader,DocumentWithID> getZoieSystem(){
 		return _zoieSystem;
 	}
 	

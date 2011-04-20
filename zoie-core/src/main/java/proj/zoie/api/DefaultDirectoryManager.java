@@ -21,29 +21,22 @@ import proj.zoie.api.impl.util.ChannelUtil;
 import proj.zoie.api.impl.util.FileUtil;
 import proj.zoie.impl.indexing.internal.IndexSignature;
 
-import proj.zoie.api.ZoieVersion;
-
-public class DefaultDirectoryManager<V extends ZoieVersion> implements DirectoryManager<V>
+public class DefaultDirectoryManager implements DirectoryManager
 {
   public static final Logger log = Logger.getLogger(DefaultDirectoryManager.class);
 
   private File _location;
   private final DIRECTORY_MODE _mode;
-  ZoieVersionFactory<V> _zoieVersionFactory;
-  public DefaultDirectoryManager(File location, ZoieVersionFactory<V> zoieVersionFactory)
+  public DefaultDirectoryManager(File location)
   {
     if (location==null) throw new IllegalArgumentException("null index directory.");
-    _zoieVersionFactory = zoieVersionFactory;
     _location = location;
-    _zoieVersionFactory = zoieVersionFactory;
     _mode = DIRECTORY_MODE.SIMPLE;
   }
-  public DefaultDirectoryManager(File location, ZoieVersionFactory<V> zoieVersionFactory, DIRECTORY_MODE mode)
+  public DefaultDirectoryManager(File location, DIRECTORY_MODE mode)
   {
     if (location==null) throw new IllegalArgumentException("null index directory.");
-    _zoieVersionFactory = zoieVersionFactory;
     _location = location;
-    _zoieVersionFactory = zoieVersionFactory;
     _mode = mode;
   }
   
@@ -67,7 +60,7 @@ public class DefaultDirectoryManager<V extends ZoieVersion> implements Directory
     
     if(create)
     {
-      IndexSignature<V> sig = null;
+      IndexSignature sig = null;
       if (_location.exists())
       {
         sig = getCurrentIndexSignature();
@@ -76,7 +69,7 @@ public class DefaultDirectoryManager<V extends ZoieVersion> implements Directory
       if (sig == null)
       {
         File directoryFile = new File(_location, INDEX_DIRECTORY);
-        sig = new IndexSignature<V>(null);
+        sig = new IndexSignature(null);
         try
         {
           saveSignature(sig, directoryFile);
@@ -105,7 +98,7 @@ public class DefaultDirectoryManager<V extends ZoieVersion> implements Directory
     return dir;
   }
   
-  public static <V extends ZoieVersion> IndexSignature<V> readSignature(File file, ZoieVersionFactory<V> zoieVersionFactory)
+  public static IndexSignature readSignature(File file)
   {
     if (file.exists())
     {
@@ -113,7 +106,7 @@ public class DefaultDirectoryManager<V extends ZoieVersion> implements Directory
       try
       {
         fin = new FileInputStream(file);
-        return IndexSignature.read(fin, zoieVersionFactory);
+        return IndexSignature.read(fin);
       }
       catch (IOException ioe)
       {
@@ -142,7 +135,7 @@ public class DefaultDirectoryManager<V extends ZoieVersion> implements Directory
     }
   }
   
-  public static <V extends ZoieVersion> void saveSignature(IndexSignature<V> sig, File file) throws IOException
+  public static void saveSignature(IndexSignature sig, File file) throws IOException
   {
     if (!file.exists())
     {
@@ -176,30 +169,30 @@ public class DefaultDirectoryManager<V extends ZoieVersion> implements Directory
    * @param indexHome
    * @return
    */
-  public IndexSignature<V> getCurrentIndexSignature()
+  public IndexSignature getCurrentIndexSignature()
   {
-    return getCurrentIndexSignature(_location, _zoieVersionFactory);
+    return getCurrentIndexSignature(_location);
   }
   
-  public static <V extends ZoieVersion> IndexSignature<V> getCurrentIndexSignature(File idxDir,ZoieVersionFactory<V> zoieVersionFactory){
+  public static IndexSignature getCurrentIndexSignature(File idxDir){
 	File directoryFile = new File(idxDir, INDEX_DIRECTORY);
-	IndexSignature<V> sig = readSignature(directoryFile, zoieVersionFactory);
+	IndexSignature sig = readSignature(directoryFile);
 	return sig;
   }
   
 
   
-  public V getVersion() throws IOException
+  public String getVersion() throws IOException
   {
-    IndexSignature<V> sig = getCurrentIndexSignature();
+    IndexSignature sig = getCurrentIndexSignature();
     return sig == null ? null : sig.getVersion();
   }
   
-  public void setVersion(V version) throws IOException
+  public void setVersion(String version) throws IOException
   {
     // update new index file
     File directoryFile = new File(_location, INDEX_DIRECTORY);
-    IndexSignature<V> sig = readSignature(directoryFile, _zoieVersionFactory);
+    IndexSignature sig = readSignature(directoryFile);
     sig.updateVersion(version);
     try
     {

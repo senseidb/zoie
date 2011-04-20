@@ -16,12 +16,11 @@ package proj.zoie.mbean;
  * limitations under the License.
  */
 import proj.zoie.impl.indexing.StreamDataProvider;
-import proj.zoie.api.ZoieVersion;
 
-public class DataProviderAdmin<V extends ZoieVersion> implements DataProviderAdminMBean {
-    private final StreamDataProvider<?,V> _dataProvider;
+public class DataProviderAdmin implements DataProviderAdminMBean {
+    private final StreamDataProvider<?> _dataProvider;
     
-    public DataProviderAdmin(StreamDataProvider<?,V> dataProvider)
+    public DataProviderAdmin(StreamDataProvider<?> dataProvider)
     {
     	_dataProvider=dataProvider;
     }

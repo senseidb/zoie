@@ -332,4 +332,10 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
     // TODO Auto-generated method stub
     log.info("starting Hourglass... already done due by auto-start");
   }
+  
+  @Override
+  public void flushEvents(long timeout) throws ZoieException
+  {
+	  _currentZoie.flushEvents(timeout);
+  }
 }

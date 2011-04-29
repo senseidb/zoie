@@ -30,26 +30,21 @@ import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.UpdateHandler;
 
+import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.api.DocIDMapper;
+import proj.zoie.api.Zoie;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
-import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.impl.indexing.ZoieSystem;
 
 public class ZoieUpdateHandler extends UpdateHandler {
 	private static Logger log = Logger.getLogger(ZoieUpdateHandler.class);
 	
 	private SolrCore _core;
-	private boolean _autocommit;
 	
 	public ZoieUpdateHandler(SolrCore core) {
 		super(core);
 		_core = core;
-
-		// _autocommit = core.getSolrConfig().getBool("zoie.autocommit", true);
-		
-		// this should NOT be enabled until Solr stops caching searchers
-		_autocommit = false;
 	}
 
 	@Override
@@ -71,23 +66,14 @@ public class ZoieUpdateHandler extends UpdateHandler {
 			throw new IOException("zoie home is not setup");
 		}
 		
-		ZoieSystem<IndexReader,DocumentWithID> zoie = zoieHome.getZoieSystem();
+		Zoie<IndexReader,DocumentWithID> zoie = zoieHome.getZoieSystem();
 		if (zoie==null){
 			throw new IOException("zoie is not setup");
 		}
-		String version = zoie.getCurrentVersion();
+		String version = zoie.getVersion();
 		DataEvent<DocumentWithID> event = new DataEvent<DocumentWithID>(new DocumentWithID(zoieUid,doc), version);
 		try {
 			zoie.consume(Arrays.asList(event));
-			if (_autocommit){
-				try{
-				  zoie.flushEventsToMemoryIndex(1000);
-				  updateReader(true);
-				}
-				catch(ZoieException e){
-				  log.error(e.getMessage(),e);
-				}
-			}
 			return 1;
 		} catch (ZoieException e) {
 			log.error(e.getMessage(),e);
@@ -116,7 +102,7 @@ public class ZoieUpdateHandler extends UpdateHandler {
 	public void commit(CommitUpdateCommand cmd) throws IOException {
 		ZoieSystemHome zoieHome = ZoieSystemHome.getInstance(_core);
 		if (zoieHome!=null){
-			ZoieSystem<IndexReader,DocumentWithID> zoie = zoieHome.getZoieSystem();
+			Zoie<IndexReader,DocumentWithID> zoie = zoieHome.getZoieSystem();
 			if (zoie!=null){
 				try {
 					zoie.flushEvents(10000);
@@ -146,23 +132,14 @@ public class ZoieUpdateHandler extends UpdateHandler {
 			throw new IOException("zoie home is not setup");
 		}
 		
-		ZoieSystem<IndexReader,DocumentWithID> zoie = zoieHome.getZoieSystem();
+		Zoie<IndexReader,DocumentWithID> zoie = zoieHome.getZoieSystem();
 		if (zoie==null){
 			throw new IOException("zoie is not setup");
 		}
-		String version = zoie.getCurrentVersion();
+		String version = zoie.getVersion();
 		DataEvent<DocumentWithID> event = new DataEvent<DocumentWithID>(new DocumentWithID(zoieUid,true), version);
 		try {
 			zoie.consume(Arrays.asList(event));
-			if (_autocommit){
-				try{
-				  zoie.flushEventsToMemoryIndex(1000);
-				  updateReader(true);
-				}
-				catch(ZoieException e){
-				  log.error(e.getMessage(),e);
-				}
-			}
 		} catch (ZoieException e) {
 			log.error(e.getMessage(),e);
 			throw new IOException(e.toString());
@@ -179,7 +156,7 @@ public class ZoieUpdateHandler extends UpdateHandler {
 			throw new IOException("zoie home is not setup");
 		}
 		
-		ZoieSystem<IndexReader,DocumentWithID> zoie = zoieHome.getZoieSystem();
+		Zoie<IndexReader,DocumentWithID> zoie = zoieHome.getZoieSystem();
 		if (zoie==null){
 			throw new IOException("zoie is not setup");
 		}
@@ -239,22 +216,13 @@ public class ZoieUpdateHandler extends UpdateHandler {
 		}
 		
 		if (delList.size()>0){
-		  String version = zoie.getCurrentVersion();
+		  String version = zoie.getVersion();
 			ArrayList<DataEvent<DocumentWithID>> eventList = new ArrayList<DataEvent<DocumentWithID>>(delList.size());
 			for (long val : delList){
 			  eventList.add(new DataEvent<DocumentWithID>(new DocumentWithID(val,true), version));
 			}
 			try {
 				zoie.consume(eventList);
-				if (_autocommit){
-					try{
-					  zoie.flushEventsToMemoryIndex(1000);
-					  updateReader(true);
-					}
-					catch(ZoieException e){
-					  log.error(e.getMessage(),e);
-					}
-				}
 			} catch (ZoieException e) {
 				log.error(e.getMessage(),e);
 				throw new IOException(e.toString());

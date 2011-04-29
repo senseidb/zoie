@@ -11,4 +11,5 @@ public interface Zoie<R extends IndexReader, D> extends DataConsumer<D>, IndexRe
   StandardMBean getStandardMBean(String name);
   String[] getStandardMBeanNames();
   void syncWithVersion(long timeInMillis, String version) throws ZoieException;
+  void flushEvents(long timeout) throws ZoieException;
 }

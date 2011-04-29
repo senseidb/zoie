@@ -1,11 +1,12 @@
 package proj.zoie.solr;
 
 import java.io.File;
-import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 
 import javax.management.MBeanServer;
+import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
+import javax.management.StandardMBean;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -18,16 +19,27 @@ import org.apache.solr.core.IndexReaderFactory;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 
+import proj.zoie.api.Zoie;
 import proj.zoie.api.ZoieException;
-import proj.zoie.impl.indexing.ZoieConfig;
+import proj.zoie.hourglass.impl.HourGlassScheduler;
+import proj.zoie.hourglass.impl.HourGlassScheduler.FREQUENCY;
+import proj.zoie.hourglass.impl.Hourglass;
+import proj.zoie.hourglass.impl.HourglassDirectoryManagerFactory;
+import proj.zoie.hourglass.mbean.HourglassAdmin;
+import proj.zoie.hourglass.mbean.HourglassAdminMBean;
 import proj.zoie.impl.indexing.DefaultIndexReaderDecorator;
+import proj.zoie.impl.indexing.ZoieConfig;
 import proj.zoie.impl.indexing.ZoieSystem;
 import proj.zoie.mbean.ZoieSystemAdmin;
+import proj.zoie.mbean.ZoieSystemAdminMBean;
 
 public class ZoieSystemHome {
 	private static Logger log = Logger.getLogger(ZoieSystemHome.class);
 	
-	private ZoieSystem<IndexReader,DocumentWithID> _zoieSystem;
+	private static final String ZOIE_TYPE_DEFAULT = "zoie";
+	private static final String ZOIE_TYPE_HOURGLASS = "hourglass";
+	
+	private Zoie<IndexReader,DocumentWithID> _zoieSystem;
 	
 	private ZoieSystemHome(SolrCore core){
 		String idxDir = core.getIndexDir();
@@ -39,7 +51,7 @@ public class ZoieSystemHome {
 		}
 		catch(Exception e){
 			log.error(e.getMessage()+", defaulting to "+StandardAnalyzer.class,e);
-			analyzer = new StandardAnalyzer(Version.LUCENE_CURRENT);
+			analyzer = new StandardAnalyzer(Version.LUCENE_30);
 		}
 		
 		Similarity similarity = null;
@@ -57,6 +69,18 @@ public class ZoieSystemHome {
 		long batchDelay = config.getInt("zoie.batchDelay",300000);
 		boolean realtime = config.getBool("zoie.realtime", true);
 		int freshness = config.getInt("zoie.freshness", 10000);
+		String type = config.get("zoie.type", ZOIE_TYPE_DEFAULT);
+		boolean isTypeZoie;
+		
+		if (ZOIE_TYPE_DEFAULT.equals(type)){
+			isTypeZoie = true;
+		}
+		else if (ZOIE_TYPE_HOURGLASS.equals(type)){
+			isTypeZoie = false;
+		}
+		else{
+			throw new IllegalArgumentException("Unsuported Zoie type: "+type);
+		}
 		
 		ZoieConfig zoieConfig = new ZoieConfig();
 		zoieConfig.setBatchSize(batchSize);
@@ -66,14 +90,59 @@ public class ZoieSystemHome {
 		zoieConfig.setSimilarity(similarity);
 		zoieConfig.setFreshness(freshness);
 		
-		_zoieSystem = new ZoieSystem<IndexReader,DocumentWithID>(idxFile,new ZoieSolrIndexableInterpreter(),new DefaultIndexReaderDecorator(),zoieConfig);
-		
-		log.info("Zoie System loaded with: ");
+
+		log.info("Zoie System loading with: ");
 		log.info("zoie.batchSize: "+batchSize);
 		log.info("zoie.batchDelay: "+batchDelay);
 		log.info("zoie.realtime: "+realtime);
 		log.info("zoie similarity: "+similarity.getClass());
 		log.info("zoie analyzer: "+analyzer.getClass());
+		
+		StandardMBean mbean = null;
+		
+		if (isTypeZoie){
+			ZoieSystem<IndexReader,DocumentWithID> zoieSystem = new ZoieSystem<IndexReader,DocumentWithID>(idxFile,new ZoieSolrIndexableInterpreter(),new DefaultIndexReaderDecorator(),zoieConfig);
+			try {
+				mbean = new StandardMBean(zoieSystem.getAdminMBean(), ZoieSystemAdminMBean.class);
+			} catch (NotCompliantMBeanException e) {
+				log.error(e.getMessage(),e);
+			}
+		    _zoieSystem = zoieSystem;
+		}
+		else{
+			String schedule = config.get("zoie.hourglass.schedule", "00 00 00");
+			String freqString = config.get("zoie.hourglass.freq", "day");
+			int trimThreshold = config.getInt("zoie.hourglass.trimThreshold", 7);
+			
+			FREQUENCY freq;
+			if ("day".equals(freqString)){
+				freq = FREQUENCY.DAILY;
+			}
+			else if ("min".equals(freqString)){
+				freq = FREQUENCY.MINUTELY;
+			}
+			else if ("hour".equals(freqString)){
+				freq = FREQUENCY.HOURLY;
+			}
+			else{
+				throw new IllegalArgumentException("Unsupported frequency: "+freqString);
+			}
+			HourGlassScheduler scheduler = new HourGlassScheduler(freq,schedule,trimThreshold);
+			HourglassDirectoryManagerFactory dirMgrFactory = new HourglassDirectoryManagerFactory(idxFile,scheduler);
+			Hourglass<IndexReader,DocumentWithID> zoieSystem = new Hourglass<IndexReader, DocumentWithID>(dirMgrFactory, new ZoieSolrIndexableInterpreter(),new DefaultIndexReaderDecorator(), zoieConfig);
+			
+			try {
+				mbean = new StandardMBean(new HourglassAdmin(zoieSystem), HourglassAdminMBean.class);
+			} catch (NotCompliantMBeanException e) {
+				log.error(e.getMessage(),e);
+			}
+		   
+			_zoieSystem = zoieSystem;
+			log.info("Hourglass: true");
+			log.info("hourglass.schedule: "+schedule);
+			log.info("hourglass.freqency: "+freq);
+			log.info("hourglass.trimeThreshold: "+trimThreshold);
+		}
 		
 		_zoieSystem.start();
 		
@@ -84,28 +153,30 @@ public class ZoieSystemHome {
 			((ZoieSolrIndexReaderFactory)readerFactory).setZoieSystem(_zoieSystem);
 		}
 		
-		MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
-		try {
-			mbeanServer.registerMBean(new ZoieSystemAdmin(_zoieSystem), new ObjectName("zoie-solr:name=zoie-system"));
-		} catch (Exception e) {
+		if (mbean!=null){
+		  MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+		  try {
+			mbeanServer.registerMBean(mbean, new ObjectName("zoie-solr:name=zoie-system"));
+		  } catch (Exception e) {
 			log.error(e.getMessage(),e);
+		  }
 		}
 	}
 	
-	public ZoieSystem<IndexReader,DocumentWithID> getZoieSystem(){
+	public Zoie<IndexReader,DocumentWithID> getZoieSystem(){
 		return _zoieSystem;
 	}
 	
 	public void shutdown(){
-		try{
-		  _zoieSystem.flushEvents(10000);
-		}
-		catch(ZoieException e){
-		  log.error(e.getMessage(),e);
-		}
-		finally{
-		  _zoieSystem.shutdown();
-		}
+	  try{
+		_zoieSystem.flushEvents(100000);
+	  }
+	  catch(ZoieException ze){
+		log.error(ze.getMessage(),ze);
+	  }
+	  finally{
+	    _zoieSystem.shutdown();
+	  }
 	}
 	
 	protected void finalize(){

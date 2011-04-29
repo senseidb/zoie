@@ -561,6 +561,7 @@ extends AsyncDataConsumer<D> implements Zoie<R, D>
    * 
    * @throws ZoieException
    */
+  @Override
   public void flushEvents(long timeout) throws ZoieException
   {
     super.flushEvents(timeout);

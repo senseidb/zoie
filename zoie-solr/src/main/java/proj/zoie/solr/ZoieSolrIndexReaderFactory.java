@@ -11,23 +11,22 @@ import org.apache.lucene.store.Directory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.IndexReaderFactory;
 
+import proj.zoie.api.Zoie;
 import proj.zoie.api.ZoieIndexReader;
-import proj.zoie.impl.indexing.ZoieSystem;
 
 /**
  * @param <VALUE> the type for the data to be put in the associated Key-Value store.
  */
 public class ZoieSolrIndexReaderFactory extends IndexReaderFactory
 {
-	private ZoieSystem<IndexReader,DocumentWithID> _zoieSystem = null;
+	private Zoie<IndexReader,DocumentWithID> _zoieSystem = null;
 	private List<ZoieIndexReader<IndexReader>> _readerList = null; 
 	@Override
-	public void init(NamedList args)
-  {
+	public void init(NamedList args){
 		super.init(args);
 	}
 	
-	public void setZoieSystem(ZoieSystem<IndexReader,DocumentWithID> zoieSystem)
+	public void setZoieSystem(Zoie<IndexReader,DocumentWithID> zoieSystem)
 	{
 		_zoieSystem = zoieSystem;
 	}

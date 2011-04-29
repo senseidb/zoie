@@ -85,6 +85,8 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
 		    if (evt == null) continue;
     		    //version = Math.max(version, evt.getVersion());
 		        version = version == null ? evt.getVersion() : (_versionComparator.compare(version,evt.getVersion()) < 0 ? evt.getVersion() : version);
+		        
+		        if (evt instanceof MarkerDataEvent) continue;
     		    // interpret and get get the indexable instance
     		    ZoieIndexable indexable = evt.getData();
     		    if (indexable == null || indexable.isSkip())

@@ -16,7 +16,6 @@ package proj.zoie.api;
  * limitations under the License.
  */
 import java.util.Collection;
-import java.util.Comparator;
 
 /**
  * interface for consuming a collection of data events
@@ -26,7 +25,7 @@ public interface DataConsumer<D> {
 	/**
 	 * Data event abstraction.
 	 */
-	public static final class DataEvent<D>
+	public static class DataEvent<D>
 	{
 		private D _data;
 		private String _version;
@@ -58,6 +57,17 @@ public interface DataConsumer<D> {
 		public D getData()
 		{
 			return _data;
+		}
+	}
+	
+	public static final class MarkerDataEvent<D> extends DataEvent<D>{
+
+		private MarkerDataEvent(String version) {
+			super(null, version);
+		}
+		
+		public static <D> MarkerDataEvent<D> createMarkerEvent(String version){
+			return new MarkerDataEvent<D>(version);
 		}
 	}
 	

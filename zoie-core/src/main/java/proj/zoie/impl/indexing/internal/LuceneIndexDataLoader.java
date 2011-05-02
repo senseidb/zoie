@@ -31,6 +31,8 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Similarity;
 
 import proj.zoie.api.DataConsumer;
@@ -47,18 +49,58 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
 	protected final Similarity _similarity;
 	protected final SearchIndexManager<R> _idxMgr;
 	protected final Comparator<String> _versionComparator;
+	private Filter _purgeFilter;
 
 	protected LuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R> idxMgr,Comparator<String> versionComparator) {
 		_analyzer = analyzer;
 		_similarity = similarity;
 		_idxMgr=idxMgr;
 		_versionComparator = versionComparator;
+		_purgeFilter = null;
+	}
+	
+	public void setPurgeFilter(Filter purgeFilter){
+		_purgeFilter = purgeFilter;
 	}
 
 	protected abstract BaseSearchIndex<R> getSearchIndex();
 	
     protected abstract void propagateDeletes(LongSet delDocs) throws IOException;
     protected abstract void commitPropagatedDeletes() throws IOException;
+    
+    private final void purgeDocuments() throws IOException{
+    	if (_purgeFilter!=null){
+    		BaseSearchIndex<R> idx = getSearchIndex();
+    		IndexReader reader = null;
+    		log.info("purging docs started...");
+    		int count = 0;
+    		long start = System.currentTimeMillis();
+    		try{
+    			reader = idx.openIndexReaderForDelete();
+    			DocIdSetIterator iter = _purgeFilter.getDocIdSet(reader).iterator();
+    			int doc;
+    			while((doc = iter.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS){
+    				count++;
+    				reader.deleteDocument(doc);
+    			}
+    		}
+    		finally{
+    			if (reader!=null){
+    				try{
+    					reader.close();
+    				}
+    				catch(IOException ioe){
+    					ZoieHealth.setFatal();
+    					log.error(ioe.getMessage(),ioe);
+    				}
+    			}
+    		}
+    		
+    		long end = System.currentTimeMillis();
+    		log.info("purging docs completed in "+(end-start)+"ms");
+    		log.info("total docs purged: " +count);
+    	}
+    }
 
 	/**
 	 * @Precondition incoming events sorted by version number
@@ -128,6 +170,7 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
 				docList.addAll(tmpList);
 			}
       idx.updateIndex(delSet, docList, _analyzer,_similarity);
+      purgeDocuments();
       propagateDeletes(delSet);
 			synchronized(_idxMgr)
 			{

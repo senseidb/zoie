@@ -93,6 +93,7 @@ public class HourglassReaderManager<R extends IndexReader, D, V extends ZoieVers
           }
         }
       }},"Zoie Maintenanace Thread");
+      maintenanceThread.start();
   }
   /**
    * consolidate the archived Index to one big optimized index and put in add

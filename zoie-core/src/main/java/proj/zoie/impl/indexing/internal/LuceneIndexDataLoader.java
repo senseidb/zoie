@@ -200,4 +200,11 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
     if (idx != null) version = idx.getVersion();
     return version;
   }
+
+	/**
+   * @return the version comparator.
+   */
+	public Comparator<String> getVersionComparator() {
+    return _versionComparator;
+  }
 }

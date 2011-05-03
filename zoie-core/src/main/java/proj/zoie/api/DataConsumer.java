@@ -90,4 +90,9 @@ public interface DataConsumer<D> {
    * @return the version number of events that it has received but not necessarily processed.
    */
 	String getVersion();
+
+	/**
+   * @return the version comparator.
+   */
+	Comparator<String> getVersionComparator();
 }

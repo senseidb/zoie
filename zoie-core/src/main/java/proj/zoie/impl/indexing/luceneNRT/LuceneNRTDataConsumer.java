@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.log4j.Logger;
@@ -204,6 +205,11 @@ public class LuceneNRTDataConsumer<D> implements DataConsumer<D>, IndexReaderFac
   }
 
   public String getVersion()
+  {
+    throw new UnsupportedOperationException();
+  }
+
+	public Comparator<String> getVersionComparator()
   {
     throw new UnsupportedOperationException();
   }

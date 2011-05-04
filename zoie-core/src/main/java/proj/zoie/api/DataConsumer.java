@@ -16,6 +16,7 @@ package proj.zoie.api;
  * limitations under the License.
  */
 import java.util.Collection;
+import java.util.Comparator;
 
 /**
  * interface for consuming a collection of data events

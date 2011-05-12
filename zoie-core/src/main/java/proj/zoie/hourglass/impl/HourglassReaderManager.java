@@ -96,7 +96,7 @@ public class HourglassReaderManager<R extends IndexReader, D>
             hourglass._shutdownLock.readLock().unlock();
           }
         }
-      }},"Zoie Maintenanace Thread");
+      }},"HourglassReaderManager Zoie Maintenanace Thread");
     maintenanceThread.start();
   }
   /**

@@ -117,7 +117,7 @@ public class DefaultReaderCache<R extends IndexReader> extends AbstractReaderCac
   {
     public MaintenanceThread()
     {
-      super("zoie-indexReader-maintenance");
+      super("DefaultReaderCache-zoie-indexReader-maintenance");
     }
     @Override
     public void run()
@@ -153,7 +153,7 @@ public class DefaultReaderCache<R extends IndexReader> extends AbstractReaderCac
             }
           } catch (IOException e)
           {
-            log.info("zoie-indexReader-maintenance", e);
+            log.info("DefaultReaderCache-zoie-indexReader-maintenance", e);
             newreaders = new ArrayList<ZoieIndexReader<R>>();
           }
         }

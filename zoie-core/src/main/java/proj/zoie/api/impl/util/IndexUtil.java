@@ -40,7 +40,7 @@ public class IndexUtil {
       String x="";
       for(int i=0;i<infos.size(); i++)
       {
-        x += "[numDoc:" + infos.info(i).docCount + ",numDel:"+infos.info(i).getDelCount()+"]"; 
+		x += "[" + infos.info(i).name + ",numDoc:" + infos.info(i).docCount + ",numDel:" + infos.info(i).getDelCount() + "]"; 
       }
       return x;
     } catch (Exception e)

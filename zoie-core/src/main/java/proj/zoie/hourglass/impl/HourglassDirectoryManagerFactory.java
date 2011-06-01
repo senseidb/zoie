@@ -153,32 +153,47 @@ public class HourglassDirectoryManagerFactory
     now.setTimeInMillis(timenow);
     Calendar threshold = _scheduler.getTrimTime(now);
     log.info("getAllArchivedDirectories loading time threshold: " + _scheduler.getFolderName(threshold));
-    for(File file : files)
+
+    boolean foundOldestToKeep = false;
+
+    for (int i = files.length - 1; i >= 0; --i)
     {
+      File file = files[i];
       String name = file.getName();
       log.debug("getAllArchivedDirectories: " + name + " " + (file.equals(_location)?"*":""));
-      Calendar time = null;
-      try
-      {
-        time = getCalendarTime(name);
-      } catch (ParseException e)
-      {
-        log.warn("potential index corruption. we skip folder: " + name, e);
-        continue;
-      }
-      if (time.before(threshold))
+
+      if (foundOldestToKeep)
       {
         log.info("getAllArchivedDirectories: skipping " + name + " for being too old");
-        continue;
       }
-      if (!file.equals(_location))
-      { // don't add the current one
+      else
+      {
+        Calendar time = null;
         try
         {
-          list.add(getFSDirectoryFromFile(file));
-        } catch (IOException e)
+          time = getCalendarTime(name);
+        }
+        catch (ParseException e)
         {
-          log.error("potential index corruption", e);
+          log.warn("potential index corruption. we skip folder: " + name, e);
+          continue;
+        }
+
+        if (!file.equals(_location))
+        { // don't add the current one
+          try
+          {
+            list.add(getFSDirectoryFromFile(file));
+          }
+          catch (IOException e)
+          {
+            log.error("potential index corruption", e);
+          }
+        }
+
+        if (time.before(threshold))
+        {
+          foundOldestToKeep = true;
         }
       }
     }

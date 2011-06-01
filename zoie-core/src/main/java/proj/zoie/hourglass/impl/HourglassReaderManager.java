@@ -122,7 +122,7 @@ public class HourglassReaderManager<R extends IndexReader, D>
                   {
                     String name1 = ((SimpleFSDirectory) r1.directory()).getFile().getName();
                     String name2 = ((SimpleFSDirectory) r2.directory()).getFile().getName();
-                    return -1 * name1.compareTo(name2);
+                    return name2.compareTo(name1);
                   }
                 });
 

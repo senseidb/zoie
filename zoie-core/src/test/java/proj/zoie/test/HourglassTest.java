@@ -4,6 +4,7 @@
 package proj.zoie.test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,13 +54,20 @@ import proj.zoie.impl.indexing.ZoieConfig;
 public class HourglassTest extends ZoieTestCaseBase {
 	static Logger log = Logger.getLogger(HourglassTest.class);
 
-	@Test
+  // Sleep time between each data event for trimming test (in
+  // milliseconds)
+  static int TRIMMING_TEST_SLEEP = 2000; 
+  int minDirs = -1; // Minimum number of dirs after system is stable
+  int maxDirs = 0;
+
+  @Test
 	public void testHourglassDirectoryManagerFactory() throws IOException,
 			InterruptedException, ZoieException {
 		File idxDir = getIdxDir();
 		MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
 		HierarchyDynamicMBean hdm = new HierarchyDynamicMBean();
-		String LOG4J_HIEARCHY_DEFAULT = "log4j:hiearchy=default";
+		String LOG4J_HIEARCHY_DEFAULT = "log4j:hierarchy=default";
+
 		try {
 			mbeanServer.registerMBean(hdm, new ObjectName(
 					"HouseGlass:name=log4j"));
@@ -90,17 +98,63 @@ public class HourglassTest extends ZoieTestCaseBase {
 		}
 		String schedule = "07 15 20";
 		long numTestContent = 10250;
-		oneTest(idxDir, schedule, numTestContent); // test starting from empty
-													// index
-		oneTest(idxDir, schedule, numTestContent); // test index pick up
+		oneTest(idxDir, schedule, numTestContent, 100, false); // test starting from empty index
+		oneTest(idxDir, schedule, numTestContent, 100, false); // test index pick up
 		return;
 	}
 
-	private void oneTest(File idxDir, String schedule, long numTestContent)
+
+  @Test
+  public void testTrimming() throws IOException, InterruptedException, ZoieException {
+		File idxDir = getIdxDir();
+		MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+		HierarchyDynamicMBean hdm = new HierarchyDynamicMBean();
+		String LOG4J_HIEARCHY_DEFAULT = "log4j:hierarchy=default";
+		try {
+			mbeanServer.registerMBean(hdm, new ObjectName("HouseGlass:name=log4j"));
+			// Add the root logger to the Hierarchy MBean
+			hdm.addLoggerMBean(Logger.getRootLogger().getName());
+
+			// Get each logger from the Log4J Repository and add it to
+			// the Hierarchy MBean created above.
+			LoggerRepository r = LogManager.getLoggerRepository();
+
+			java.util.Enumeration loggers = r.getCurrentLoggers();
+
+			int count = 1;
+			while (loggers.hasMoreElements()) {
+				String name = ((Logger) loggers.nextElement()).getName();
+				if (log.isDebugEnabled()) {
+					log.debug("[contextInitialized]: Registering " + name);
+				}
+				hdm.addLoggerMBean(name);
+				count++;
+			}
+			if (log.isInfoEnabled()) {
+				log.info("[contextInitialized]: " + count + " log4j MBeans registered.");
+			}
+		} catch (Exception e) {
+			log.error("[contextInitialized]: Exception catched: ", e);
+		}
+		String schedule = "07 15 20";
+
+    System.out.println("Testing trimming, please wait for about 4 mins...");
+
+    int trimThreshold = 1;
+		long numTestContent = (trimThreshold + 3) * 60 * 1000 / TRIMMING_TEST_SLEEP;
+		oneTest(idxDir, schedule, numTestContent, trimThreshold, true);
+    
+    assertTrue(maxDirs >= trimThreshold + 2);
+    assertTrue(minDirs == trimThreshold + 1);
+		return;
+	}
+
+	private void oneTest(File idxDir, String schedule, long numTestContent,
+                       int trimThreshold, boolean isTestTrimming)
 			throws IOException, InterruptedException {
 		HourglassDirectoryManagerFactory factory = new HourglassDirectoryManagerFactory(
 				idxDir, new HourGlassScheduler(
-						HourGlassScheduler.FREQUENCY.MINUTELY, schedule, 100));
+						HourGlassScheduler.FREQUENCY.MINUTELY, schedule, trimThreshold));
 		ZoieConfig zConfig = new ZoieConfig();
 		zConfig.setBatchSize(3);
 		zConfig.setBatchDelay(10);
@@ -144,10 +198,35 @@ public class HourglassTest extends ZoieTestCaseBase {
 
 		long accumulatedTime = 0;
 		for (int i = initNumDocs; i < initNumDocs + numTestContent; i++) {
-			List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(
-					2);
+			List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(2);
 			list.add(new DataEvent<String>("" + i, "" + i));
 			memoryProvider.addEvents(list);
+
+      if (isTestTrimming)
+      {
+        if (idxDir.exists()) 
+        {
+          int numDirs = idxDir.listFiles().length;
+          if (numDirs > maxDirs) 
+          {
+            System.out.println("Set maxDirs to " + numDirs);
+            maxDirs = numDirs;
+          }
+          if (minDirs < 0 && maxDirs >= trimThreshold + 2 && numDirs <= trimThreshold + 1)
+          {
+            // We want to make sure that number of directories does
+            // shrink to trimThreshold + 1.  Exactly when trimming is
+            // done is controlled by HourglassReaderManager; it happens
+            // only once per minute.
+            System.out.println("Set minDirs to " + numDirs);
+            minDirs = numDirs;
+          }
+        }
+        System.out.println((i - initNumDocs) + " of " + (numTestContent - initNumDocs));
+        Thread.sleep(TRIMMING_TEST_SLEEP);
+        continue;
+      }
+
 			if (i % 113 != 0)
 				continue;
 			long flushtime = System.currentTimeMillis();

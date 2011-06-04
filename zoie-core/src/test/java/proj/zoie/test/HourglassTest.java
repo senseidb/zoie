@@ -57,7 +57,7 @@ public class HourglassTest extends ZoieTestCaseBase {
   // Sleep time between each data event for trimming test (in
   // milliseconds)
   static int TRIMMING_TEST_SLEEP = 2000; 
-  int minDirs = -1; // Minimum number of dirs after system is stable
+  int minDirs = Integer.MAX_VALUE; // Minimum number of dirs after system is stable
   int maxDirs = 0;
 
   @Test
@@ -212,7 +212,7 @@ public class HourglassTest extends ZoieTestCaseBase {
             System.out.println("Set maxDirs to " + numDirs);
             maxDirs = numDirs;
           }
-          if (minDirs < 0 && maxDirs >= trimThreshold + 2 && numDirs <= trimThreshold + 1)
+          if (maxDirs >= trimThreshold + 2 && numDirs < minDirs)
           {
             // We want to make sure that number of directories does
             // shrink to trimThreshold + 1.  Exactly when trimming is
@@ -222,7 +222,7 @@ public class HourglassTest extends ZoieTestCaseBase {
             minDirs = numDirs;
           }
         }
-        System.out.println((i - initNumDocs) + " of " + (numTestContent - initNumDocs));
+        System.out.println((i - initNumDocs + 1) + " of " + (numTestContent - initNumDocs));
         Thread.sleep(TRIMMING_TEST_SLEEP);
         continue;
       }

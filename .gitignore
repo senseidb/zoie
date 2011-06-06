@@ -10,3 +10,6 @@ lib
 MANIFEST.MF
 !lib/tools
 .settings
+*~
+TAGS
+cscope.*

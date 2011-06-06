@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
@@ -111,29 +112,57 @@ public class HourglassReaderManager<R extends IndexReader, D>
     Calendar now = Calendar.getInstance();
     now.setTimeInMillis(timenow);
     Calendar threshold = hg._scheduler.getTrimTime(now);
-    for(int i=0; i<toRemove.size(); i++)
+
+    ZoieIndexReader<R>[] readerArray = toRemove.toArray(new ZoieIndexReader[toRemove.size()]);
+    Arrays.sort(readerArray,
+                new Comparator<ZoieIndexReader<R>>()
+                {
+                  @Override
+                  public int compare(ZoieIndexReader<R> r1, ZoieIndexReader<R> r2)
+                  {
+                    String name1 = ((SimpleFSDirectory) r1.directory()).getFile().getName();
+                    String name2 = ((SimpleFSDirectory) r2.directory()).getFile().getName();
+                    return name2.compareTo(name1);
+                  }
+                });
+
+    boolean foundOldestToKeep = false;
+
+    for (ZoieIndexReader<R> reader: readerArray)
     {
-      SimpleFSDirectory dir = (SimpleFSDirectory) toRemove.get(i).directory();
+      SimpleFSDirectory dir = (SimpleFSDirectory) reader.directory();
       String path = dir.getFile().getName();
-      Calendar archivetime = null;
-      try
-      {
-        archivetime = HourglassDirectoryManagerFactory.getCalendarTime(path);
-      } catch (ParseException e)
-      {
-        log.error("index directory name bad. potential corruption. Move on without trimming.", e);
-        toKeep.add(toRemove.get(i));
-        continue;
-      }
-      if (archivetime.before(threshold))
+
+      if (foundOldestToKeep)
       {
         log.info("trimming: remove " + path);
         log.info(dir.getFile() + " -before--" + (dir.getFile().exists()?" not deleted ":" deleted"));
         FileUtil.rmDir(dir.getFile());
         log.info(dir.getFile() + " -after--" + (dir.getFile().exists()?" not deleted ":" deleted"));
-      } else
+        continue;
+      }
+      else
       {
-        toKeep.add(toRemove.get(i));
+        // Always keep this reader (when the oldest one to keep has not
+        // been found), no matter the index directory name can be parsed
+        // or not.
+        toKeep.add(reader);
+
+        Calendar archivetime = null;
+        try
+        {
+          archivetime = HourglassDirectoryManagerFactory.getCalendarTime(path);
+        }
+        catch (ParseException e)
+        {
+          log.error("index directory name bad. potential corruption. Move on without trimming.", e);
+          continue;
+        }
+
+        if (archivetime.before(threshold))
+        {
+          foundOldestToKeep = true;
+        }
       }
     }
     toRemove.removeAll(toKeep);

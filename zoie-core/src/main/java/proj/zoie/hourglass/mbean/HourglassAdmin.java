@@ -79,12 +79,6 @@ public class HourglassAdmin implements HourglassAdminMBean
     }
 
     @Override
-    public int getDiskIndexSize()
-    {
-      return 0;
-    }
-
-    @Override
     public long getDiskIndexSizeBytes()
     {
       return hourglass.getSizeBytes();
@@ -122,30 +116,41 @@ public class HourglassAdmin implements HourglassAdminMBean
     }
 
     @Override
+	public void setMaxMergeDocs(int maxMergeDocs) {
+    	hourglass.getCurrentZoie().getAdminMBean().setMaxMergeDocs(maxMergeDocs);
+	}
+
+	@Override
     public int getMaxSmallSegments()
     {
       return hourglass.getCurrentZoie().getAdminMBean().getMaxSmallSegments();
     }
+	
+	
 
     @Override
-    public long getMaxUID() throws IOException
-    {
-      // TODO Auto-generated method stub
-      return 0;
-    }
+	public void setNumLargeSegments(int numLargeSegments) {
+    	hourglass.getCurrentZoie().getAdminMBean().setNumLargeSegments(numLargeSegments);
+	}
+
+
+	@Override
+	public void setMaxSmallSegments(int maxSmallSegments) {
+		hourglass.getCurrentZoie().getAdminMBean().setMaxSmallSegments(maxSmallSegments);
+	}
 
     @Override
     public int getMergeFactor()
     {
       return hourglass.getCurrentZoie().getAdminMBean().getMergeFactor();
     }
+    
+    
 
     @Override
-    public long getMinUID() throws IOException
-    {
-      // TODO Auto-generated method stub
-      return 0;
-    }
+	public void setMergeFactor(int mergeFactor) {
+    	hourglass.getCurrentZoie().getAdminMBean().setMergeFactor(mergeFactor);
+	}
 
     @Override
     public int getNumLargeSegments()

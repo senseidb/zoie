@@ -179,7 +179,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
     // TODO disable compound file for RAMDirecory when lucene bug is fixed
     idxWriter.setUseCompoundFile(false);
     idxWriter.setMergeScheduler(_mergeScheduler);
-    ZoieMergePolicy mergePolicy = new ZoieMergePolicy(idxWriter);
+    ZoieMergePolicy mergePolicy = new ZoieMergePolicy();
     mergePolicy.setMergePolicyParams(_mergePolicyParams);
     idxWriter.setMergePolicy(mergePolicy);
     idxWriter.setRAMBufferSizeMB(3);

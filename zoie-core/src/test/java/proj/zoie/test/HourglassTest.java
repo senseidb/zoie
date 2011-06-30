@@ -4,6 +4,7 @@
 package proj.zoie.test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,13 +54,19 @@ import proj.zoie.impl.indexing.ZoieConfig;
 public class HourglassTest extends ZoieTestCaseBase {
 	static Logger log = Logger.getLogger(HourglassTest.class);
 
-	@Test
+  // Sleep time between each data event for trimming test (in
+  // milliseconds)
+  static int TRIMMING_TEST_SLEEP = 2000; 
+  int minDirs = Integer.MAX_VALUE; // Minimum number of dirs after system is stable
+  int maxDirs = 0;
+
+  @Test
 	public void testHourglassDirectoryManagerFactory() throws IOException,
 			InterruptedException, ZoieException {
 		File idxDir = getIdxDir();
 		MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
 		HierarchyDynamicMBean hdm = new HierarchyDynamicMBean();
-		String LOG4J_HIEARCHY_DEFAULT = "log4j:hiearchy=default";
+		String LOG4J_HIEARCHY_DEFAULT = "log4j:hierarchy=default";
 		try {
 			mbeanServer.registerMBean(hdm, new ObjectName(
 					"HouseGlass:name=log4j"));
@@ -93,6 +100,51 @@ public class HourglassTest extends ZoieTestCaseBase {
 		oneTest(idxDir, schedule, numTestContent); // test starting from empty
 													// index
 		oneTest(idxDir, schedule, numTestContent); // test index pick up
+		return;
+	}
+
+  @Test
+  public void testTrimming() throws IOException, InterruptedException, ZoieException {
+		File idxDir = getIdxDir();
+		MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+		HierarchyDynamicMBean hdm = new HierarchyDynamicMBean();
+		String LOG4J_HIEARCHY_DEFAULT = "log4j:hierarchy=default";
+		try {
+			mbeanServer.registerMBean(hdm, new ObjectName("HouseGlass:name=log4j"));
+			// Add the root logger to the Hierarchy MBean
+			hdm.addLoggerMBean(Logger.getRootLogger().getName());
+
+			// Get each logger from the Log4J Repository and add it to
+			// the Hierarchy MBean created above.
+			LoggerRepository r = LogManager.getLoggerRepository();
+
+			java.util.Enumeration loggers = r.getCurrentLoggers();
+
+			int count = 1;
+			while (loggers.hasMoreElements()) {
+				String name = ((Logger) loggers.nextElement()).getName();
+				if (log.isDebugEnabled()) {
+					log.debug("[contextInitialized]: Registering " + name);
+				}
+				hdm.addLoggerMBean(name);
+				count++;
+			}
+			if (log.isInfoEnabled()) {
+				log.info("[contextInitialized]: " + count + " log4j MBeans registered.");
+			}
+		} catch (Exception e) {
+			log.error("[contextInitialized]: Exception catched: ", e);
+		}
+		String schedule = "07 15 20";
+
+    System.out.println("Testing trimming, please wait for about 4 mins...");
+
+    int trimThreshold = 1;
+		long numTestContent = (trimThreshold + 3) * 60 * 1000 / TRIMMING_TEST_SLEEP;
+		doTrimmingTest(idxDir, schedule, numTestContent, trimThreshold);
+    
+    assertTrue(maxDirs >= trimThreshold + 2);
+    assertTrue(minDirs == trimThreshold + 1);
 		return;
 	}
 
@@ -144,8 +196,7 @@ public class HourglassTest extends ZoieTestCaseBase {
 
 		long accumulatedTime = 0;
 		for (int i = initNumDocs; i < initNumDocs + numTestContent; i++) {
-			List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(
-					2);
+			List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(2);
 			list.add(new DataEvent<String>("" + i, "" + i));
 			memoryProvider.addEvents(list);
 			if (i % 113 != 0)
@@ -196,6 +247,94 @@ public class HourglassTest extends ZoieTestCaseBase {
 			mbeanServer.unregisterMBean(new ObjectName(
 					"HouseGlass:name=hourglass"));
 		} catch (Exception e) {
+			e.printStackTrace();
+			log.error(e);
+		}
+		memoryProvider.stop();
+		hourglass.shutdown();
+	}
+
+	private void doTrimmingTest(File idxDir,
+                              String schedule,
+                              long numTestContent,
+                              int trimThreshold)
+    throws IOException, InterruptedException
+  {
+		HourglassDirectoryManagerFactory factory =
+      new HourglassDirectoryManagerFactory(idxDir,
+                                           new HourGlassScheduler(HourGlassScheduler.FREQUENCY.MINUTELY,
+                                                                  schedule, trimThreshold));
+		ZoieConfig zConfig = new ZoieConfig();
+		zConfig.setBatchSize(3);
+		zConfig.setBatchDelay(10);
+		zConfig.setFreshness(10);
+		Hourglass<IndexReader, String> hourglass = new Hourglass<IndexReader, String>(
+				factory, new HourglassTestInterpreter(),
+				new IndexReaderDecorator<IndexReader>() {
+
+					public IndexReader decorate(
+							ZoieIndexReader<IndexReader> indexReader)
+							throws IOException {
+						return indexReader;
+					}
+
+					public IndexReader redecorate(IndexReader decorated,
+							ZoieIndexReader<IndexReader> copy,
+							boolean withDeletes) throws IOException {
+						// TODO Auto-generated method stub
+						return decorated;
+					}
+
+					public void setDeleteSet(IndexReader reader, DocIdSet docIds) {
+						// Do nothing
+					}
+				}, zConfig);
+		HourglassAdmin mbean = new HourglassAdmin(hourglass);
+		MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+		try {
+			mbeanServer.registerMBean(mbean, new ObjectName("HouseGlass:name=hourglass"));
+		} catch (Exception e) {
+			System.out.println(e);
+		}
+		MemoryStreamDataProvider<String> memoryProvider =
+      new MemoryStreamDataProvider<String>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
+		memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
+		memoryProvider.setDataConsumer(hourglass);
+		memoryProvider.start();
+		int initNumDocs = getTotalNumDocs(hourglass);
+		System.out.println("initial number of DOCs: " + initNumDocs);
+
+		for (int i = initNumDocs; i < initNumDocs + numTestContent; i++) {
+			List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(2);
+			list.add(new DataEvent<String>("" + i, "" + i));
+			memoryProvider.addEvents(list);
+
+      System.out.println((i - initNumDocs + 1) + " of " + (numTestContent - initNumDocs));
+      if (idxDir.exists()) 
+      {
+        int numDirs = idxDir.listFiles().length;
+        if (numDirs > maxDirs) 
+        {
+          System.out.println("Set maxDirs to " + numDirs);
+          maxDirs = numDirs;
+        }
+        if (maxDirs >= trimThreshold + 2 && numDirs < minDirs)
+        {
+          // We want to make sure that number of directories does shrink
+          // to trimThreshold + 1.  Exactly when trimming is done is
+          // controlled by HourglassReaderManager, which checks trimming
+          // condition only once per minute.
+          System.out.println("Set minDirs to " + numDirs);
+          minDirs = numDirs;
+        }
+      }
+      Thread.sleep(TRIMMING_TEST_SLEEP);
+    }
+
+		try {
+			mbeanServer.unregisterMBean(new ObjectName("HouseGlass:name=hourglass"));
+		}
+    catch (Exception e) {
 			e.printStackTrace();
 			log.error(e);
 		}

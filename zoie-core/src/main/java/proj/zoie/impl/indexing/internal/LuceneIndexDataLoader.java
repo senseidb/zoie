@@ -68,7 +68,7 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
     protected abstract void propagateDeletes(LongSet delDocs) throws IOException;
     protected abstract void commitPropagatedDeletes() throws IOException;
     
-    private final void purgeDocuments() throws IOException{
+    private final void purgeDocuments(){
     	if (_purgeFilter!=null){
     		BaseSearchIndex<R> idx = getSearchIndex();
     		IndexReader reader = null;
@@ -83,6 +83,9 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
     				count++;
     				reader.deleteDocument(doc);
     			}
+    		}
+    		catch(Throwable th){
+    			log.error("problem creating purge filter: "+th.getMessage(),th);
     		}
     		finally{
     			if (reader!=null){

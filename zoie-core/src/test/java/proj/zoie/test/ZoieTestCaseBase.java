@@ -8,6 +8,8 @@ import java.util.Comparator;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
+import org.apache.log4j.Appender;
+import org.apache.log4j.PatternLayout;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
@@ -25,6 +27,18 @@ import proj.zoie.test.data.InRangeDataInterpreterForTests;
 
 public class ZoieTestCaseBase
 {
+  static{
+    Appender appender = null;
+    PatternLayout layout = new PatternLayout();
+    layout.setConversionPattern("%d{yyyy/MM/dd HH:mm:ss.SSS} %p [%c{1}] [%x] %m%n");
+    try{
+	 appender = new org.apache.log4j.FileAppender(layout,"zoie-test-log.log");
+    }	
+    catch(IOException e){
+	  e.printStackTrace();
+    }
+    org.apache.log4j.BasicConfigurator.configure(appender);
+  }
   static Logger log = Logger.getLogger(ZoieTestCaseBase.class);
   static MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
   public void registerMBean(Object standardmbean, String mbeanname)

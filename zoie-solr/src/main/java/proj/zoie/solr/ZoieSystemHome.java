@@ -51,7 +51,7 @@ public class ZoieSystemHome {
 		}
 		catch(Exception e){
 			log.error(e.getMessage()+", defaulting to "+StandardAnalyzer.class,e);
-			analyzer = new StandardAnalyzer(Version.LUCENE_30);
+			analyzer = new StandardAnalyzer(Version.LUCENE_29);
 		}
 		
 		Similarity similarity = null;

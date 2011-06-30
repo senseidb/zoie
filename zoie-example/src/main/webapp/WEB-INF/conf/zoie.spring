@@ -8,7 +8,7 @@
 	
 	<bean id="fileInterpreter" class="proj.zoie.impl.indexing.FileIndexableInterpreter" />
 	
-	<bean id="versionComparator" class="proj.zoie.impl.indexing.ZoieConfig.DefaultVersionComparator" />
+	<bean id="versionComparator" class="proj.zoie.impl.indexing.ZoieConfig$DefaultVersionComparator" />
 	
 	<bean id="indexingSystem" class="proj.zoie.impl.indexing.SimpleZoieSystem" init-method="start" destroy-method="shutdown">
 		<constructor-arg value="file:${index.dir}"/>

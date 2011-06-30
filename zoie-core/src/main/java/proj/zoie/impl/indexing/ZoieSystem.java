@@ -35,6 +35,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.Version;
 
@@ -437,6 +438,10 @@ extends AsyncDataConsumer<D> implements Zoie<R, D>
       Analyzer analyzer, Similarity similarity, int batchSize, long batchDelay, boolean realtime, Comparator<String> versionComparator)
   {
     return new ZoieSystem<IndexReader, D>(idxDir, interpreter, new DefaultIndexReaderDecorator(), analyzer, similarity, batchSize, batchDelay, realtime, versionComparator);
+  }
+  
+  public void setPurgeFilter(Filter purgeFilter){
+	 _diskLoader.setPurgeFilter(purgeFilter);
   }
 
   public void addIndexingEventListener(IndexingEventListener lsnr)

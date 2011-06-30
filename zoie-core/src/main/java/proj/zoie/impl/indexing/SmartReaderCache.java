@@ -96,12 +96,17 @@ public class SmartReaderCache<R extends IndexReader> extends AbstractReaderCache
   @Override
   public void setFreshness(long freshness)
   {
+	if (freshness < 0){
+      log.warn("freshness has to be at least 0 and cannot be " + freshness);
+	  freshness = 10000;
+	}
+	log.info("setting freshness to " + freshness + "ms");
     _freshness = freshness;
   }
 
   private Thread newMaintenanceThread()
   {
-    return new Thread("zoie-indexReader-maintenance")
+    return new Thread("SmartReaderCache-zoie-indexReader-maintenance")
     {
       @Override
       public void run()
@@ -121,7 +126,7 @@ public class SmartReaderCache<R extends IndexReader> extends AbstractReaderCache
           List<ZoieIndexReader<R>> newreaders = null;
           if (alreadyShutdown)
           {
-            newreaders = new ArrayList<ZoieIndexReader<R>>();
+            newreaders = new ArrayList<ZoieIndexReader<R>>(0);
             // clean up and quit
           } else
           {
@@ -130,24 +135,30 @@ public class SmartReaderCache<R extends IndexReader> extends AbstractReaderCache
               newreaders = _readerfactory.getIndexReaders();
             } catch (IOException e)
             {
-              log.info("zoie-indexReader-maintenance", e);
+              log.info("SmartReaderCache-zoie-indexReader-maintenance", e);
               newreaders = new ArrayList<ZoieIndexReader<R>>();
             }
           }
           cachedreaders = new ArrayList<ZoieIndexReader<R>>(newreaders);
-          WeakReference<List<ZoieIndexReader<R>>> w = new WeakReference<List<ZoieIndexReader<R>>>(cachedreaders, refq);
-          readermap.put(w, newreaders); // when nobody uses cachedreaders, we will clean newreaders :)
+          if (cachedreaders.size()>0){
+            WeakReference<List<ZoieIndexReader<R>>> w = new WeakReference<List<ZoieIndexReader<R>>>(cachedreaders, refq);
+            readermap.put(w, newreaders); // when nobody uses cachedreaders, we will clean newreaders :)
+          }
           cachedreaderTimestamp = System.currentTimeMillis();
           synchronized (cachemonitor)
           {
             cachemonitor.notifyAll();
           }
-          // clearning and reference counting on the ones no longer in use
+          // cleaning and reference counting on the ones no longer in use
           Reference<? extends List<ZoieIndexReader<R>>> wclean = null;
           while((wclean = refq.poll()) != null)
           {
             List<ZoieIndexReader<R>> readers = readermap.remove(wclean);
             _readerfactory.returnIndexReaders(readers);
+          }
+          if (alreadyShutdown && readermap.size() == 0){
+			log.info("SmartReaderCache-zoie-indexReader-maintenance done.");
+			break;
           }
         }
       }

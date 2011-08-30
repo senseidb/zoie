@@ -220,8 +220,6 @@ public class HourglassTest extends ZoieTestCaseBase {
 				searcher = new IndexSearcher(reader);
 				TopDocs hitsall = searcher.search(new MatchAllDocsQuery(), 10);
 				numDoc = hitsall.totalHits;
-				if (numDoc != oldNum)
-					System.out.println("numDoc: " + numDoc);
 				oldNum = numDoc;
 				Thread.sleep(30);
 			}

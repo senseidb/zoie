@@ -198,7 +198,6 @@ public class ZoieTest extends ZoieTestCaseBase {
 					10);
 			assertEquals(1, hits.totalHits);
 			// assertEquals(String.valueOf((long)((long)Integer.MAX_VALUE*2L)),searcher.doc(hits.scoreDocs[0].doc).get("id"));
-			System.out.println("hao: searching is successful");
 		} finally {
 			try {
 				if (searcher != null) {
@@ -483,8 +482,6 @@ public class ZoieTest extends ZoieTestCaseBase {
 	@Test
 	public void testDelSet() throws ZoieException {
 		for (int i = 0; i < 10; i++) {
-			System.out.println("testDelSet Round: " + i);
-			log.info("\n\n\ntestDelSet Round: " + i);
 			testDelSetImpl();
 		}
 	}

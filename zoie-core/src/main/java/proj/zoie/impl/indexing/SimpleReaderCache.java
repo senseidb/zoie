@@ -2,6 +2,7 @@ package proj.zoie.impl.indexing;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.index.IndexReader;
@@ -26,7 +27,7 @@ public class SimpleReaderCache<R extends IndexReader> extends AbstractReaderCach
 		return _readerFactory.getIndexReaders();
 	  } catch (IOException e) {
 		logger.error(e.getMessage(),e);
-		return null;
+		return new ArrayList<ZoieIndexReader<R>>();
 	  }
 	}
 

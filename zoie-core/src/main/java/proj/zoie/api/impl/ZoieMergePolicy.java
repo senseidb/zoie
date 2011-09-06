@@ -17,7 +17,7 @@ package proj.zoie.api.impl;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.util.Set;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.index.CorruptIndexException;
@@ -129,30 +129,32 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
     }
   }
 
-  private boolean isOptimized(SegmentInfos infos, IndexWriter writer, int maxNumSegments, Set<?> segmentsToOptimize) throws IOException {
+  @Override
+  protected boolean isOptimized(SegmentInfos infos,int maxNumSegments,Map<SegmentInfo,Boolean> segmentsToOptimize) throws IOException {
     final int numSegments = infos.size();
     int numToOptimize = 0;
     SegmentInfo optimizeInfo = null;
     for(int i=0;i<numSegments && numToOptimize <= maxNumSegments;i++) {
       final SegmentInfo info = infos.info(i);
-      if (segmentsToOptimize.contains(info)) {
+      if (segmentsToOptimize.get(info)) {
         numToOptimize++;
         optimizeInfo = info;
       }
     }
 
     return numToOptimize <= maxNumSegments &&
-    (numToOptimize != 1 || isOptimized(writer, optimizeInfo));
+    (numToOptimize != 1 || isOptimized(optimizeInfo));
   }
 
   /** Returns true if this single nfo is optimized (has no
    *  pending norms or deletes, is in the same dir as the
    *  writer, and matches the current compound file setting */
-  private boolean isOptimized(IndexWriter writer, SegmentInfo info)
+  protected boolean isOptimized(SegmentInfo info)
   throws IOException {
+    IndexWriter w = writer.get();
     return !info.hasDeletions() &&
     !info.hasSeparateNorms() &&
-    info.dir == writer.getDirectory() &&
+    info.dir == w.getDirectory() &&
     info.getUseCompoundFile() == getUseCompoundFile();
   }
 
@@ -165,7 +167,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
    *  (mergeFactor at a time) so the {@link MergeScheduler}
    *  in use may make use of concurrency. */
   @Override
-  public MergeSpecification findMergesForOptimize(SegmentInfos infos, int maxNumSegments, Set segmentsToOptimize) throws IOException {
+  public MergeSpecification findMergesForOptimize(SegmentInfos infos, int maxNumSegments, Map<SegmentInfo,Boolean> segmentsToOptimize) throws IOException {
 
     assert maxNumSegments > 0;
 
@@ -180,7 +182,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
       while(last > 0)
       {
         final SegmentInfo info = infos.info(--last);
-        if (segmentsToOptimize.contains(info))
+        if (segmentsToOptimize.get(info))
         {
           last++;
           break;

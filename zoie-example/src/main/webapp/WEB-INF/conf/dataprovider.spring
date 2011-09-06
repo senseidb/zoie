@@ -9,6 +9,7 @@
 	
 	<bean id="dataprovider" class="proj.zoie.impl.indexing.FileDataProvider">
 		<constructor-arg value="file:${source.dir}"/>
+		<constructor-arg ref="versionComparator"/>
 		<property name="dataConsumer" ref="consumer" />
 	</bean>
 	

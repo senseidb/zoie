@@ -1,0 +1,194 @@
+<html xmlns:og="http://ogp.me/ns#">
+<head>
+	<title>Zoie realtime indexing and search system</title>
+	<link rel="icon" type="image/png" href="images/zoielogo_s.png"/>
+	<meta name="description" content="zoie is a realtime indexing and search system built on apache lucene"/>
+	<meta name="keywords" content="search,realtime,zoie,indexing,opensource,lucene" />
+	<meta http-equiv='Content-Type' content='text/html;charset=utf-8' />
+	<meta property="og:title" value="zoie" />
+	<meta property="og:image" value="images/zoielogo_s.png" />
+	<meta property="og:description" value="zoie is a realtime indexing and search system built on apache lucene" />
+	<meta property="og:site_name" value="github" />
+	<meta property="og:type" value="website" />
+	
+	<link rel="stylesheet" href="http://twitter.github.com/bootstrap/assets/css/bootstrap-1.2.0.min.css"/>
+	<link rel="stylesheet" href="styles/prettify.css" type="text/css" media="screen"/>
+	<link rel="stylesheet" href="styles/style.css" type="text/css" media="screen"/>
+	<script src="http://code.jquery.com/jquery-1.5.2.min.js"></script>
+	<script src="scripts/app.js" type="text/javascript" charset="utf-8"></script>
+	
+	<script type="text/javascript" charset="utf-8">
+		function renderSnippet(source,area,src){
+			$("#"+area).empty();
+			$("#"+source).children().clone().appendTo("#"+area);
+			$('.active').removeClass('active');
+			$(src).parent('li').addClass('active');
+		};
+		
+	</script>
+</head>
+
+	<body>
+		<a href="http://github.com/javasoze/zoie"><img style="position: absolute; top: 40; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+	        <div class="topbar-wrapper"> 
+	            <div class="topbar"> 
+	              <div class="topbar-inner"> 
+	                <div class="container"> 
+					  <div id="logo"><a href="#">Zoie</a></div>
+	                  <h3><a href="#">Zoie</a></h3> 
+	                  <ul class="nav"> 
+	                    <li class="active"><a href="#" onclick="renderSnippet('home','stuff',this)">Home</a></li> 
+	                    <li><a href="#" onclick="renderSnippet('download','stuff',this)">Downloads</a></li> 
+	                    <li><a href="#">Documentation</a></li> 
+	                    <li><a href="#">Developers</a></li>
+	                  </ul> 
+	                  <ul class="nav secondary-nav"> 
+	                    <li class="dropdown"> 
+	                      <a href="#" class="dropdown-toggle">Resources</a> 
+	                      <ul class="dropdown-menu"> 
+	                        <li><a href="http://github.com/javasoze/zoie">Source</a></li> 
+	                        <li><a href="http://linkedin.jira.com/wiki/display/ZOIE/Code+Samples">Code Samples</a></li>
+	                        <li><a href="http://linkedin.jira.com/wiki/display/ZOIE/Getting+Started+-+Zoie+Example">Getting Started</a></li> 
+	                        <li><a href="http://linkedin.jira.com/wiki/display/ZOIE">Wiki Space</a></li>
+	                        <li class="divider"></li> 
+	                        <li><a href="http://linkedin.jira.com/browse/ZOIE">Bugs</a></li>
+	                        <li><a href="http://groups.google.com/group/zoie">Mailing List</a></li> 
+							<li><a href="http://www.facebook.com/pages/Zoie-Realtime-Search-System/152613021424304">Facebook</a></li> 
+							<li><a href="http://www.apache.org/licenses/LICENSE-2.0.html">License (APL v2.0)</a></li>
+	                      </ul> 
+	                    </li> 
+	                  </ul> 
+	                </div> 
+	              </div><!-- /topbar-inner --> 
+	            </div><!-- /topbar --> 
+	          </div><!-- /topbar-wrapper -->
+		<div class="container spacer">
+		
+			<div id="stuff">
+			</div>
+		</div>
+		
+		<div id="home" hidden="true">
+			  <div class="row"> 
+			    <div class="span4 columns"> 
+			      <h2>What is Zoie?</h2> 
+			    </div> 
+			    <div class="span12 columns"> 
+<p>Zoie is a real-time search and indexing system built on <a href="http://lucene.apache.org">Apache Lucene</a>.</p>
+<p>Donated by <a href="http://www.linkedin.com">LinkedIn.com</a> on July 19, 2008, and has been deployed in a real-time large-scale consumer website: LinkedIn.com handling millions of searches as well as millions of updates daily.</p>
+			    </div> 
+			  </div><!-- /row -->
+			<div class="row"> 
+			    <div class="span4 columns"> 
+			      <h2>Architecture:</h2> 
+			    </div> 
+			    <div class="span12 columns"> 
+				Zoie implements 2 facades: (<a href="http://linkedin.jira.com/wiki/download/attachments/1998880/zoie-uml.jpg?version=1&modificationDate=1265842437638">Class Diagram</a>)
+				<h4>DataConsumer:</h4>
+				Consumer of a collection of indexing events.
+				<h4>IndexReaderFactory:</h4>
+				As the name states, a factory produces Lucene <a href="http://lucene.apache.org/java/3_0_0/api/core/org/apache/lucene/index/IndexReader.html">IndexReader</a> instances.
+<p>
+	<h4>Diagram</h4>
+	The following diagram illustrates how Zoie implements the above facades:
+	<img src="images/zoie-graph.jpg" />
+</p>
+			    </div> 
+			  </div><!-- /row -->
+			 <div class="row"> 
+			    <div class="span4 columns"> 
+			      <h2>Features:</h2> 
+			    </div> 
+			    <div class="span12 columns"> 
+<ul>
+	<li> fast lucene docid to uid mapping
+    <li> fast uid to lucene docid mapping (reverse id mapping)
+    <li> custom MergePolicy to produce balanced index segment management for handle realtime updates
+    <li> partial delete expunge for enhancing search performance without full optimize
+    <li> Automatic plugin to forward-rolling index
+    <li> full jmx console for indexing management/monitoring
+    <li> ...
+</ul>
+			    </div> 
+			  </div><!-- /row -->
+			<div class="row"> 
+			    <div class="span4 columns"> 
+			      <h2>Design Goals:</h2> 
+			    </div> 
+			    <div class="span12 columns"> 
+					<ul>
+					    <li> Additions of documents must be made available to searchers immediately
+					    <li> Indexing must not affect search performance
+					    <li> Additions of documents must not fragment the index (which hurts search performance)
+					    <li> Deletes and/or updates of documents must not affect search performance.
+					    <li> ... 
+					</ul>
+			    </div> 
+			  </div><!-- /row -->
+		</div>
+		
+		<div id="download" hidden="true">
+			<div class="row"> 
+			    <div class="span4 columns"> 
+			      <h2>Release:</h2> 
+			    </div> 
+			    <div class="span12 columns"> 
+<p>The latest Zoie release is <strong>3.0.0</strong>, which can be downloaded <a href="http://github.com/javasoze/zoie/downloads">here</a>.</p>
+<h4>Changes:</h4>
+<ul>
+	<li>Lucene 3.0.x compatibility</li>
+	<li>Added retention support (GC old documents)</li>
+	<li>Numerous performance tweaks</li>
+	<li>Bug fixes</li>
+	<li>Zoie major version will be pegged to Lucene major version</li>
+</ul>
+			    </div> 
+			  </div><!-- /row -->
+			<div class="row"> 
+			    <div class="span4 columns"> 
+			      <h2>Maven</h2> 
+			    </div> 
+			    <div class="span12 columns"> 
+Zoie libraries are available on Maven:
+<p>
+	<h4>zoie-core</h4>
+	Description: core library
+	<pre class="prettify">
+		&lt;groupId&gt;<strong>com.linkedin.zoie</strong>&lt;/groupId&gt;
+		&lt;artifactId&gt;<strong>zoie-core</strong>&lt;/artifactId&gt;
+		&lt;version&gt;<strong>3.0.0</strong>&lt;/version&gt;
+	</pre>
+	<h4>zoie-solr</h4>
+	Description: Solr plugin
+	<pre class="prettify">
+		&lt;groupId&gt;<strong>com.linkedin.zoie</strong>&lt;/groupId&gt;
+		&lt;artifactId&gt;<strong>zoie-solr</strong>&lt;/artifactId&gt;
+		&lt;version&gt;<strong>3.0.0</strong>&lt;/version&gt;
+		
+	</pre>
+	<h4>zoie-jms</h4>
+	Description: JMS data provider
+	<pre class="prettify">
+		&lt;groupId&gt;<strong>com.linkedin.zoie</strong>&lt;/groupId&gt;
+		&lt;artifactId&gt;<strong>zoie-jms</strong>&lt;/artifactId&gt;
+		&lt;version&gt;<strong>3.0.0</strong>&lt;/version&gt;
+		
+	</pre>
+</p>
+			    </div> 
+			  </div><!-- /row -->
+			<div class="row"> 
+			    <div class="span4 columns"> 
+			      <h2>Source Packages</h2> 
+			    </div> 
+			    <div class="span12 columns"> 
+<p>Source packages can be downloaded in both <br/><a href="http://github.com/javasoze/zoie/tarball/master"><img border="0" width="90" src="http://github.com/images/modules/download/tar.png"/></a> and <a href="http://github.com/javasoze/zoie/zipball/master"><img border="0" width="90" src="http://github.com/images/modules/download/zip.png"/></a> formats.</p>
+<p>You can also clone the project with <a href="http://git-scm.com">Git</a>
+  by running:
+  <pre class="well">git clone git://github.com/javasoze/zoie</pre>
+</p>
+			    </div> 
+			  </div><!-- /row -->
+		</div>
+	</body>
+</html>

@@ -50,7 +50,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
     private IntRBTreeSet _delDocIdSet = new IntRBTreeSet();
     private int[] _currentDelDocIds;
     
-    static class UIDTokenStream extends TokenStream {
+    static final class UIDTokenStream extends TokenStream {
         private boolean returnToken = false;
 
         private PayloadAttribute payloadAttr;
@@ -73,7 +73,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
         }
 
         @Override
-		public boolean incrementToken() throws IOException {
+		public final boolean incrementToken() throws IOException {
         	if (returnToken) {
                 returnToken = false;
                 return true;

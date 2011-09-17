@@ -178,7 +178,7 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
     IndexWriter idxWriter = new IndexWriter(directory, analyzer, create, _deletionPolicy, MaxFieldLength.UNLIMITED);
     idxWriter.setMergeScheduler(_mergeScheduler);
 
-    ZoieMergePolicy mergePolicy = new ZoieMergePolicy(idxWriter);
+    ZoieMergePolicy mergePolicy = new ZoieMergePolicy();
     mergePolicy.setMergePolicyParams(_mergePolicyParams);
     idxWriter.setRAMBufferSizeMB(5);
 

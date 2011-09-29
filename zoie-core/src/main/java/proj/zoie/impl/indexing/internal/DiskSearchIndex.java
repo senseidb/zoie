@@ -24,10 +24,12 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.SerialMergeScheduler;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Version;
 
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.ZoieHealth;
@@ -171,23 +173,23 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
     Directory directory = _dirMgr.getDirectory(true);
 
     log.info("opening index writer at: "+_dirMgr.getPath());
-
-    // create a new modifier to the index, assuming at most one instance is running at any given time
-    boolean create = !IndexReader.indexExists(directory);  
-    // hao: autocommit is set to false with this constructor
-    IndexWriter idxWriter = new IndexWriter(directory, analyzer, create, _deletionPolicy, MaxFieldLength.UNLIMITED);
-    idxWriter.setMergeScheduler(_mergeScheduler);
-
+    
     ZoieMergePolicy mergePolicy = new ZoieMergePolicy();
     mergePolicy.setMergePolicyParams(_mergePolicyParams);
-    idxWriter.setRAMBufferSizeMB(5);
 
-    idxWriter.setMergePolicy(mergePolicy);
-
-    if (similarity != null)
-    {
-      idxWriter.setSimilarity(similarity);
+    // hao: autocommit is set to false with this constructor
+    IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_33,analyzer);
+    config.setOpenMode(OpenMode.CREATE_OR_APPEND);
+    config.setIndexDeletionPolicy(_deletionPolicy);
+    config.setMergeScheduler(_mergeScheduler);
+    config.setMergePolicy(mergePolicy);
+    config.setReaderPooling(false);
+    if (similarity!=null){
+      config.setSimilarity(similarity);
     }
+    config.setRAMBufferSizeMB(5);
+    IndexWriter idxWriter = new IndexWriter(directory,config);
+
     _indexWriter = idxWriter;
     return idxWriter;
   }

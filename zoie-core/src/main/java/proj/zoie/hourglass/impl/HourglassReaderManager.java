@@ -18,10 +18,12 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.SimpleFSDirectory;
+import org.apache.lucene.util.Version;
 
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.ZoieException;
@@ -120,8 +122,8 @@ public class HourglassReaderManager<R extends IndexReader, D>
                   @Override
                   public int compare(ZoieIndexReader<R> r1, ZoieIndexReader<R> r2)
                   {
-                    String name1 = ((SimpleFSDirectory) r1.directory()).getFile().getName();
-                    String name2 = ((SimpleFSDirectory) r2.directory()).getFile().getName();
+                    String name1 = ((SimpleFSDirectory) r1.directory()).getDirectory().getName();
+                    String name2 = ((SimpleFSDirectory) r2.directory()).getDirectory().getName();
                     return name2.compareTo(name1);
                   }
                 });
@@ -131,14 +133,14 @@ public class HourglassReaderManager<R extends IndexReader, D>
     for (ZoieIndexReader<R> reader: readerArray)
     {
       SimpleFSDirectory dir = (SimpleFSDirectory) reader.directory();
-      String path = dir.getFile().getName();
+      String path = dir.getDirectory().getName();
 
       if (foundOldestToKeep)
       {
         log.info("trimming: remove " + path);
-        log.info(dir.getFile() + " -before--" + (dir.getFile().exists()?" not deleted ":" deleted"));
-        FileUtil.rmDir(dir.getFile());
-        log.info(dir.getFile() + " -after--" + (dir.getFile().exists()?" not deleted ":" deleted"));
+        log.info(dir.getDirectory() + " -before--" + (dir.getDirectory().exists()?" not deleted ":" deleted"));
+        FileUtil.rmDir(dir.getDirectory());
+        log.info(dir.getDirectory() + " -after--" + (dir.getDirectory().exists()?" not deleted ":" deleted"));
         continue;
       }
       else
@@ -177,23 +179,27 @@ public class HourglassReaderManager<R extends IndexReader, D>
     log.info("begin consolidate ... ");
     long b4 = System.currentTimeMillis();
     SimpleFSDirectory target = (SimpleFSDirectory) archived.get(0).directory();
-    log.info("into: "+target.getFile().getAbsolutePath());
+    log.info("into: "+target.getDirectory().getAbsolutePath());
     SimpleFSDirectory sources[] = new SimpleFSDirectory[archived.size()-1];
     @SuppressWarnings("unchecked")
     IndexSignature sigs[] = (IndexSignature[])new IndexSignature[archived.size()];
-    sigs[0] = _dirMgrFactory.getIndexSignature(target.getFile()); // the target index signature
+    sigs[0] = _dirMgrFactory.getIndexSignature(target.getDirectory()); // the target index signature
     log.info("target version: " + sigs[0].getVersion());
     for(int i=1; i<archived.size(); i++)
     {
       sources[i-1] = (SimpleFSDirectory) archived.get(i).directory();
-      sigs[i] = _dirMgrFactory.getIndexSignature(sources[i-1].getFile());  // get other index signatures
-      log.info("from: " + sources[i-1].getFile().getAbsolutePath());
+      sigs[i] = _dirMgrFactory.getIndexSignature(sources[i-1].getDirectory());  // get other index signatures
+      log.info("from: " + sources[i-1].getDirectory().getAbsolutePath());
     }
     IndexWriter idxWriter = null;
     try
     {
-      idxWriter = new IndexWriter(target, null, false, new ZoieIndexDeletionPolicy(), MaxFieldLength.UNLIMITED);
-      idxWriter.addIndexesNoOptimize(sources);
+      IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_33,null);
+      config.setReaderPooling(false);
+      config.setOpenMode(OpenMode.APPEND);
+      config.setIndexDeletionPolicy(new ZoieIndexDeletionPolicy());
+      idxWriter = new IndexWriter(target,config);
+      idxWriter.addIndexes(sources);
       idxWriter.optimize(1);
     } catch (CorruptIndexException e)
     {
@@ -217,10 +223,10 @@ public class HourglassReaderManager<R extends IndexReader, D>
           // remove the originals from disk
           for(SimpleFSDirectory dir : sources)
           {
-            IndexSignature sig = _dirMgrFactory.getIndexSignature(dir.getFile());
-            log.info(dir.getFile() + "---" + (dir.getFile().exists()?" not deleted ":" deleted") + " version: " + sig.getVersion());
-            FileUtil.rmDir(dir.getFile());
-            log.info(dir.getFile() + "---" + (dir.getFile().exists()?" not deleted ":" deleted"));
+            IndexSignature sig = _dirMgrFactory.getIndexSignature(dir.getDirectory());
+            log.info(dir.getDirectory() + "---" + (dir.getDirectory().exists()?" not deleted ":" deleted") + " version: " + sig.getVersion());
+            FileUtil.rmDir(dir.getDirectory());
+            log.info(dir.getDirectory() + "---" + (dir.getDirectory().exists()?" not deleted ":" deleted"));
           }
           String tgtversion = null;
           for(int i = sigs.length - 1; i >= 0; i--)
@@ -229,10 +235,10 @@ public class HourglassReaderManager<R extends IndexReader, D>
               tgtversion = sigs[i].getVersion();
           }
           // save the version to target
-          IndexSignature tgtsig = _dirMgrFactory.getIndexSignature(target.getFile());
+          IndexSignature tgtsig = _dirMgrFactory.getIndexSignature(target.getDirectory());
           tgtsig.updateVersion(tgtversion);
-          _dirMgrFactory.saveIndexSignature(target.getFile(), tgtsig);
-          log.info("saveIndexSignature to " + target.getFile().getAbsolutePath() + " at version: " + tgtsig.getVersion());
+          _dirMgrFactory.saveIndexSignature(target.getDirectory(), tgtsig);
+          log.info("saveIndexSignature to " + target.getDirectory().getAbsolutePath() + " at version: " + tgtsig.getVersion());
           // open index reader for the consolidated index
           IndexReader reader = IndexReader.open(target, true);
           // decorate the index

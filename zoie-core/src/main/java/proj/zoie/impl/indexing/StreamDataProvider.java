@@ -36,6 +36,7 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
   private int _batchSize;
   private DataConsumer<D> _consumer;
   private DataThread<D> _thread;
+  private volatile int _retryTime = 100;   // default retry every 100ms
 
   protected final Comparator<String> _versionComparator;
 
@@ -45,6 +46,14 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
     _consumer = null;
 
     _versionComparator = versionComparator;
+  }
+  
+  public void setRetryTime(int retryTime){
+	_retryTime = retryTime;
+  }
+  
+  public int getRetryTime(){
+	return _retryTime;
   }
 
   public void setDataConsumer(DataConsumer<D> consumer)
@@ -372,7 +381,7 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
               this.notifyAll();
               try
               {
-                this.wait(100);
+                this.wait(_dataProvider.getRetryTime());
               } catch (InterruptedException e)
               {
                 Thread.interrupted();

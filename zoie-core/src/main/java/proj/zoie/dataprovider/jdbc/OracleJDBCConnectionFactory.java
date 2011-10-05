@@ -45,7 +45,7 @@ public class OracleJDBCConnectionFactory implements JDBCConnectionFactory
 	return _conn;
   }
   
-  public void showndown() throws SQLException{
+  public synchronized void showndown() throws SQLException{
 		if (_conn!=null){
 			_conn.close();
 		}

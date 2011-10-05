@@ -713,7 +713,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 
 			idxSystem.syncWithVersion(10000, ""+(count-1));
 
-			QueryParser parser = new QueryParser(Version.LUCENE_CURRENT,
+			QueryParser parser = new QueryParser(Version.LUCENE_30,
 					"contents", idxSystem.getAnalyzer());
 			Query q;
 			Searcher searcher = null;
@@ -721,7 +721,6 @@ public class ZoieTest extends ZoieTestCaseBase {
 
 			TopDocs hits;
 
-			q = parser.parse("zoie");
 			readers = idxSystem.getIndexReaders();
 
 			for (int i = 0; i < readers.size(); i++) {

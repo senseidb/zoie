@@ -191,7 +191,7 @@ public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexR
 	}
 	
 	private class ReopenThread extends Thread{
-		private boolean _stop;
+		private volatile boolean _stop;
 		ReopenThread(){
 			super("reopen thread");
 			setDaemon(true);
@@ -200,7 +200,7 @@ public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexR
 		
 		void terminate(){
 			if (!_stop){
-				_stop=false;
+				_stop=true;
 				interrupt();
 			}
 		}

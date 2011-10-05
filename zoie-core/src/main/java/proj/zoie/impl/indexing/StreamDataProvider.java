@@ -392,7 +392,7 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
     private long[] last60 = new long[60];
     private long[] last60slots = new long[60];
     private volatile int currentslot = 0;
-    private final int window = 3;// window size 3 seconds
+    private static final int window = 3;// window size 3 seconds
 
     private long getEventsPerMinute()
     {

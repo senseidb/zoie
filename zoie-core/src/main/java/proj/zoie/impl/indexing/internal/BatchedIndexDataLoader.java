@@ -59,7 +59,7 @@ public class BatchedIndexDataLoader<R extends IndexReader,D> implements DataCons
 	protected long _lastFlushTime;
 	protected int _eventCount;
 	protected int _maxBatchSize;
-	protected boolean _stop;
+	protected volatile boolean _stop;
 	protected boolean _flush;
 	protected final SearchIndexManager<R> _idxMgr;
 	protected final ZoieIndexableInterpreter<D> _interpreter;
@@ -350,7 +350,7 @@ public class BatchedIndexDataLoader<R extends IndexReader,D> implements DataCons
               fireIndexingEvent(evt);
               try{
                 String newVersion = _idxMgr.getCurrentDiskVersion();
-                if (currentVersion != newVersion){
+                if (!currentVersion.equals(newVersion)){
                 	fireNewVersionEvent(newVersion);
                 }
               }

@@ -1,5 +1,6 @@
 package proj.zoie.impl.indexing;
 
+import java.io.Serializable;
 import java.util.Comparator;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -196,9 +197,10 @@ public class ZoieConfig
     this.ramIndexFactory = ramIndexFactory;
   }
 
-  public static class DefaultVersionComparator implements Comparator<String>
+  public static class DefaultVersionComparator implements Comparator<String>,Serializable
   {
-    public int compare(String s1, String s2)
+	private static final long serialVersionUID = 1L;
+	public int compare(String s1, String s2)
       {
         if(s1==s2) return 0;
         if(s1==null) return -1;

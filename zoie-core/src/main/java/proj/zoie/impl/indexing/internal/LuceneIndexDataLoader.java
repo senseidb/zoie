@@ -113,12 +113,19 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
 	 * 
 	 */
 	public void consume(Collection<DataEvent<ZoieIndexable>> events) throws ZoieException {
-		int eventCount = events.size();
-        if (events == null || eventCount == 0)
+		
+        if (events == null)
 			return;
 
+        int eventCount = events.size();
+        if (eventCount==0){
+        	return;
+        }
 		BaseSearchIndex<R> idx = getSearchIndex();
 
+		if (idx==null){
+			throw new ZoieException("trying to consume to null index");
+		}
 		Long2ObjectMap<List<IndexingReq>> addList = new Long2ObjectOpenHashMap<List<IndexingReq>>();
 		String version = idx.getVersion();		// current version
 

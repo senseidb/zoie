@@ -26,12 +26,12 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Version;
 import org.junit.Test;
 
+import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
-import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.impl.indexing.MemoryStreamDataProvider;
-import proj.zoie.impl.indexing.ZoieSystem;
 import proj.zoie.impl.indexing.ZoieConfig;
+import proj.zoie.impl.indexing.ZoieSystem;
 import proj.zoie.test.data.DataForTests;
 
 public class ZoieThreadTest extends ZoieTestCaseBase {
@@ -63,7 +63,7 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
 			queryRunnables[i] = new QueryRunnable() {
 				public void run() {
 					QueryParser parser = new QueryParser(
-							Version.LUCENE_CURRENT, "contents",
+							Version.LUCENE_33, "contents",
 							idxSystem.getAnalyzer());
 					Query q;
 					try {

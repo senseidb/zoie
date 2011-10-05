@@ -231,7 +231,8 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
 	    try
 	    {
 	      writer = openIndexWriter(null,null);
-	      writer.addIndexesNoOptimize(new Directory[] { dir });
+	      writer.addIndexes(new Directory[] { dir });
+	      writer.maybeMerge();
 	    }
 	    finally
 	    {	      

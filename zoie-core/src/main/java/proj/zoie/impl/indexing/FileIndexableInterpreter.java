@@ -28,7 +28,6 @@ import org.apache.lucene.document.Field.Store;
 
 import proj.zoie.api.indexing.AbstractZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexable;
-import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 
 public class FileIndexableInterpreter implements ZoieIndexableInterpreter<File> 

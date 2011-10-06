@@ -25,8 +25,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -54,7 +54,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
         private boolean returnToken = false;
 
         private PayloadAttribute payloadAttr;
-        private TermAttribute termAttr;
+        private CharTermAttribute termAttr;
         UIDTokenStream(long uid) {
           byte[] buffer = new byte[8];
           buffer[0] = (byte) (uid);
@@ -67,8 +67,8 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
           buffer[7] = (byte) (uid >> 56);
           payloadAttr = (PayloadAttribute)addAttribute(PayloadAttribute.class);
           payloadAttr.setPayload(new Payload(buffer));
-          termAttr = (TermAttribute)addAttribute(TermAttribute.class);
-          termAttr.setTermBuffer(termVal);
+          termAttr = (CharTermAttribute)addAttribute(CharTermAttribute.class);
+          termAttr.append(termVal);
           returnToken = true;
         }
 
@@ -145,7 +145,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 	@Override
 	public void markDeletes(LongSet delDocs, LongSet deletedUIDs)
 	{
-      DocIDMapper idMapper = getDocIDMaper();
+      DocIDMapper<?> idMapper = getDocIDMaper();
       LongIterator iter = delDocs.iterator();
       IntRBTreeSet delDocIdSet = _delDocIdSet;
 

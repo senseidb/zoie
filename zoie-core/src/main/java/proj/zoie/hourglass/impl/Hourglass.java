@@ -52,7 +52,7 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
     _dirMgrFactory.clearRecentlyChanged();
     _interpreter = interpreter;
     _decorator = readerDecorator;
-    _readerMgr = new HourglassReaderManager<R, D>(this, _dirMgrFactory, _decorator, loadArchives(),zoieConfig.getVersionComparator());
+    _readerMgr = new HourglassReaderManager<R, D>(this, _dirMgrFactory, _decorator, loadArchives());
     _currentVersion = _dirMgrFactory.getArchivedVersion();
     _currentZoie = _readerMgr.retireAndNew(null);
     _currentZoie.start();

@@ -187,11 +187,6 @@ public class IndexReaderDispenser<R extends IndexReader>
       numTries--;
       try{
         IndexSignature sig = new IndexSignature(_dirMgr.getVersion());
-  
-        if (sig==null)
-        {
-          throw new IOException("no index exist");
-        }
         
         if (_currentReader==null){
           reader = newReader(_dirMgr, _decorator, sig);
@@ -220,7 +215,7 @@ public class IndexReaderDispenser<R extends IndexReader>
     if (_currentReader != reader)
     {
       if (reader!=null){
-        DocIDMapper mapper = _idx._idxMgr._docIDMapperFactory.getDocIDMapper((ZoieMultiReader<R>)reader);
+        DocIDMapper<?> mapper = _idx._idxMgr._docIDMapperFactory.getDocIDMapper((ZoieMultiReader<R>)reader);
         reader.setDocIDMapper(mapper);
       }
       // assume that this is the only place that _currentReader gets refreshed 
@@ -230,7 +225,7 @@ public class IndexReaderDispenser<R extends IndexReader>
       // all the clients release their hold on it, the reader will be closed
       // automatically.
       log.info("swap disk reader and release old one from system");
-      if (oldReader !=null) ((ZoieIndexReader)oldReader).decZoieRef();//.decRef();
+      if (oldReader !=null) ((ZoieIndexReader<?>)oldReader).decZoieRef();//.decRef();
     }
     return reader;
   }

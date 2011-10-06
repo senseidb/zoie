@@ -17,6 +17,7 @@ package proj.zoie.api.impl;
  * limitations under the License.
  */
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -342,7 +343,9 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
 
     if(numLargeSegs < numSegs)
     {
-      SegmentInfos smallSegments = infos.range(numLargeSegs, numSegs);
+      List<SegmentInfo> smallSegmentList = infos.asList().subList(numLargeSegs, numSegs);
+      SegmentInfos smallSegments = new SegmentInfos();
+      smallSegments.addAll(smallSegmentList);
       spec = super.findMergesToExpungeDeletes(smallSegments);
     }
 
@@ -427,7 +430,9 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
     else
     {
       // apply the log merge policy to small segments.
-      SegmentInfos smallSegments = infos.range(numLargeSegs, numSegs);
+      List<SegmentInfo> smallSegmentList = infos.asList().subList(numLargeSegs, numSegs);
+      SegmentInfos smallSegments = new SegmentInfos();
+      smallSegments.addAll(smallSegmentList);
       MergeSpecification spec = super.findMerges(smallSegments);
 
       if(_partialExpunge)

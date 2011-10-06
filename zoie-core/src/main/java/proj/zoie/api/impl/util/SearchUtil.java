@@ -127,7 +127,7 @@ public class SearchUtil
       {
         retstr += "reader: " + readerid + "\n";
         ZoieIndexReader reader = readers.get(readerid);
-        DocIDMapper idmapper = reader.getDocIDMaper();
+        DocIDMapper<?> idmapper = reader.getDocIDMaper();
         int docid = idmapper.getDocID(UID);
         retstr += "docid(in reader): " + formatter.format(docid) + "\n";
         if (docid == DocIDMapper.NOT_FOUND)

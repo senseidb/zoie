@@ -8,12 +8,12 @@ import proj.zoie.api.ZoieSegmentReader;
 import proj.zoie.api.DocIDMapper.DocIDArray;
 
 public class DefaultDocIDMapperFactory implements DocIDMapperFactory {
-	public DocIDMapper getDocIDMapper(ZoieMultiReader<?> multireader) {
+	public DocIDMapper<?> getDocIDMapper(ZoieMultiReader<?> multireader) {
 		final ZoieSegmentReader<?>[] subreaders =(ZoieSegmentReader<?>[])(multireader.getSequentialSubReaders());
 		final int[] starts = multireader.getStarts();
 		for (int i = 0; i < subreaders.length; ++i){
 			ZoieSegmentReader<?> subReader = subreaders[i];
-			DocIDMapper mapper = subReader.getDocIDMaper();
+			DocIDMapper<?> mapper = subReader.getDocIDMaper();
 			if (mapper == null){
 				mapper = new DocIDMapperImpl(subReader.getUIDArray());
 			}

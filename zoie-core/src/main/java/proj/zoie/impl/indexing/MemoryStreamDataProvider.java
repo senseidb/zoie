@@ -32,7 +32,6 @@ public class MemoryStreamDataProvider<D> extends StreamDataProvider<D>
   private List<DataEvent<D>> _list;
   private int _count;
   private volatile String _maxVersion = null;
-  private boolean _stop;
 
   // private static final double DEFAULT_ITERS_PER_SECOND=100.0;
   private static final Logger log = Logger.getLogger(MemoryStreamDataProvider.class);
@@ -42,7 +41,6 @@ public class MemoryStreamDataProvider<D> extends StreamDataProvider<D>
     super(versionComparator);
     _list = new LinkedList<DataEvent<D>>();
     _count = 0;
-    _stop = false;
   }
   
 
@@ -135,23 +133,6 @@ public class MemoryStreamDataProvider<D> extends StreamDataProvider<D>
       return _count;
     }
   }
-
-  @Override
-  public void stop()
-  {
-    try
-    {
-      synchronized (this)
-      {
-        _stop = true;
-        this.notifyAll();
-      }
-    } finally
-    {
-      super.stop();
-    }
-  }
-
 
   @Override
   public void setStartingOffset(String version) {

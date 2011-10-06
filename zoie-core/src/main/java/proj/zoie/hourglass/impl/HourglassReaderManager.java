@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
@@ -17,24 +16,16 @@ import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.SimpleFSDirectory;
-import org.apache.lucene.util.Version;
 
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.ZoieException;
-import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieMultiReader;
 import proj.zoie.api.impl.util.FileUtil;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.impl.indexing.ZoieSystem;
-import proj.zoie.impl.indexing.internal.IndexSignature;
-import proj.zoie.impl.indexing.internal.ZoieIndexDeletionPolicy;
 
 public class HourglassReaderManager<R extends IndexReader, D>
 {
@@ -46,18 +37,17 @@ public class HourglassReaderManager<R extends IndexReader, D>
   private volatile boolean isShutdown = false;
   private final Thread maintenanceThread;
   private final ExecutorService retireThreadPool = Executors.newCachedThreadPool();
-  private final Comparator<String> _versionComparator;
   public HourglassReaderManager(final Hourglass<R, D> hourglass, HourglassDirectoryManagerFactory dirMgrFactory,
       IndexReaderDecorator<R> decorator,
-      List<ZoieIndexReader<R>> initArchives,
-      Comparator<String> versionComparator)
+      List<ZoieIndexReader<R>> initArchives)
   {
     hg = hourglass;
     _dirMgrFactory = dirMgrFactory;
     _decorator = decorator;
-    _versionComparator = versionComparator;
 
-    box = new Box<R, D>(initArchives, Collections.EMPTY_LIST, Collections.EMPTY_LIST, _decorator);
+    List<ZoieSystem<R, D>> emptyList = Collections.emptyList();
+    
+    box = new Box<R, D>(initArchives, emptyList, emptyList, _decorator);
     
     maintenanceThread = new Thread(new Runnable(){
       final int trimThreshold = hourglass._scheduler.getTrimThreshold();
@@ -115,9 +105,9 @@ public class HourglassReaderManager<R extends IndexReader, D>
     now.setTimeInMillis(timenow);
     Calendar threshold = hg._scheduler.getTrimTime(now);
 
-    ZoieIndexReader<R>[] readerArray = toRemove.toArray(new ZoieIndexReader[toRemove.size()]);
-    Arrays.sort(readerArray,
-                new Comparator<ZoieIndexReader<R>>()
+    //ZoieIndexReader<R>[] readerArray = toRemove.toArray(new ZoieIndexReader[toRemove.size()]);
+    List<ZoieIndexReader<R>> readerList = new ArrayList<ZoieIndexReader<R>>(toRemove);
+    Collections.sort(readerList, new Comparator<ZoieIndexReader<R>>()
                 {
                   @Override
                   public int compare(ZoieIndexReader<R> r1, ZoieIndexReader<R> r2)
@@ -130,7 +120,7 @@ public class HourglassReaderManager<R extends IndexReader, D>
 
     boolean foundOldestToKeep = false;
 
-    for (ZoieIndexReader<R> reader: readerArray)
+    for (ZoieIndexReader<R> reader: readerList)
     {
       SimpleFSDirectory dir = (SimpleFSDirectory) reader.directory();
       String path = dir.getDirectory().getName();
@@ -169,95 +159,7 @@ public class HourglassReaderManager<R extends IndexReader, D>
     }
     toRemove.removeAll(toKeep);
   }
-  /**
-   * consolidate the archived Index to one big optimized index and put in add
-   * @param archived
-   * @param add
-   */
-  private void consolidate(List<ZoieIndexReader<R>> archived, List<ZoieIndexReader<R>> add)
-  {
-    log.info("begin consolidate ... ");
-    long b4 = System.currentTimeMillis();
-    SimpleFSDirectory target = (SimpleFSDirectory) archived.get(0).directory();
-    log.info("into: "+target.getDirectory().getAbsolutePath());
-    SimpleFSDirectory sources[] = new SimpleFSDirectory[archived.size()-1];
-    @SuppressWarnings("unchecked")
-    IndexSignature sigs[] = (IndexSignature[])new IndexSignature[archived.size()];
-    sigs[0] = _dirMgrFactory.getIndexSignature(target.getDirectory()); // the target index signature
-    log.info("target version: " + sigs[0].getVersion());
-    for(int i=1; i<archived.size(); i++)
-    {
-      sources[i-1] = (SimpleFSDirectory) archived.get(i).directory();
-      sigs[i] = _dirMgrFactory.getIndexSignature(sources[i-1].getDirectory());  // get other index signatures
-      log.info("from: " + sources[i-1].getDirectory().getAbsolutePath());
-    }
-    IndexWriter idxWriter = null;
-    try
-    {
-      IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_33,null);
-      config.setReaderPooling(false);
-      config.setOpenMode(OpenMode.APPEND);
-      config.setIndexDeletionPolicy(new ZoieIndexDeletionPolicy());
-      idxWriter = new IndexWriter(target,config);
-      idxWriter.addIndexes(sources);
-      idxWriter.optimize(1);
-    } catch (CorruptIndexException e)
-    {
-      ZoieHealth.setFatal();
-      log.error("index currupted during consolidation", e);
-    } catch (LockObtainFailedException e)
-    {
-      ZoieHealth.setFatal();
-      log.error("LockObtainFailedException during consolidation", e);
-    } catch (IOException e)
-    {
-      ZoieHealth.setFatal();
-      log.error("IOException during consolidation", e);
-    } finally
-    {
-      if (idxWriter != null)
-      {
-        try
-        {
-          idxWriter.close();
-          // remove the originals from disk
-          for(SimpleFSDirectory dir : sources)
-          {
-            IndexSignature sig = _dirMgrFactory.getIndexSignature(dir.getDirectory());
-            log.info(dir.getDirectory() + "---" + (dir.getDirectory().exists()?" not deleted ":" deleted") + " version: " + sig.getVersion());
-            FileUtil.rmDir(dir.getDirectory());
-            log.info(dir.getDirectory() + "---" + (dir.getDirectory().exists()?" not deleted ":" deleted"));
-          }
-          String tgtversion = null;
-          for(int i = sigs.length - 1; i >= 0; i--)
-          { // get the largest version so far
-            if (tgtversion ==null || _versionComparator.compare(sigs[i].getVersion(), tgtversion)>0)
-              tgtversion = sigs[i].getVersion();
-          }
-          // save the version to target
-          IndexSignature tgtsig = _dirMgrFactory.getIndexSignature(target.getDirectory());
-          tgtsig.updateVersion(tgtversion);
-          _dirMgrFactory.saveIndexSignature(target.getDirectory(), tgtsig);
-          log.info("saveIndexSignature to " + target.getDirectory().getAbsolutePath() + " at version: " + tgtsig.getVersion());
-          // open index reader for the consolidated index
-          IndexReader reader = IndexReader.open(target, true);
-          // decorate the index
-          ZoieMultiReader<R> zoiereader = new ZoieMultiReader<R>(reader, _decorator);
-          add.add(zoiereader);
-          long b5 = System.currentTimeMillis();
-          log.info("done consolidate in " + (System.currentTimeMillis() - b4)+"ms  blocked for " + (System.currentTimeMillis()-b5));
-        } catch (CorruptIndexException e)
-        {
-          ZoieHealth.setFatal();
-          log.error("index currupted during consolidation", e);
-        } catch (IOException e)
-        {
-          ZoieHealth.setFatal();
-          log.error("IOException during consolidation", e);
-        }
-      }
-    }
-  }
+ 
   /**
    * The readers removed will also be decRef(). But the readers to be added will NOT get incRef(),
    * which means we assume the newly added ones have already been incRef().

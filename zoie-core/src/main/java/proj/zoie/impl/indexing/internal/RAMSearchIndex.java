@@ -151,7 +151,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
         // for RAM indexes, just get a new index reader
         srcReader = IndexReader.open(_directory, true);
         finalReader = ZoieIndexReader.open(srcReader, _decorator);
-        DocIDMapper mapper = _idxMgr._docIDMapperFactory.getDocIDMapper((ZoieMultiReader<R>) finalReader);
+        DocIDMapper<?> mapper = _idxMgr._docIDMapperFactory.getDocIDMapper((ZoieMultiReader<R>) finalReader);
         finalReader.setDocIDMapper(mapper);
         return finalReader;
       } catch (IOException ioe)
@@ -208,7 +208,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
         reader = (ZoieIndexReader<R>) _currentReader.reopen(true);
         if (reader != _currentReader)
         {
-          DocIDMapper mapper = _idxMgr._docIDMapperFactory.getDocIDMapper((ZoieMultiReader<R>) reader);
+          DocIDMapper<?> mapper = _idxMgr._docIDMapperFactory.getDocIDMapper((ZoieMultiReader<R>) reader);
           reader.setDocIDMapper(mapper);
         }
       }
@@ -218,7 +218,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
         ZoieIndexReader<R> oldReader = _currentReader;
         _currentReader = reader;
         if (oldReader != null)
-          ((ZoieIndexReader) oldReader).decZoieRef();// .decRef();
+          ((ZoieIndexReader<?>) oldReader).decZoieRef();// .decRef();
       }
       LongSet delDocs = _delDocs;
       clearDeletes();

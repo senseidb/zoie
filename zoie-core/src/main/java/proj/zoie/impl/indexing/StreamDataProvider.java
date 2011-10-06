@@ -183,11 +183,10 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
   private static final class DataThread<D> extends Thread
   {
     private Collection<DataEvent<D>> _batch;
-    private String _currentVersion;
+    private volatile String _currentVersion;
     private final StreamDataProvider<D> _dataProvider;
     private volatile boolean _paused;
     private volatile boolean _stop;
-    private volatile boolean _stopped = false;
     private AtomicLong _eventCount = new AtomicLong(0);
     private volatile long _throttle = 40000;// Long.MAX_VALUE;
     private boolean _flushing = false;
@@ -291,14 +290,6 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
       last60[currentslot] += count;
     }
 
-    public String getCurrentVersion()
-    {
-      synchronized (this)
-      {
-        return _currentVersion;
-      }
-    }
-
     public void syncWthVersion(long timeInMillis, String version) throws ZoieException
     {
       if (version == null) return;
@@ -390,7 +381,6 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
           }
         }
       }
-      _stopped = true;
     }
 
     private long getEventCount()

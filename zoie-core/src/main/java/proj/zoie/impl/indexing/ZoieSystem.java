@@ -385,7 +385,7 @@ extends AsyncDataConsumer<D> implements Zoie<R, D>
     _realtimeIndexing = rtIndexing;
     _interpreter = interpreter;
 
-    _analyzer = analyzer == null ? new StandardAnalyzer(Version.LUCENE_CURRENT)
+    _analyzer = analyzer == null ? new StandardAnalyzer(Version.LUCENE_34)
     : analyzer;
     _similarity = similarity == null ? new DefaultSimilarity() : similarity;
     log.info("creating Zoie instance --> "
@@ -431,7 +431,7 @@ extends AsyncDataConsumer<D> implements Zoie<R, D>
   public static <D> ZoieSystem<IndexReader, D> buildDefaultInstance(File idxDir, ZoieIndexableInterpreter<D> interpreter,
       int batchSize, long batchDelay, boolean realtime, Comparator<String> versionComparator)
   {
-    return buildDefaultInstance(idxDir, interpreter, new StandardAnalyzer(Version.LUCENE_CURRENT), new DefaultSimilarity(), batchSize, batchDelay, realtime, versionComparator);
+    return buildDefaultInstance(idxDir, interpreter, new StandardAnalyzer(Version.LUCENE_34), new DefaultSimilarity(), batchSize, batchDelay, realtime, versionComparator);
   }
 
   public static <D> ZoieSystem<IndexReader, D> buildDefaultInstance(File idxDir, ZoieIndexableInterpreter<D> interpreter,

@@ -50,6 +50,7 @@
     <module>zoie-server</module>
     <module>zoie-solr</module>
     <module>zoie-jms</module>
+    <module>zoie-perf</module>
   </modules>
 
   <build>

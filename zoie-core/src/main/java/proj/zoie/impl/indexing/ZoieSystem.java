@@ -543,8 +543,15 @@ extends AsyncDataConsumer<D> implements Zoie<R, D>
     _searchIdxMgr.close();
     log.info("zoie shutdown successfully.");
   }
+  
+  
 
-  public boolean alreadyShutdown()
+  @Override
+  public void stop() {
+    shutdown();
+}
+
+public boolean alreadyShutdown()
   {
     return alreadyShutdown;
   }

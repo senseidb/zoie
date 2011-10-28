@@ -25,12 +25,13 @@ import org.apache.lucene.util.Version;
 
 import proj.zoie.api.DataConsumer;
 import proj.zoie.api.IndexReaderFactory;
+import proj.zoie.api.LifeCycleCotrolledDataConsumer;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 
-public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexReaderFactory<IndexReader>
+public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledDataConsumer<D>,IndexReaderFactory<IndexReader>
 {
 	private static final Logger logger = Logger.getLogger(ThrottledLuceneNRTDataConsumer.class);
 
@@ -50,6 +51,7 @@ public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexR
 	private ReopenThread _reopenThread;
 	private HashSet<IndexReader> _returnSet = new HashSet<IndexReader>();
 	private ConcurrentLinkedQueue<IndexReader> _returnList = new ConcurrentLinkedQueue<IndexReader>();
+	private volatile String version = null;
 	
 	public ThrottledLuceneNRTDataConsumer(File dir,ZoieIndexableInterpreter<D> interpreter,long throttleFactor) throws IOException{
 		this(FSDirectory.open(dir),new StandardAnalyzer(Version.LUCENE_33),interpreter,throttleFactor);
@@ -70,6 +72,7 @@ public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexR
 		_reopenThread = new ReopenThread();
 	}
 	
+	@Override
 	public void start(){
 		try {
 			IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_33,_analyzer);
@@ -80,7 +83,9 @@ public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexR
 		}
 	}
 	
-	public void shutdown(){
+
+	@Override
+	public void stop(){
 		_reopenThread.terminate();
 		if (_currentReader!=null){
 			try {
@@ -106,6 +111,7 @@ public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexR
 		
 		if (events.size() > 0){
 			for (DataEvent<D> event : events){
+				version = event.getVersion();
 				ZoieIndexable indexable = _interpreter.convertAndInterpret(event.getData());
 				if (indexable.isSkip()) continue;
 				
@@ -231,6 +237,6 @@ public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexR
   
   public String getVersion()
   {
-    throw new UnsupportedOperationException();
+    return version;
   }
 }

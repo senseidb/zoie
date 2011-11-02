@@ -55,6 +55,7 @@ public class ZoieConfig
   long _freshness = 10000;
   ReaderCacheFactory readercachefactory = null;
   RAMIndexFactory<?> ramIndexFactory = null;
+  boolean skipBadRecord = false;
 
   /**
    * Default constructor. Set the size of batch and batch delay to default value
@@ -77,6 +78,15 @@ public class ZoieConfig
     this.rtIndexing = true;
     this.maxBatchSize = DEFAULT_MAX_BATCH_SIZE;
     this.versionComparator = versionComparator;
+  }
+
+  
+  public boolean isSkipBadRecord() {
+	return skipBadRecord;
+  }
+
+  public void setSkipBadRecord(boolean skipBadRecord) {
+	this.skipBadRecord = skipBadRecord;
   }
 
   public DocIDMapperFactory getDocidMapperFactory()

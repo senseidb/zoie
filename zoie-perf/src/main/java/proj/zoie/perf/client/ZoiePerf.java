@@ -2,11 +2,11 @@ package proj.zoie.perf.client;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.Configuration;
@@ -38,9 +38,9 @@ import proj.zoie.perf.indexing.TweetInterpreter;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.GaugeMetric;
 import com.yammer.metrics.core.MeterMetric;
+import com.yammer.metrics.core.Metric;
 import com.yammer.metrics.core.TimerMetric;
-import com.yammer.metrics.reporting.ConsoleReporter;
-import com.yammer.metrics.reporting.JmxReporter;
+import com.yammer.metrics.reporting.CsvReporter;
 
 public class ZoiePerf {
 
@@ -128,6 +128,8 @@ public class ZoiePerf {
 					+ confFile.getAbsolutePath() + " does not exist.");
 		}
 
+		Map<String,Metric> monitoredMetrics = new HashMap<String,Metric>();
+		
 		Configuration conf = new PropertiesConfiguration();
 		((PropertiesConfiguration) conf).setDelimiterParsingDisabled(true);
 		((PropertiesConfiguration) conf).load(confFile);
@@ -152,6 +154,9 @@ public class ZoiePerf {
 				"searchTimer", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
 		final MeterMetric errorMeter = Metrics.newMeter(ZoiePerf.class,
 				"errorMeter", "error", TimeUnit.SECONDS);
+		
+		monitoredMetrics.put("searchTimer", searchTimer);
+		monitoredMetrics.put("errorMeter", errorMeter);
 
 		final long waitTime = conf.getLong("perf.query.threadWait", 200);
 
@@ -161,7 +166,9 @@ public class ZoiePerf {
 
 			public void terminate() {
 				stop = true;
-				this.notifyAll();
+				synchronized(this){
+				  this.notifyAll();
+				}
 			}
 
 			public void run() {
@@ -232,7 +239,9 @@ public class ZoiePerf {
 		long dataAmount;
 		long start = System.currentTimeMillis();
 
-		Metrics.newGauge(ZoiePerf.class, "eventCount", new GaugeMetric<Long>() {
+		Metric metric = null;
+		String name = "eventCount";
+		metric = Metrics.newGauge(ZoiePerf.class, name, new GaugeMetric<Long>() {
 
 			@Override
 			public Long value() {
@@ -240,8 +249,11 @@ public class ZoiePerf {
 			}
 
 		});
+		
+		monitoredMetrics.put(name, metric);
 
-		Metrics.newGauge(ZoiePerf.class, "amountConsumed",
+		name = "amountConsumed";
+		metric = Metrics.newGauge(ZoiePerf.class, name,
 				new GaugeMetric<Long>() {
 
 					@Override
@@ -251,7 +263,12 @@ public class ZoiePerf {
 
 				});
 
-		Metrics.newGauge(ZoiePerf.class, "consumptionRateCountPS",
+
+		monitoredMetrics.put(name, metric);
+		
+
+		name = "consumeRateCount";
+		metric = Metrics.newGauge(ZoiePerf.class, name,
 				new GaugeMetric<Long>() {
 
 					long prevCount = 0L;
@@ -275,7 +292,12 @@ public class ZoiePerf {
 
 				});
 
-		Metrics.newGauge(ZoiePerf.class, "consumptionRateMBPS",
+
+		monitoredMetrics.put(name, metric);
+		
+
+		name = "consumeRateMB";
+		metric = Metrics.newGauge(ZoiePerf.class, name,
 				new GaugeMetric<Long>() {
 					long prevMB = 0L;
 					long prevTime = 0L;
@@ -299,10 +321,18 @@ public class ZoiePerf {
 
 				});
 
-		ConsoleReporter consoleReporter = new ConsoleReporter(System.out);
-		consoleReporter.start(5, TimeUnit.SECONDS);
+		monitoredMetrics.put(name, metric);
+		//ConsoleReporter consoleReporter = new ConsoleReporter(System.out);
+		//consoleReporter.start(5, TimeUnit.SECONDS);
 
-		JmxReporter jmxReporter = new JmxReporter(Metrics.defaultRegistry());
+		//JmxReporter jmxReporter = new JmxReporter(Metrics.defaultRegistry());
+		
+		File csvOut = new File("csvout");
+		csvOut.mkdirs();
+		CsvReporter csvReporter = new CsvReporter(csvOut,Metrics.defaultRegistry());
+		
+		int updateInterval = conf.getInt("perf.update.intervalSec", 2);
+		csvReporter.start(updateInterval, TimeUnit.SECONDS);
 
 		dataProvider.setDataConsumer(testHandler.consumer);
 		long maxEventsPerMin = conf.getLong("perf.maxEventsPerMin");
@@ -347,12 +377,13 @@ public class ZoiePerf {
 			searchThreads[i].join();
 		}
 
-		consoleReporter.shutdown();
-		jmxReporter.shutdown();
+		//consoleReporter.shutdown();
+		//jmxReporter.shutdown();
+		
+		csvReporter.shutdown();
 
 		System.out.println("Test duration: " + (end - start) + " ms");
 
 		System.out.println("Amount of data consumed: " + dataAmount);
-
 	}
 }

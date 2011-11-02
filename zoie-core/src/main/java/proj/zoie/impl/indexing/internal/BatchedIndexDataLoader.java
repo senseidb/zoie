@@ -350,7 +350,7 @@ public class BatchedIndexDataLoader<R extends IndexReader,D> implements DataCons
               fireIndexingEvent(evt);
               try{
                 String newVersion = _idxMgr.getCurrentDiskVersion();
-                if (!currentVersion.equals(newVersion)){
+                if (currentVersion==null || !currentVersion.equals(newVersion)){
                 	fireNewVersionEvent(newVersion);
                 }
               }

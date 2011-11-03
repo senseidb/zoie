@@ -71,6 +71,7 @@ public class ZoiePerf {
 		zoieConfig.setBatchDelay(10000);
 		zoieConfig.setMaxBatchSize(10000);
 		zoieConfig.setRtIndexing(true);
+		zoieConfig.setVersionComparator(ZoiePerfVersion.COMPARATOR);
 		zoieConfig.setReadercachefactory(SimpleReaderCache.FACTORY);
 
 		DirectoryManager dirMgr = new DefaultDirectoryManager(idxDir,
@@ -112,13 +113,6 @@ public class ZoiePerf {
 		}
 	}
 
-	static long parseVersion(String version) {
-		if (version == null || version.length() == 0)
-			return 0L;
-		return Long.parseLong(version);
-	}
-	
-	
 	
 	public static void runPerf(Configuration conf) throws Exception{
         Map<String,Metric> monitoredMetrics = new HashMap<String,Metric>();
@@ -226,7 +220,7 @@ public class ZoiePerf {
 		testHandler.consumer.start();
 
 		long dataAmount;
-		long start = System.currentTimeMillis();
+		final long start = System.currentTimeMillis();
 
 		Metric metric = null;
 		String name = "eventCount";
@@ -247,7 +241,8 @@ public class ZoiePerf {
 
 					@Override
 					public Long value() {
-						return parseVersion(testHandler.consumer.getVersion());
+						ZoiePerfVersion ver = ZoiePerfVersion.fromString(testHandler.consumer.getVersion());
+						return ver.offsetVersion;
 					}
 
 				});
@@ -266,7 +261,8 @@ public class ZoiePerf {
 					@Override
 					public Long value() {
 						long newTime = System.currentTimeMillis();
-						long newCount = dataProvider.getEventCount();
+						
+						long newCount =  dataProvider.getEventCount();
 
 						long timeDelta = newTime - prevTime;
 						long countDelta = newCount - prevCount;
@@ -294,8 +290,8 @@ public class ZoiePerf {
 					@Override
 					public Long value() {
 						long newTime = System.currentTimeMillis();
-						long newMB = parseVersion(testHandler.consumer
-								.getVersion());
+						ZoiePerfVersion ver = ZoiePerfVersion.fromString(testHandler.consumer.getVersion());
+						long newMB = ver.offsetVersion;
 
 						long timeDelta = newTime - prevTime;
 						long mbdelta = newMB - prevMB;
@@ -317,12 +313,12 @@ public class ZoiePerf {
 				new GaugeMetric<Long>() {
 
 					long prevCount = 0L;
-					long prevTime = 0L;
+					long prevTime = start;
 
 					@Override
 					public Long value() {
 						long newTime = System.currentTimeMillis();
-						long newCount = dataProvider.getEventCount();
+						long newCount =  dataProvider.getEventCount();
 
 						long timeDelta = newTime - prevTime;
 						long countDelta = newCount - prevCount;
@@ -408,7 +404,8 @@ public class ZoiePerf {
 			searchThreads[i].start();
 		}
 
-		while ((dataAmount = parseVersion(testHandler.consumer.getVersion())) < maxSize) {
+		ZoiePerfVersion perfVersion = ZoiePerfVersion.fromString(testHandler.consumer.getVersion());
+		while ((dataAmount = perfVersion.offsetVersion) < maxSize) {
 			Thread.sleep(500);
 		}
 

@@ -9,6 +9,7 @@ import org.apache.log4j.Logger;
 import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.impl.indexing.StreamDataProvider;
 import proj.zoie.impl.indexing.ZoieConfig;
+import proj.zoie.perf.client.ZoiePerfVersion;
 
 public class LinedFileDataProvider extends StreamDataProvider<String> {
 
@@ -37,8 +38,10 @@ public class LinedFileDataProvider extends StreamDataProvider<String> {
 		  try{
 			String line = _rad.readLine();
 			if (line == null) return null;
-			String version = String.valueOf(_offset);
+			
+			String version = ZoiePerfVersion.toString(_count,_offset);
 			_offset = _rad.getFilePointer();
+			
 			event = new DataEvent<String>(line,version);
 		  }
 		  catch(IOException ioe){
@@ -57,7 +60,8 @@ public class LinedFileDataProvider extends StreamDataProvider<String> {
 
 	@Override
 	public void setStartingOffset(String version) {
-		_startingOffset = Long.parseLong(version);
+		ZoiePerfVersion perfVersion = ZoiePerfVersion.fromString(version);
+		_startingOffset = perfVersion.offsetVersion;
 	}
 
 	@Override

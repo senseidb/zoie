@@ -20,6 +20,14 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Version;
+import org.mortbay.jetty.Handler;
+import org.mortbay.jetty.Server;
+import org.mortbay.jetty.handler.DefaultHandler;
+import org.mortbay.jetty.handler.HandlerList;
+import org.mortbay.jetty.handler.ResourceHandler;
+import org.mortbay.jetty.nio.SelectChannelConnector;
+import org.mortbay.jetty.servlet.Context;
+import org.mortbay.jetty.servlet.ServletHolder;
 
 import proj.zoie.api.DefaultDirectoryManager;
 import proj.zoie.api.DirectoryManager;
@@ -34,6 +42,7 @@ import proj.zoie.impl.indexing.ZoieSystem;
 import proj.zoie.impl.indexing.luceneNRT.ThrottledLuceneNRTDataConsumer;
 import proj.zoie.perf.indexing.LinedFileDataProvider;
 import proj.zoie.perf.indexing.TweetInterpreter;
+import proj.zoie.perf.servlet.ZoiePerfServlet;
 
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.GaugeMetric;
@@ -111,29 +120,10 @@ public class ZoiePerf {
 			return 0L;
 		return Long.parseLong(version);
 	}
-
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) throws Exception {
-		File confFile;
-		try {
-			confFile = new File(new File(args[0]), "perf.properties");
-		} catch (Exception e) {
-			confFile = new File(new File("conf"), "perf.properties");
-		}
-
-		if (!confFile.exists()) {
-			throw new ConfigurationException("configuration file: "
-					+ confFile.getAbsolutePath() + " does not exist.");
-		}
-
-		Map<String,Metric> monitoredMetrics = new HashMap<String,Metric>();
+	
+	public static void runPerf(Configuration conf) throws Exception{
+        Map<String,Metric> monitoredMetrics = new HashMap<String,Metric>();
 		
-		Configuration conf = new PropertiesConfiguration();
-		((PropertiesConfiguration) conf).setDelimiterParsingDisabled(true);
-		((PropertiesConfiguration) conf).load(confFile);
-
 		File queryFile = new File(conf.getString("perf.query.file"));
 		if (!queryFile.exists()) {
 			System.out.println("query file does not exist");
@@ -385,5 +375,55 @@ public class ZoiePerf {
 		System.out.println("Test duration: " + (end - start) + " ms");
 
 		System.out.println("Amount of data consumed: " + dataAmount);
+	}
+
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) throws Exception {
+		File confFile;
+		try {
+			confFile = new File(new File(args[0]), "perf.properties");
+		} catch (Exception e) {
+			confFile = new File(new File("conf"), "perf.properties");
+		}
+
+		if (!confFile.exists()) {
+			throw new ConfigurationException("configuration file: "
+					+ confFile.getAbsolutePath() + " does not exist.");
+		}
+		
+
+		Configuration conf = new PropertiesConfiguration();
+		((PropertiesConfiguration) conf).setDelimiterParsingDisabled(true);
+		((PropertiesConfiguration) conf).load(confFile);
+
+
+		
+		Server server = new Server();
+        SelectChannelConnector connector = new SelectChannelConnector();
+        connector.setPort(18888);
+        server.addConnector(connector);
+ 
+        ResourceHandler resourceHandler = new ResourceHandler();
+        resourceHandler.setWelcomeFiles(new String[]{ "index.html" });
+ 
+        resourceHandler.setResourceBase("./");
+        
+        ResourceHandler csvDataHandler = new ResourceHandler();
+        csvDataHandler.setResourceBase("./csvOut");
+        
+
+        server.setHandler(resourceHandler);
+        
+        final Context context = new Context(server, "/servlets", Context.ALL);
+        context.addServlet(new ServletHolder(new ZoiePerfServlet(new File("csvout"))), "/zoie-perf/*");
+        
+        server.start();
+        
+        runPerf(conf);
+		
+        server.join();
+        
 	}
 }

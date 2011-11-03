@@ -227,24 +227,30 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
 
 	        if (memIndexB != null)                           // load memory index B
 	        {
-	          reader = memIndexB.openIndexReader();
-	          if (reader != null)
-	          {
-	            reader = reader.copy();
-	            reader.setDelDocIds();
-	            readers.add(reader);
-	          }
+            synchronized(memIndexB)
+            {
+              reader = memIndexB.openIndexReader();
+              if (reader != null)
+              {
+                reader = reader.copy();
+                reader.setDelDocIds();
+                readers.add(reader);
+              }
+            }
 	        }
 
 	        if (memIndexA != null)                           // load memory index A
 	        {
-	          reader = memIndexA.openIndexReader();
-	          if (reader != null)
-	          {
-              reader = reader.copy();
-	            reader.setDelDocIds();
-	            readers.add(reader);
-	          }
+            synchronized(memIndexA)
+            {
+              reader = memIndexA.openIndexReader();
+              if (reader != null)
+              {
+                reader = reader.copy();
+                reader.setDelDocIds();
+                readers.add(reader);
+              }
+            }
 	        }
 
 	        // load disk index

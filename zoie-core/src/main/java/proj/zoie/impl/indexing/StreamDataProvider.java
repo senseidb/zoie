@@ -262,9 +262,10 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
       {
         if (_dataProvider._consumer != null)
         {
-          _eventCount.getAndAdd(tmp.size());
-          updateStats();
+          int batchSize = tmp.size();
           _dataProvider._consumer.consume(tmp);
+          _eventCount.getAndAdd(batchSize);
+          updateStats();
         }
       } catch (ZoieException e)
       {

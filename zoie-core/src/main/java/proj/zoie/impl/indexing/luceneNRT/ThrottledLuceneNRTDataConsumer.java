@@ -126,7 +126,7 @@ public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledData
 				Analyzer localAnalyzer = req.getAnalyzer();
 				Document doc = req.getDocument();
 				Field uidField = new Field(DOCUMENT_ID_FIELD,String.valueOf(indexable.getUID()),Store.NO,Index.NOT_ANALYZED_NO_NORMS);
-				uidField.setOmitTermFreqAndPositions(true);
+				uidField.setOmitNorms(true);
 				doc.add(uidField);
 				if (localAnalyzer == null) localAnalyzer = _analyzer;
 				try {
@@ -136,18 +136,6 @@ public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledData
 				}
 			  }
 			}
-			
-			
-			int numdocs;
-			try {
-				// for realtime commit is not needed per lucene mailing list
-				//_writer.commit();
-				numdocs = _writer.numDocs();
-			} catch (IOException e) {
-				throw new ZoieException(e.getMessage(),e);
-			}
-			
-			logger.info("flushed "+events.size()+" events to index, index now contains "+numdocs+" docs.");
 		}
 	}
 

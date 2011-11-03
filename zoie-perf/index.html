@@ -1,3 +1,4 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"> 
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -17,6 +18,7 @@
 		<script type="text/javascript">
 		var searchChart;
 		var searchDataOffset = 0;
+		
 		$(document).ready(function() {
 			//search perf chart
 			function reqSearchData(){
@@ -31,10 +33,19 @@
 			      $.each(vals, function(itemNo, item) {
 							if (itemNo == 0) {
 							    xVal = parseInt(item);
-							} else {
+							}
+							else if (itemNo == 1){
+							    var val = parseFloat(item);
+							    $("#min").html(val);
+							} 
+							else if (itemNo == 2){
+							    var val = parseFloat(item);
+							    $("#max").html(val);
+							}
+							else {
 							    point[0]=xVal;
 							    point[1]=parseFloat(item);
-							    var series = searchChart.series[itemNo-1];
+							    var series = searchChart.series[itemNo-3];
 							    shift = series.data.length>20;
 								series.addPoint(point,true,shift);
 							}
@@ -63,14 +74,7 @@
 						text: 'Latency(ms)'
 					}
 				},
-				series: [{
-				  name:'min',
-				  data:[]
-				},
-				{
-				  name:'max',
-				  data:[]
-				},
+				series: [
 				{
 				  name:'mean',
 				  data:[]
@@ -122,6 +126,7 @@
 							    var series = indexingEventChart.series[itemNo-1];
 							    shift = series.data.length>20;
 								series.addPoint(point,true,shift);
+							    $("#eventsPerSec").html(point[1]);
 							}
 						});
 			    }
@@ -182,6 +187,7 @@
 							    var series = indexingSizeChart.series[itemNo-1];
 							    shift = series.data.length>20;
 								series.addPoint(point,true,shift);
+								
 							}
 						});
 			    }
@@ -215,20 +221,97 @@
 				
 			};
 			indexingSizeChart = new Highcharts.Chart(indexingSizeOptions);
+			
+			// index MB rate chart
+			
+			
+			var indexingLatencyChart;
+			var indexLatencyOffset=0;
+			
+			function reqIndexingLatency(){
+			var url = "/servlets/zoie-perf/?type=indexLatency&offset="+indexLatencyOffset;
+			  $.get(url, function(data) {
+			    if (data.length>0){
+			      var items = data.split(":");
+			      indexLatencyOffset = parseFloat(items[0]);
+			      var vals = items[1].split(',');
+			      var point= new Array();
+			      var xVal = 0;
+			      $.each(vals, function(itemNo, item) {
+							if (itemNo == 0) {
+							    xVal = parseInt(item);
+							} else {
+							    point[0]=xVal;
+							    point[1]=parseFloat(item);
+							    var series = indexingLatencyChart.series[itemNo-1];
+							    shift = series.data.length>20;
+								series.addPoint(point,true,shift);
+								
+								
+							    $("#idxLatency").html(point[1]);
+							}
+						});
+			    }
+			    setTimeout(reqIndexingLatency, 2000);  
+			  });
+			}
+			
+			var indexingLatencyOptions = {
+				chart: {
+					renderTo: 'indexingLatency',
+					defaultSeriesType: 'spline',
+					events: {
+					  load : reqIndexingLatency
+					}
+				},
+				title: {
+					text: 'Indexing Latency'
+				},
+				xAxis: {
+					categories: []
+				},
+				yAxis: {
+					title: {
+						text: 'indexing latency (ms)'
+					}
+				},
+				series: [{
+				  name:'indexing latency',
+				  data:[]
+				}]
+				
+			};
+			indexingLatencyChart = new Highcharts.Chart(indexingLatencyOptions);
 		});
 		</script>
 </head>
 
 <body>
+   <div class="container-fluid">
+    <div class="sidebar">
+      <h3>Search Min Latency:
+      <span id="min"></span>
+      </h3>
+      <h3>Search Max Latency:
+      <span id="max"></span>
+      </h3>
+      <h3>Events Per Second:
+      <span id="eventsPerSec"></span>
+      </h3>
+      <h3>Indexing Latency (ms):
+      <span id="idxLatency"></span>
+      </h3>
+    </div>
     <div style="text-align:center" class="container">
       <h1>Zoie Perf Console</h1>
       
       <!-- 3. Add the container -->
 	  <div id="searchPerf" style="width: 800px; height: 400px; margin: 0 auto"></div>
 	  
+	  <div id="indexingLatency" style="width: 800px; height: 400px; margin: 0 auto"></div>
 	  <div id="indexingEvent" style="width: 800px; height: 400px; margin: 0 auto"></div>
 	  <div id="indexingSize" style="width: 800px; height: 400px; margin: 0 auto"></div>
     </div>
-    
+  </div>
 </body>
 </html>

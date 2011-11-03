@@ -20,10 +20,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Version;
-import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
-import org.mortbay.jetty.handler.DefaultHandler;
-import org.mortbay.jetty.handler.HandlerList;
 import org.mortbay.jetty.handler.ResourceHandler;
 import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.servlet.Context;
@@ -120,6 +117,8 @@ public class ZoiePerf {
 			return 0L;
 		return Long.parseLong(version);
 	}
+	
+	
 	
 	public static void runPerf(Configuration conf) throws Exception{
         Map<String,Metric> monitoredMetrics = new HashMap<String,Metric>();
@@ -310,6 +309,65 @@ public class ZoiePerf {
 					}
 
 				});
+
+		monitoredMetrics.put(name, metric);
+		
+		name = "indexLatency";
+		metric = Metrics.newGauge(ZoiePerf.class, name,
+				new GaugeMetric<Long>() {
+
+					long prevCount = 0L;
+					long prevTime = 0L;
+
+					@Override
+					public Long value() {
+						long newTime = System.currentTimeMillis();
+						long newCount = dataProvider.getEventCount();
+
+						long timeDelta = newTime - prevTime;
+						long countDelta = newCount - prevCount;
+						List<IndexReader> readers = null;
+						long readerMarker = 0L;
+						try {
+							readers = testHandler.readerFactory
+									.getIndexReaders();
+							for (IndexReader reader : readers){
+								readerMarker+=reader.maxDoc();
+							}
+						} 
+						catch(Exception e){
+							// ignore
+						}finally {							
+							if (readers != null) {
+								testHandler.readerFactory
+										.returnIndexReaders(readers);
+							}
+						}
+
+						prevTime = newTime;
+						prevCount = newCount;
+						
+						long countsBehind = newCount - readerMarker;
+
+
+						System.out.println("counts behind: "+countsBehind);
+						System.out.println("new count: "+newCount);
+						System.out.println("reader marker: "+readerMarker);
+						System.out.println("time delta: "+timeDelta);
+						System.out.println("count delta: "+countDelta);
+						
+						if (countDelta > 0){
+						  return timeDelta*countsBehind/countDelta;
+						}
+						else{
+						  return 0L;
+						}
+						
+						
+					}
+
+				});
+
 
 		monitoredMetrics.put(name, metric);
 		//ConsoleReporter consoleReporter = new ConsoleReporter(System.out);

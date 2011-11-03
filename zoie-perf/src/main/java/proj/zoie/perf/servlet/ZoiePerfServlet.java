@@ -29,6 +29,7 @@ public class ZoiePerfServlet extends HttpServlet {
 		_fileMap.put("searchTimer", new File(_dataDir,"searchTimer.csv"));
 		_fileMap.put("consumeRateCount", new File(_dataDir,"consumeRateCount.csv"));
 		_fileMap.put("consumeRateMB", new File(_dataDir,"consumeRateMB.csv"));
+		_fileMap.put("indexLatency", new File(_dataDir,"indexLatency.csv"));
 	}
 	
 	@Override

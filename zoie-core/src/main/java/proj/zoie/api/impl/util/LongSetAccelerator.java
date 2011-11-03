@@ -36,7 +36,7 @@ public class LongSetAccelerator implements LongSet {
 	private final long[] _filter;
 	private final int _mask;
 	private final LongSet _set;
-	private final int MIXER = 2147482951; // a prime number
+	private static final int MIXER = 2147482951; // a prime number
 
 	public LongSetAccelerator(LongSet set) {
 		_set = set;

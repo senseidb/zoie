@@ -1,5 +1,5 @@
 package proj.zoie.api;
 
 public interface DocIDMapperFactory {
-  DocIDMapper getDocIDMapper(ZoieMultiReader<?> reader);
+  DocIDMapper<?> getDocIDMapper(ZoieMultiReader<?> reader);
 }

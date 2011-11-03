@@ -32,7 +32,7 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -61,7 +61,7 @@ public class LuceneNRTDataConsumer<D> implements DataConsumer<D>, IndexReaderFac
 
   public LuceneNRTDataConsumer(File dir, ZoieIndexableInterpreter<D> interpreter) throws IOException
   {
-    this(FSDirectory.open(dir), new StandardAnalyzer(Version.LUCENE_CURRENT), interpreter);
+    this(FSDirectory.open(dir), new StandardAnalyzer(Version.LUCENE_33), interpreter);
   }
 
   public LuceneNRTDataConsumer(File dir, Analyzer analyzer, ZoieIndexableInterpreter<D> interpreter) throws IOException
@@ -81,7 +81,8 @@ public class LuceneNRTDataConsumer<D> implements DataConsumer<D>, IndexReaderFac
   {
     try
     {
-      _writer = new IndexWriter(_dir, _analyzer, MaxFieldLength.UNLIMITED);
+	  IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_33,_analyzer);
+      _writer = new IndexWriter(_dir, config);
     } catch (IOException e)
     {
       logger.error("uanble to start consumer: " + e.getMessage(), e);

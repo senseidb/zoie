@@ -1,5 +1,6 @@
 package proj.zoie.impl.indexing;
 
+import java.io.Serializable;
 import java.util.Comparator;
 import java.util.regex.Pattern;
 
@@ -102,7 +103,7 @@ public class ZoieConfig
 
   public Analyzer getAnalyzer()
   {
-    return analyzer == null ? new StandardAnalyzer(Version.LUCENE_CURRENT)
+    return analyzer == null ? new StandardAnalyzer(Version.LUCENE_34)
         : analyzer;
   }
 
@@ -197,8 +198,10 @@ public class ZoieConfig
     this.ramIndexFactory = ramIndexFactory;
   }
 
-  public static class DefaultVersionComparator implements Comparator<String>
+  public static class DefaultVersionComparator implements Comparator<String>,Serializable
   {
+    private static final long serialVersionUID = 1L;
+
     private static final Pattern _numPattern = Pattern.compile("[0-9]+");
 
     public int compare(String s1, String s2)

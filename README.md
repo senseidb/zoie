@@ -26,4 +26,4 @@ groupId: com.linkedin.zoie
 
 artifactId: zoie-core
 
-Latest Version: 2.5.1
+Latest Version: 3.0.0

@@ -164,7 +164,7 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
 	      if (reader!=null)
 	      {
 		    IntList delList = new IntArrayList(delDocs.size());
-	    	DocIDMapper idMapper = reader.getDocIDMaper();
+	    	DocIDMapper<?> idMapper = reader.getDocIDMaper();
 	    	LongIterator iter = delDocs.iterator();
 	        
 	    	while(iter.hasNext()){
@@ -231,7 +231,8 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
 	    try
 	    {
 	      writer = openIndexWriter(null,null);
-	      writer.addIndexesNoOptimize(new Directory[] { dir });
+	      writer.addIndexes(new Directory[] { dir });
+	      writer.maybeMerge();
 	    }
 	    finally
 	    {	      

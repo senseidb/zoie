@@ -1,7 +1,6 @@
 package proj.zoie.impl.indexing;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,8 +53,12 @@ public class DefaultReaderCache<R extends IndexReader> extends AbstractReaderCac
   {
     if (readers == null || readers.size()==0) return;
     returningIndexReaderQueueLock.readLock().lock();
-    returningIndexReaderQueue.add(readers);
-    returningIndexReaderQueueLock.readLock().unlock();
+    try{
+      returningIndexReaderQueue.add(readers);
+    }
+    finally{
+      returningIndexReaderQueueLock.readLock().unlock();
+    }
   }
 
   public void refreshCache(long timeout) throws ZoieException

@@ -32,7 +32,7 @@ public class DocIDMapperImpl implements DocIDMapper<DocIDArray>
 	  private final int[] _start;
 	  private final long[] _filter;
 	  private final int _mask;
-	  private final int MIXER = 2147482951; // a prime number
+	  private static final int MIXER = 2147482951; // a prime number
 	  
 	  public DocIDMapperImpl(long[] uidArray)
 	  {

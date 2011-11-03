@@ -66,7 +66,6 @@ public class MemoryManager<T>
     {
       queue =  new ConcurrentLinkedQueue<WeakReference<T>>();
       _sizeMap.putIfAbsent(size, queue);
-      queue = _sizeMap.get(size);
     }
     while(true)
     {

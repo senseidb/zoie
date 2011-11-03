@@ -3,7 +3,7 @@ package proj.zoie.hourglass.impl;
 import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.ZoieIndexReader;
 
-public class NullDocIDMapper implements DocIDMapper
+public class NullDocIDMapper implements DocIDMapper<Object>
 {
   public static final NullDocIDMapper INSTANCE = new NullDocIDMapper();
   public int getDocID(long uid)
@@ -31,7 +31,7 @@ public class NullDocIDMapper implements DocIDMapper
     throw new UnsupportedOperationException();
   }
 
-  public ZoieIndexReader[] getSubReaders()
+  public ZoieIndexReader<?>[] getSubReaders()
   {
     throw new UnsupportedOperationException();
   }

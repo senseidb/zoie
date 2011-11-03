@@ -89,5 +89,6 @@ public interface ZoieAdminMBean {
     int getCurrentMemBatchSize();
 
     int getCurrentDiskBatchSize();
+    
 
 }

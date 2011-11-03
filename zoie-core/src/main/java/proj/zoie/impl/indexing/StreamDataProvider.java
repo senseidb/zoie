@@ -36,6 +36,7 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
   private int _batchSize;
   private DataConsumer<D> _consumer;
   private DataThread<D> _thread;
+  private volatile int _retryTime = 100;   // default retry every 100ms
 
   protected final Comparator<String> _versionComparator;
 
@@ -45,6 +46,14 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
     _consumer = null;
 
     _versionComparator = versionComparator;
+  }
+  
+  public void setRetryTime(int retryTime){
+	_retryTime = retryTime;
+  }
+  
+  public int getRetryTime(){
+	return _retryTime;
   }
 
   public void setDataConsumer(DataConsumer<D> consumer)
@@ -174,11 +183,10 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
   private static final class DataThread<D> extends Thread
   {
     private Collection<DataEvent<D>> _batch;
-    private String _currentVersion;
+    private volatile String _currentVersion;
     private final StreamDataProvider<D> _dataProvider;
     private volatile boolean _paused;
     private volatile boolean _stop;
-    private volatile boolean _stopped = false;
     private AtomicLong _eventCount = new AtomicLong(0);
     private volatile long _throttle = 40000;// Long.MAX_VALUE;
     private boolean _flushing = false;
@@ -282,14 +290,6 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
       last60[currentslot] += count;
     }
 
-    public String getCurrentVersion()
-    {
-      synchronized (this)
-      {
-        return _currentVersion;
-      }
-    }
-
     public void syncWthVersion(long timeInMillis, String version) throws ZoieException
     {
       if (version == null) return;
@@ -372,7 +372,7 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
               this.notifyAll();
               try
               {
-                this.wait(100);
+                this.wait(_dataProvider.getRetryTime());
               } catch (InterruptedException e)
               {
                 Thread.interrupted();
@@ -381,7 +381,6 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
           }
         }
       }
-      _stopped = true;
     }
 
     private long getEventCount()
@@ -392,7 +391,7 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
     private long[] last60 = new long[60];
     private long[] last60slots = new long[60];
     private volatile int currentslot = 0;
-    private final int window = 3;// window size 3 seconds
+    private static final int window = 3;// window size 3 seconds
 
     private long getEventsPerMinute()
     {

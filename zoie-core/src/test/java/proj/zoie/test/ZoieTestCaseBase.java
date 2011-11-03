@@ -9,8 +9,8 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
 import org.apache.log4j.Appender;
-import org.apache.log4j.PatternLayout;
 import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.DocIdSet;
@@ -20,6 +20,8 @@ import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.impl.InRangeDocIDMapperFactory;
 import proj.zoie.api.indexing.IndexReaderDecorator;
+import proj.zoie.impl.indexing.SimpleReaderCache;
+import proj.zoie.impl.indexing.ZoieConfig;
 import proj.zoie.impl.indexing.ZoieSystem;
 import proj.zoie.test.data.DataInterpreterForTests;
 import proj.zoie.test.data.InRangeDataInterpreterForTests;
@@ -135,8 +137,18 @@ public class ZoieTestCaseBase
    */
   protected static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime, long delay,Analyzer analyzer,DocIDMapperFactory docidMapperFactory, Comparator<String> versionComparator)
   {
+    ZoieConfig config = new ZoieConfig();
+    config.setDocidMapperFactory(docidMapperFactory);
+    config.setBatchSize(50);
+    config.setBatchDelay(2000);
+    config.setRtIndexing(realtime);
+    config.setVersionComparator(versionComparator);
+    config.setSimilarity(null);
+    config.setAnalyzer(null);
+//    config.setReadercachefactory(SimpleReaderCache.FACTORY);
+    
     ZoieSystem<IndexReader,String> idxSystem=new ZoieSystem<IndexReader, String>(idxDir,new DataInterpreterForTests(delay,analyzer),
-        new TestIndexReaderDecorator(),docidMapperFactory, null,null,50,2000,realtime,versionComparator);
+        new TestIndexReaderDecorator(),config);
     return idxSystem;
   }
 
@@ -159,8 +171,17 @@ public class ZoieTestCaseBase
 
   protected static ZoieSystem<IndexReader,String> createInRangeZoie(File idxDir,boolean realtime, InRangeDocIDMapperFactory docidMapperFactory, Comparator<String> versionComparator)
   {
+    ZoieConfig config = new ZoieConfig();
+    config.setDocidMapperFactory(docidMapperFactory);
+    config.setBatchSize(50);
+    config.setBatchDelay(2000);
+    config.setRtIndexing(realtime);
+    config.setVersionComparator(versionComparator);
+    config.setSimilarity(null);
+    config.setAnalyzer(null);
+   // config.setReadercachefactory(SimpleReaderCache.FACTORY);
     ZoieSystem<IndexReader,String> idxSystem=new ZoieSystem<IndexReader, String>(idxDir,new InRangeDataInterpreterForTests(20,null),
-        new TestIndexReaderDecorator(),docidMapperFactory,null,null,50,2000,realtime,versionComparator);
+        new TestIndexReaderDecorator(),config);
     return idxSystem;
   } 
   protected static boolean deleteDirectory(File path) {

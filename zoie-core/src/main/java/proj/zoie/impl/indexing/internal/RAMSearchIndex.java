@@ -26,10 +26,12 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Version;
 
 import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.ZoieIndexReader;
@@ -149,7 +151,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
         // for RAM indexes, just get a new index reader
         srcReader = IndexReader.open(_directory, true);
         finalReader = ZoieIndexReader.open(srcReader, _decorator);
-        DocIDMapper mapper = _idxMgr._docIDMapperFactory.getDocIDMapper((ZoieMultiReader<R>) finalReader);
+        DocIDMapper<?> mapper = _idxMgr._docIDMapperFactory.getDocIDMapper((ZoieMultiReader<R>) finalReader);
         finalReader.setDocIDMapper(mapper);
         return finalReader;
       } catch (IOException ioe)
@@ -171,23 +173,23 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
   {
     if (_indexWriter != null)
       return _indexWriter;
-
-    // if index does not exist, create empty index
-    boolean create = !IndexReader.indexExists(_directory);
-    // hao: autocommit is set to false with this constructor
-    IndexWriter idxWriter = new IndexWriter(_directory, analyzer, create, MaxFieldLength.UNLIMITED);
-    // TODO disable compound file for RAMDirecory when lucene bug is fixed
-    idxWriter.setUseCompoundFile(false);
-    idxWriter.setMergeScheduler(_mergeScheduler);
-    ZoieMergePolicy mergePolicy = new ZoieMergePolicy(idxWriter);
+    
+    ZoieMergePolicy mergePolicy = new ZoieMergePolicy();
     mergePolicy.setMergePolicyParams(_mergePolicyParams);
-    idxWriter.setMergePolicy(mergePolicy);
-    idxWriter.setRAMBufferSizeMB(3);
+    mergePolicy.setUseCompoundFile(false);
 
-    if (similarity != null)
-    {
-      idxWriter.setSimilarity(similarity);
+    IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_33,analyzer);
+    config.setOpenMode(OpenMode.CREATE_OR_APPEND);
+    config.setMergeScheduler(_mergeScheduler);
+    config.setMergePolicy(mergePolicy);
+    
+    config.setReaderPooling(false);
+    if (similarity!=null){
+      config.setSimilarity(similarity);
     }
+    config.setRAMBufferSizeMB(3);
+    
+    IndexWriter idxWriter = new IndexWriter(_directory,config);
     _indexWriter = idxWriter;
     return idxWriter;
   }
@@ -206,7 +208,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
         reader = (ZoieIndexReader<R>) _currentReader.reopen(true);
         if (reader != _currentReader)
         {
-          DocIDMapper mapper = _idxMgr._docIDMapperFactory.getDocIDMapper((ZoieMultiReader<R>) reader);
+          DocIDMapper<?> mapper = _idxMgr._docIDMapperFactory.getDocIDMapper((ZoieMultiReader<R>) reader);
           reader.setDocIDMapper(mapper);
         }
       }
@@ -216,7 +218,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
         ZoieIndexReader<R> oldReader = _currentReader;
         _currentReader = reader;
         if (oldReader != null)
-          ((ZoieIndexReader) oldReader).decZoieRef();// .decRef();
+          ((ZoieIndexReader<?>) oldReader).decZoieRef();// .decRef();
       }
       LongSet delDocs = _delDocs;
       clearDeletes();

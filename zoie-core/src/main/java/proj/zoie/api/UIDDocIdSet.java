@@ -26,7 +26,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 public class UIDDocIdSet extends DocIdSet {
     private final int[] _sorted;
     
-    public UIDDocIdSet(long[] uidArray,DocIDMapper mapper){
+    public UIDDocIdSet(long[] uidArray,DocIDMapper<?> mapper){
     	if (uidArray == null) throw new IllegalArgumentException("input uid array is null");
     	_sorted = mapUID(uidArray, mapper);
     }
@@ -35,7 +35,7 @@ public class UIDDocIdSet extends DocIdSet {
     	_sorted = docids;
     }
     
-    public static int[] mapUID(long[] uidArray,DocIDMapper mapper)
+    public static int[] mapUID(long[] uidArray,DocIDMapper<?> mapper)
 	{
 		IntRBTreeSet idSet = new IntRBTreeSet();
 		for (long uid : uidArray)

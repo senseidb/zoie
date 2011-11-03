@@ -67,7 +67,7 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndex
 	protected long _maxUID;
 	protected boolean _noDedup = false;
 	protected final IndexReaderDecorator<R> _decorator;
-	protected DocIDMapper _docIDMapper;
+	protected DocIDMapper<?> _docIDMapper;
 
 	public static <R extends IndexReader> List<R> extractDecoratedReaders(List<ZoieIndexReader<R>> readerList) throws IOException
 	{
@@ -163,7 +163,7 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndex
 				SubReaderInfo<ZoieIndexReader<R>> info = null;
 				for (int i=0;i<subR.length;++i){
 					ZoieIndexReader<R> subReader = (ZoieIndexReader<R>)subR[i];
-					DocIDMapper mapper = subReader.getDocIDMaper();
+					DocIDMapper<?> mapper = subReader.getDocIDMaper();
 					int docid = mapper.getDocID(uid);
 					if (docid!=DocIDMapper.NOT_FOUND){
 						info = new SubReaderInfo<ZoieIndexReader<R>>(subReader,docid);
@@ -273,11 +273,11 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndex
 
 	abstract public long getUID(int docid);
 	
-	public DocIDMapper getDocIDMaper(){
+	public DocIDMapper<?> getDocIDMaper(){
 		return _docIDMapper;
 	}
 	
-	public void setDocIDMapper(DocIDMapper docIDMapper){
+	public void setDocIDMapper(DocIDMapper<?> docIDMapper){
 		_docIDMapper = docIDMapper;
 	}
 	

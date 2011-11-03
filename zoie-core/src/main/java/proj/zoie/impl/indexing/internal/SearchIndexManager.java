@@ -470,7 +470,6 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
 		  {
 	      ZoieHealth.setFatal();
 		    log.error(e.getMessage(),e);
-		    if(diskIndexReader != null) diskIndexReader.close();
 		    throw e;
 		  }
 		  Mem<R> oldMem = _mem;

@@ -198,7 +198,6 @@ public class ZoieTest extends ZoieTestCaseBase {
 					10);
 			assertEquals(1, hits.totalHits);
 			// assertEquals(String.valueOf((long)((long)Integer.MAX_VALUE*2L)),searcher.doc(hits.scoreDocs[0].doc).get("id"));
-			System.out.println("hao: searching is successful");
 		} finally {
 			try {
 				if (searcher != null) {
@@ -265,7 +264,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 				idxDir, true, ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		idxSystem.start();
 		String query = "zoie";
-		QueryParser parser = new QueryParser(Version.LUCENE_CURRENT,
+		QueryParser parser = new QueryParser(Version.LUCENE_33,
 				"contents", idxSystem.getAnalyzer());
 		Query q = null;
 		try {
@@ -483,8 +482,6 @@ public class ZoieTest extends ZoieTestCaseBase {
 	@Test
 	public void testDelSet() throws ZoieException {
 		for (int i = 0; i < 10; i++) {
-			System.out.println("testDelSet Round: " + i);
-			log.info("\n\n\ntestDelSet Round: " + i);
 			testDelSetImpl();
 		}
 	}
@@ -502,7 +499,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 			queryThreads[i] = new QueryThread() {
 				public void run() {
 					QueryParser parser = new QueryParser(
-							Version.LUCENE_CURRENT, "contents",
+							Version.LUCENE_33, "contents",
 							idxSystem.getAnalyzer());
 					Query q;
 					try {
@@ -716,7 +713,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 
 			idxSystem.syncWithVersion(10000, ""+(count-1));
 
-			QueryParser parser = new QueryParser(Version.LUCENE_CURRENT,
+			QueryParser parser = new QueryParser(Version.LUCENE_30,
 					"contents", idxSystem.getAnalyzer());
 			Query q;
 			Searcher searcher = null;
@@ -724,7 +721,6 @@ public class ZoieTest extends ZoieTestCaseBase {
 
 			TopDocs hits;
 
-			q = parser.parse("zoie");
 			readers = idxSystem.getIndexReaders();
 
 			for (int i = 0; i < readers.size(); i++) {

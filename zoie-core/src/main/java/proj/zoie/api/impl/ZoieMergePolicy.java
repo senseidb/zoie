@@ -17,7 +17,8 @@ package proj.zoie.api.impl;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.util.Set;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.index.CorruptIndexException;
@@ -45,9 +46,8 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
   private int _maxSmallSegments = DEFAULT_NUM_SMALL_SEGMENTS; // default merge factor plus 1.
   private int _maxSegments = _numLargeSegments + _maxSmallSegments;
 
-  public ZoieMergePolicy(IndexWriter writer)
+  public ZoieMergePolicy()
   {
-    super(writer);
     super.setMergeFactor(DEFAULT_MERGE_FACTOR);// set default merge factor to 7. Less than 10. Good for search speed.
   }
 
@@ -65,7 +65,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
 
   protected long size(SegmentInfo info) throws IOException
   {
-    long byteSize = info.sizeInBytes();
+    long byteSize = info.sizeInBytes(false);
     float delRatio = (info.docCount <= 0 ? 0.0f : ((float)info.getDelCount() / (float)info.docCount));
     return (info.docCount <= 0 ?  byteSize : (long)((float)byteSize * (1.0f - delRatio)));
   }
@@ -130,30 +130,32 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
     }
   }
 
-  private boolean isOptimized(SegmentInfos infos, IndexWriter writer, int maxNumSegments, Set<?> segmentsToOptimize) throws IOException {
+  @Override
+  protected boolean isOptimized(SegmentInfos infos,int maxNumSegments,Map<SegmentInfo,Boolean> segmentsToOptimize) throws IOException {
     final int numSegments = infos.size();
     int numToOptimize = 0;
     SegmentInfo optimizeInfo = null;
     for(int i=0;i<numSegments && numToOptimize <= maxNumSegments;i++) {
       final SegmentInfo info = infos.info(i);
-      if (segmentsToOptimize.contains(info)) {
+      if (segmentsToOptimize.get(info)) {
         numToOptimize++;
         optimizeInfo = info;
       }
     }
 
     return numToOptimize <= maxNumSegments &&
-    (numToOptimize != 1 || isOptimized(writer, optimizeInfo));
+    (numToOptimize != 1 || isOptimized(optimizeInfo));
   }
 
   /** Returns true if this single nfo is optimized (has no
    *  pending norms or deletes, is in the same dir as the
    *  writer, and matches the current compound file setting */
-  private boolean isOptimized(IndexWriter writer, SegmentInfo info)
+  protected boolean isOptimized(SegmentInfo info)
   throws IOException {
+    IndexWriter w = writer.get();
     return !info.hasDeletions() &&
     !info.hasSeparateNorms() &&
-    info.dir == writer.getDirectory() &&
+    info.dir == w.getDirectory() &&
     info.getUseCompoundFile() == getUseCompoundFile();
   }
 
@@ -166,13 +168,13 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
    *  (mergeFactor at a time) so the {@link MergeScheduler}
    *  in use may make use of concurrency. */
   @Override
-  public MergeSpecification findMergesForOptimize(SegmentInfos infos, int maxNumSegments, Set segmentsToOptimize) throws IOException {
+  public MergeSpecification findMergesForOptimize(SegmentInfos infos, int maxNumSegments, Map<SegmentInfo,Boolean> segmentsToOptimize) throws IOException {
 
     assert maxNumSegments > 0;
 
     MergeSpecification spec = null;
 
-    if (!isOptimized(infos, writer, maxNumSegments, segmentsToOptimize))
+    if (!isOptimized(infos, maxNumSegments, segmentsToOptimize))
     {
       // Find the newest (rightmost) segment that needs to
       // be optimized (other segments may have been flushed
@@ -181,7 +183,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
       while(last > 0)
       {
         final SegmentInfo info = infos.info(--last);
-        if (segmentsToOptimize.contains(info))
+        if (segmentsToOptimize.get(info))
         {
           last++;
           break;
@@ -194,11 +196,11 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
         {
           // Since we must optimize down to 1 segment, the
           // choice is simple:
-          boolean useCompoundFile = getUseCompoundFile();
-          if (last > 1 || !isOptimized(writer, infos.info(0)))
+         // boolean useCompoundFile = getUseCompoundFile();
+          if (last > 1 || !isOptimized(infos.info(0)))
           {
             spec = new MergeSpecification();
-            spec.add(new OneMerge(infos.range(0, last), useCompoundFile));
+            spec.add(new OneMerge(infos.asList().subList(0, last)));
           }
         }
         else if (last > maxNumSegments)
@@ -217,7 +219,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
     if (infoLen <= maxNumSegments) return null;
 
     MergeSpecification spec = new MergeSpecification();
-    boolean useCompoundFile = getUseCompoundFile();
+   // boolean useCompoundFile = getUseCompoundFile();
 
     // use Viterbi algorithm to find the best segmentation.
     // we will try to minimize the size variance of resulting segments.
@@ -265,7 +267,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
       int mergeStart = i + prev;
       if((mergeEnd - mergeStart) > 1)
       {
-        spec.add(new OneMerge(infos.range(mergeStart, mergeEnd), useCompoundFile));
+        spec.add(new OneMerge(infos.asList().subList(mergeStart, mergeEnd)));
       }
       else
       {
@@ -286,7 +288,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
     if(partialExpunge && maxDelCount > 0)
     {
       // expunge deletes
-      spec.add(new OneMerge(infos.range(expungeCandidate, expungeCandidate + 1), useCompoundFile));
+      spec.add(new OneMerge(infos.asList().subList(expungeCandidate, expungeCandidate + 1)));
     }
 
     return spec;
@@ -341,7 +343,9 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
 
     if(numLargeSegs < numSegs)
     {
-      SegmentInfos smallSegments = infos.range(numLargeSegs, numSegs);
+      List<SegmentInfo> smallSegmentList = infos.asList().subList(numLargeSegs, numSegs);
+      SegmentInfos smallSegments = new SegmentInfos();
+      smallSegments.addAll(smallSegmentList);
       spec = super.findMergesToExpungeDeletes(smallSegments);
     }
 
@@ -351,7 +355,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
       SegmentInfo info = infos.info(i);
       if(info.hasDeletions())
       {
-        spec.add(new OneMerge(infos.range(i, i + 1), getUseCompoundFile()));        
+        spec.add(new OneMerge(infos.asList().subList(i, i + 1)));        
       }
     }
     return spec;
@@ -400,7 +404,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
       {
         MergeSpecification spec = findBalancedMerges(infos, numLargeSegs, (numLargeSegs - 1), _partialExpunge);
         if(spec == null) spec = new MergeSpecification(); // should not happen
-        spec.add(new OneMerge(infos.range(numLargeSegs, numSegs), getUseCompoundFile()));
+        spec.add(new OneMerge(infos.asList().subList(numLargeSegs, numSegs)));
         return spec;
       }
       else
@@ -420,13 +424,15 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
         if(size(info) < sizeThreshold) break;
         startSeg++;
       }
-      spec.add(new OneMerge(infos.range(startSeg, numSegs), getUseCompoundFile()));
+      spec.add(new OneMerge(infos.asList().subList(startSeg, numSegs)));
       return spec;
     }
     else
     {
       // apply the log merge policy to small segments.
-      SegmentInfos smallSegments = infos.range(numLargeSegs, numSegs);
+      List<SegmentInfo> smallSegmentList = infos.asList().subList(numLargeSegs, numSegs);
+      SegmentInfos smallSegments = new SegmentInfos();
+      smallSegments.addAll(smallSegmentList);
       MergeSpecification spec = super.findMerges(smallSegments);
 
       if(_partialExpunge)
@@ -459,7 +465,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
     }
     if(maxDelCount > 0)
     {
-      return new OneMerge(infos.range(expungeCandidate, expungeCandidate + 1), getUseCompoundFile());
+      return new OneMerge(infos.asList().subList(expungeCandidate, expungeCandidate + 1));
     }
     return null;
   }

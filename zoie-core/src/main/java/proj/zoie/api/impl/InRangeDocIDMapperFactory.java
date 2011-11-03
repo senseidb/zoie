@@ -111,7 +111,7 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
       for (int i = 0; i < subreaders.length; ++i)
       {
         ZoieSegmentReader<?> subReader = subreaders[i];
-        DocIDMapper mapper = subReader.getDocIDMaper();
+        DocIDMapper<?> mapper = subReader.getDocIDMaper();
         if (mapper == null)
         {
           mapper = new DocIDMapperImpl(subReader.getUIDArray());
@@ -354,7 +354,7 @@ public class InRangeDocIDMapperFactory implements DocIDMapperFactory
     // matter here
     final ZoieSegmentReader<?>[] subreaders;
     final int[] starts;
-    final DocIDMapper[] mappers;
+    final DocIDMapper<?>[] mappers;
     final int bound;
 
     public DocIDMapperSmall(ZoieSegmentReader<?>[] subreaders, int[] starts)

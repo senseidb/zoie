@@ -38,17 +38,18 @@ public class ZoieIndexDeletionPolicy implements IndexDeletionPolicy
     _lastCommit = null;
   }
 
-  public void onInit(List commits) throws IOException
+  @Override
+  public void onInit(List<? extends IndexCommit> commits) throws IOException
   {
     processCommits(commits);
   }
 
-  public void onCommit(List commits) throws IOException
+  public void onCommit(List<? extends IndexCommit> commits) throws IOException
   {
     processCommits(commits);
   }
   
-  private synchronized void processCommits(List commits)
+  private synchronized void processCommits(List<? extends IndexCommit> commits)
   {
     int size = commits.size();
     if(size == 0) return;

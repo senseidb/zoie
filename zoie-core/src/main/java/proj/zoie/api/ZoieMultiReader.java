@@ -111,7 +111,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
     public long getMinUID()
     {
       long uid = Long.MAX_VALUE;
-      for(ZoieIndexReader reader : _subZoieReaders)
+      for(ZoieIndexReader<R> reader : _subZoieReaders)
       {
         uid = (uid > reader.getMinUID() ? reader.getMinUID() : uid);
       }
@@ -122,7 +122,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
     public long getMaxUID()
     {
       long uid = Long.MIN_VALUE;
-      for(ZoieIndexReader reader : _subZoieReaders)
+      for(ZoieIndexReader<R> reader : _subZoieReaders)
       {
         uid = (uid < reader.getMaxUID() ? reader.getMaxUID() : uid);
       }
@@ -143,7 +143,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
       {
 	    for(int i = 0; i < subReaders.length; i++)
 	    {
-	      ZoieSegmentReader<R> subReader = (ZoieSegmentReader)subReaders[i];
+	      ZoieSegmentReader<R> subReader = (ZoieSegmentReader<R>)subReaders[i];
 	      subReader.markDeletes(delDocs, deletedUIDs);
         }
       }
@@ -157,7 +157,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
 	  {
 	    for(int i = 0; i < subReaders.length; i++)
 	    {
-	      ZoieSegmentReader<R> subReader = (ZoieSegmentReader)subReaders[i];
+	      ZoieSegmentReader<R> subReader = (ZoieSegmentReader<R>)subReaders[i];
 	      subReader.commitDeletes();
 	    }
 	  }

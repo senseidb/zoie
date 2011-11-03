@@ -18,7 +18,7 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -53,7 +53,7 @@ public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexR
 	private ConcurrentLinkedQueue<IndexReader> _returnList = new ConcurrentLinkedQueue<IndexReader>();
 	
 	public ThrottledLuceneNRTDataConsumer(File dir,ZoieIndexableInterpreter<D> interpreter,long throttleFactor) throws IOException{
-		this(FSDirectory.open(dir),new StandardAnalyzer(Version.LUCENE_CURRENT),interpreter,throttleFactor);
+		this(FSDirectory.open(dir),new StandardAnalyzer(Version.LUCENE_33),interpreter,throttleFactor);
 	}
 	
 	public ThrottledLuceneNRTDataConsumer(File dir,Analyzer analyzer,ZoieIndexableInterpreter<D> interpreter,long throttleFactor) throws IOException{
@@ -73,7 +73,8 @@ public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexR
 	
 	public void start(){
 		try {
-			_writer = new IndexWriter(_dir, _analyzer,MaxFieldLength.UNLIMITED);
+			IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_33,_analyzer);
+			_writer = new IndexWriter(_dir, config);
 			_reopenThread.start();
 		} catch (IOException e) {
 			logger.error("uanble to start consumer: "+e.getMessage(),e);
@@ -192,7 +193,7 @@ public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexR
 	}
 	
 	private class ReopenThread extends Thread{
-		private boolean _stop;
+		private volatile boolean _stop;
 		ReopenThread(){
 			super("reopen thread");
 			setDaemon(true);
@@ -201,7 +202,7 @@ public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexR
 		
 		void terminate(){
 			if (!_stop){
-				_stop=false;
+				_stop=true;
 				interrupt();
 			}
 		}
@@ -217,7 +218,7 @@ public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexR
 					try {
 						logger.info("updating reader...");
 						IndexReader oldReader = ThrottledLuceneNRTDataConsumer.this._currentReader;
-						ThrottledLuceneNRTDataConsumer.this._currentReader=ThrottledLuceneNRTDataConsumer.this._writer.getReader();
+						ThrottledLuceneNRTDataConsumer.this._currentReader=IndexReader.open(ThrottledLuceneNRTDataConsumer.this._writer, true);
 						if (oldReader!=null){
 							returnReader(oldReader);
 						}

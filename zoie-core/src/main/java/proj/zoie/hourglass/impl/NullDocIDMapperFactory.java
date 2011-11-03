@@ -8,7 +8,7 @@ import proj.zoie.api.ZoieMultiReader;
 public class NullDocIDMapperFactory implements DocIDMapperFactory
 {
   public static final NullDocIDMapperFactory INSTANCE = new NullDocIDMapperFactory();
-  public DocIDMapper getDocIDMapper(ZoieMultiReader<?> reader)
+  public DocIDMapper<Object> getDocIDMapper(ZoieMultiReader<?> reader)
   {
     for(ZoieIndexReader<?>r : reader.getSequentialSubReaders())
     {

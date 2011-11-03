@@ -4,8 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.apache.log4j.Logger;
@@ -15,6 +17,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -23,7 +26,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 
-import proj.zoie.api.DataConsumer;
 import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.LifeCycleCotrolledDataConsumer;
 import proj.zoie.api.ZoieException;
@@ -136,6 +138,16 @@ public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledData
 				}
 			  }
 			}
+			
+			if (version!=null){
+			  HashMap<String,String> versionMap = new HashMap<String,String>();
+			  versionMap.put("version", version);
+			  try {
+				_writer.commit(versionMap);
+			  } catch (IOException e) {
+				throw new ZoieException(e.getMessage(),e);
+			  }
+			}
 		}
 	}
 
@@ -145,6 +157,13 @@ public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledData
 
 	public IndexReader getDiskIndexReader() throws IOException {
 		return _currentReader;
+	}
+	
+	private volatile String _currentReaderVersion = null;
+
+	@Override
+	public String getCurrentReaderVersion() {
+		return _currentReaderVersion;
 	}
 
 	public List<IndexReader> getIndexReaders() throws IOException {
@@ -212,6 +231,10 @@ public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledData
 						logger.info("updating reader...");
 						IndexReader oldReader = ThrottledLuceneNRTDataConsumer.this._currentReader;
 						ThrottledLuceneNRTDataConsumer.this._currentReader=IndexReader.open(ThrottledLuceneNRTDataConsumer.this._writer, true);
+						Map<String,String> versionMap = ThrottledLuceneNRTDataConsumer.this._currentReader.getCommitUserData();
+						if (versionMap!=null){
+							_currentReaderVersion = versionMap.get("version");
+						}
 						if (oldReader!=null){
 							returnReader(oldReader);
 						}

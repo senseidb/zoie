@@ -391,7 +391,7 @@ extends AsyncDataConsumer<D> implements Zoie<R, D>
 
     docidMapperFactory = docidMapperFactory == null ? new DefaultDocIDMapperFactory()
     : docidMapperFactory;
-    _searchIdxMgr = new SearchIndexManager<R>(_dirMgr, indexReaderDecorator, docidMapperFactory, ramIndexFactory);
+    _searchIdxMgr = new SearchIndexManager<R>(_dirMgr, versionComparator,indexReaderDecorator, docidMapperFactory, ramIndexFactory);
     _realtimeIndexing = rtIndexing;
     
     if (skipBadRecords){
@@ -1140,5 +1140,10 @@ public boolean alreadyShutdown()
   {
     super.syncWithVersion(timeInMillis, version);
     readercache.refreshCache(timeInMillis);
+  }
+
+  @Override
+  public String getCurrentReaderVersion() {
+	return _searchIdxMgr.getCurrentReaderVersion();
   }
 }

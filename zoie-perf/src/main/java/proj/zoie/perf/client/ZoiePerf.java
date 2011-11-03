@@ -322,23 +322,9 @@ public class ZoiePerf {
 
 						long timeDelta = newTime - prevTime;
 						long countDelta = newCount - prevCount;
-						List<IndexReader> readers = null;
-						long readerMarker = 0L;
-						try {
-							readers = testHandler.readerFactory
-									.getIndexReaders();
-							for (IndexReader reader : readers){
-								readerMarker+=reader.maxDoc();
-							}
-						} 
-						catch(Exception e){
-							// ignore
-						}finally {							
-							if (readers != null) {
-								testHandler.readerFactory
-										.returnIndexReaders(readers);
-							}
-						}
+						
+						String currentReaderVersion = testHandler.readerFactory.getCurrentReaderVersion();
+						long readerMarker = ZoiePerfVersion.fromString(currentReaderVersion).countVersion;
 
 						prevTime = newTime;
 						prevCount = newCount;

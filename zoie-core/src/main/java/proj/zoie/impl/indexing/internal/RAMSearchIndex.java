@@ -44,7 +44,7 @@ import proj.zoie.api.indexing.IndexReaderDecorator;
 
 public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
 {
-  private String _version;
+  private volatile String _version;
   private final Directory _directory;
   private final File _backingdir;
   private final IndexReaderDecorator<R> _decorator;

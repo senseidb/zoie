@@ -3,10 +3,8 @@ package proj.zoie.impl.indexing.luceneNRT;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.apache.log4j.Logger;
@@ -50,8 +48,9 @@ public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledData
 	private ReopenThread _reopenThread;
 	private HashSet<IndexReader> _returnSet = new HashSet<IndexReader>();
 	private ConcurrentLinkedQueue<IndexReader> _returnList = new ConcurrentLinkedQueue<IndexReader>();
-	private volatile String version = null;
 	private final MergePolicy _mergePolicy;
+	private boolean _appendOnly = false;
+	private volatile String _version = null;
 	
 	public ThrottledLuceneNRTDataConsumer(Directory dir,Analyzer analyzer,ZoieIndexableInterpreter<D> interpreter,long throttleFactor,MergePolicy mergePolicy){
 		_writer = null;
@@ -65,6 +64,17 @@ public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledData
 		_reopenThread = new ReopenThread();
 	}
 	
+	
+	public boolean isAppendOnly() {
+		return _appendOnly;
+	}
+
+
+	public void setAppendOnly(boolean _appendOnly) {
+		this._appendOnly = _appendOnly;
+	}
+
+
 	@Override
 	public void start(){
 		try {
@@ -107,14 +117,15 @@ public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledData
 		
 		if (events.size() > 0){
 			for (DataEvent<D> event : events){
-				version = event.getVersion();
+				_version = event.getVersion();
 				ZoieIndexable indexable = _interpreter.convertAndInterpret(event.getData());
 				if (indexable.isSkip()) continue;
-				
-				try {
-				  _writer.deleteDocuments(new Term(DOCUMENT_ID_FIELD,String.valueOf(indexable.getUID())));
-				} catch(IOException e) {
-				  throw new ZoieException(e.getMessage(),e);
+				if (!_appendOnly){
+				  try {
+				    _writer.deleteDocuments(new Term(DOCUMENT_ID_FIELD,String.valueOf(indexable.getUID())));
+				  } catch(IOException e) {
+				    throw new ZoieException(e.getMessage(),e);
+				  }
 				}
 				  
 			  IndexingReq[] reqs = indexable.buildIndexingReqs();
@@ -130,16 +141,6 @@ public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledData
 				} catch(IOException e) {
 					throw new ZoieException(e.getMessage(),e);
 				}
-			  }
-			}
-			
-			if (version!=null){
-			  HashMap<String,String> versionMap = new HashMap<String,String>();
-			  versionMap.put("version", version);
-			  try {
-				_writer.commit(versionMap);
-			  } catch (IOException e) {
-				throw new ZoieException(e.getMessage(),e);
 			  }
 			}
 		}
@@ -225,10 +226,7 @@ public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledData
 						logger.info("updating reader...");
 						IndexReader oldReader = ThrottledLuceneNRTDataConsumer.this._currentReader;
 						ThrottledLuceneNRTDataConsumer.this._currentReader=IndexReader.open(ThrottledLuceneNRTDataConsumer.this._writer, true);
-						Map<String,String> versionMap = ThrottledLuceneNRTDataConsumer.this._currentReader.getCommitUserData();
-						if (versionMap!=null){
-							_currentReaderVersion = versionMap.get("version");
-						}
+						_currentReaderVersion = _version;
 						if (oldReader!=null){
 							returnReader(oldReader);
 						}
@@ -242,6 +240,6 @@ public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledData
   
   public String getVersion()
   {
-    return version;
+    return _version;
   }
 }

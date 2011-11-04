@@ -131,6 +131,10 @@ public class ZoiePerf {
 		}
 		ThrottledLuceneNRTDataConsumer<String> nrtSystem = new ThrottledLuceneNRTDataConsumer<String>(
 				dir, new StandardAnalyzer(Version.LUCENE_34),interpreter, throttle,mergePolicy);
+		
+		boolean appendOnly = conf.getBoolean("appendOnly", false);
+		nrtSystem.setAppendOnly(appendOnly);
+		
 		return new PerfTestHandler(
 				(LifeCycleCotrolledDataConsumer<String>) nrtSystem,
 				(IndexReaderFactory<IndexReader>) nrtSystem);
@@ -371,13 +375,13 @@ public class ZoiePerf {
 						
 						long countsBehind = newCount - readerMarker;
 
-
+/*
 						System.out.println("counts behind: "+countsBehind);
 						System.out.println("new count: "+newCount);
 						System.out.println("reader marker: "+readerMarker);
 						System.out.println("time delta: "+timeDelta);
 						System.out.println("count delta: "+countDelta);
-						
+						*/
 						if (countDelta > 0){
 						  return timeDelta*countsBehind/countDelta;
 						}
@@ -433,6 +437,7 @@ public class ZoiePerf {
 		ZoiePerfVersion perfVersion = ZoiePerfVersion.fromString(testHandler.consumer.getVersion());
 		while ((dataAmount = perfVersion.offsetVersion) < maxSize) {
 			Thread.sleep(500);
+			perfVersion = ZoiePerfVersion.fromString(testHandler.consumer.getVersion());
 		}
 
 		dataProvider.stop();

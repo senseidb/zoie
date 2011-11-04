@@ -18,7 +18,9 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -199,11 +201,11 @@ public class ZoiePerf {
 			}
 
 			public void run() {
+				QueryParser parser = new QueryParser(Version.LUCENE_34,"contents",new StandardAnalyzer(Version.LUCENE_34));
 				while (!stop) {
 					int qidx = rand.nextInt(queryTerms.length);
-					final TermQuery tq = new TermQuery(new Term("contents",
-							queryTerms[qidx]));
 					try {
+						final Query tq = parser.parse(queryTerms[qidx]);
 						searchTimer.time(new Callable<TopDocs>() {
 
 							@Override

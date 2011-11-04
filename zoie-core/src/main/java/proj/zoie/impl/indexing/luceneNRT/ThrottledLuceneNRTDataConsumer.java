@@ -1,6 +1,5 @@
 package proj.zoie.impl.indexing.luceneNRT;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -12,18 +11,16 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 
 import proj.zoie.api.IndexReaderFactory;
@@ -54,21 +51,15 @@ public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledData
 	private HashSet<IndexReader> _returnSet = new HashSet<IndexReader>();
 	private ConcurrentLinkedQueue<IndexReader> _returnList = new ConcurrentLinkedQueue<IndexReader>();
 	private volatile String version = null;
+	private final MergePolicy _mergePolicy;
 	
-	public ThrottledLuceneNRTDataConsumer(File dir,ZoieIndexableInterpreter<D> interpreter,long throttleFactor) throws IOException{
-		this(FSDirectory.open(dir),new StandardAnalyzer(Version.LUCENE_33),interpreter,throttleFactor);
-	}
-	
-	public ThrottledLuceneNRTDataConsumer(File dir,Analyzer analyzer,ZoieIndexableInterpreter<D> interpreter,long throttleFactor) throws IOException{
-		this(FSDirectory.open(dir),analyzer,interpreter,throttleFactor);
-	}
-	
-	public ThrottledLuceneNRTDataConsumer(Directory dir,Analyzer analyzer,ZoieIndexableInterpreter<D> interpreter,long throttleFactor){
+	public ThrottledLuceneNRTDataConsumer(Directory dir,Analyzer analyzer,ZoieIndexableInterpreter<D> interpreter,long throttleFactor,MergePolicy mergePolicy){
 		_writer = null;
 		_analyzer = analyzer;
 		_interpreter = interpreter;
 		_dir = dir;
 		_throttleFactor = throttleFactor;
+		_mergePolicy = mergePolicy;
 		_currentReader = null;
 		if (_throttleFactor<=0) throw new IllegalArgumentException("throttle factor must be > 0");
 		_reopenThread = new ReopenThread();
@@ -78,6 +69,9 @@ public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledData
 	public void start(){
 		try {
 			IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_33,_analyzer);
+			if (_mergePolicy!=null){
+			  config.setMergePolicy(_mergePolicy);
+			}
 			_writer = new IndexWriter(_dir, config);
 			_reopenThread.start();
 		} catch (IOException e) {

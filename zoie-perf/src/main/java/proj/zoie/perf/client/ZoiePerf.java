@@ -14,11 +14,17 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.Version;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.handler.ResourceHandler;
@@ -31,6 +37,7 @@ import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DirectoryManager.DIRECTORY_MODE;
 import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.LifeCycleCotrolledDataConsumer;
+import proj.zoie.api.impl.ZoieMergePolicy;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.impl.indexing.DefaultIndexReaderDecorator;
 import proj.zoie.impl.indexing.SimpleReaderCache;
@@ -63,7 +70,14 @@ public class ZoiePerf {
 
 	static TweetInterpreter interpreter = new TweetInterpreter();
 
-	static PerfTestHandler buildZoieHandler(File idxDir, Configuration conf) {
+	static Map<String,DIRECTORY_MODE> modeMap = new HashMap<String,DIRECTORY_MODE>();
+	static{
+		modeMap.put("file", DIRECTORY_MODE.SIMPLE);
+		modeMap.put("mmap", DIRECTORY_MODE.MMAP);
+		modeMap.put("nio", DIRECTORY_MODE.NIO);
+	}
+	
+	static PerfTestHandler buildZoieHandler(File idxDir, Configuration topConf,Configuration conf) {
 
 		ZoieConfig zoieConfig = new ZoieConfig();
 		zoieConfig.setAnalyzer(new StandardAnalyzer(Version.LUCENE_34));
@@ -73,9 +87,11 @@ public class ZoiePerf {
 		zoieConfig.setRtIndexing(true);
 		zoieConfig.setVersionComparator(ZoiePerfVersion.COMPARATOR);
 		zoieConfig.setReadercachefactory(SimpleReaderCache.FACTORY);
-
-		DirectoryManager dirMgr = new DefaultDirectoryManager(idxDir,
-				DIRECTORY_MODE.SIMPLE);
+		
+		String modeConf = topConf.getString("perf.directory.type", "file");
+		DIRECTORY_MODE mode = modeMap.get(modeConf);
+		if (mode == null) mode = DIRECTORY_MODE.SIMPLE;
+		DirectoryManager dirMgr = new DefaultDirectoryManager(idxDir,mode);
 
 		IndexReaderDecorator<IndexReader> indexReaderDecorator = new DefaultIndexReaderDecorator();
 
@@ -86,11 +102,35 @@ public class ZoiePerf {
 				(IndexReaderFactory) zoieSystem);
 	}
 
-	static PerfTestHandler buildNrtHandler(File idxDir, Configuration conf)
+	static PerfTestHandler buildNrtHandler(File idxDir, Configuration topConf,Configuration conf)
 			throws Exception {
 		long throttle = conf.getLong("throttle");
+		String modeConf = topConf.getString("perf.directory.type", "file");
+		Directory dir;
+		if ("file".equals(modeConf)){
+			dir = FSDirectory.open(idxDir);
+		}
+		else if ("mmap".equals(modeConf)){
+			dir = MMapDirectory.open(idxDir);
+		}
+		else if ("nio".equals(modeConf)){
+			dir = NIOFSDirectory.open(idxDir);
+		}
+		else{
+			dir = FSDirectory.open(idxDir);
+		}
+		
+		MergePolicy mergePolicy = null;
+		
+		String mergePolicyConf = conf.getString("mergePolicy");
+		if ("tier".equals(mergePolicyConf)){
+			mergePolicy = new TieredMergePolicy();
+		}
+		else if ("zoie".equals(mergePolicyConf)){
+			mergePolicy = new ZoieMergePolicy();
+		}
 		ThrottledLuceneNRTDataConsumer<String> nrtSystem = new ThrottledLuceneNRTDataConsumer<String>(
-				idxDir, interpreter, throttle);
+				dir, new StandardAnalyzer(Version.LUCENE_34),interpreter, throttle,mergePolicy);
 		return new PerfTestHandler(
 				(LifeCycleCotrolledDataConsumer<String>) nrtSystem,
 				(IndexReaderFactory<IndexReader>) nrtSystem);
@@ -104,9 +144,9 @@ public class ZoiePerf {
 		Configuration subConf = conf.subset("perf." + type);
 
 		if ("zoie".equals(type)) {
-			return buildZoieHandler(idxDir, subConf);
+			return buildZoieHandler(idxDir,conf, subConf);
 		} else if ("nrt".equals(type)) {
-			return buildNrtHandler(idxDir, subConf);
+			return buildNrtHandler(idxDir, conf,subConf);
 		} else {
 			throw new ConfigurationException("test type: " + type
 					+ " is not supported");

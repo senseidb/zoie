@@ -178,7 +178,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
     mergePolicy.setMergePolicyParams(_mergePolicyParams);
     mergePolicy.setUseCompoundFile(false);
 
-    IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_33,analyzer);
+    IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_34,analyzer);
     config.setOpenMode(OpenMode.CREATE_OR_APPEND);
     config.setMergeScheduler(_mergeScheduler);
     config.setMergePolicy(mergePolicy);

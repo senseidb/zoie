@@ -288,19 +288,39 @@
 
 <body>
    <div class="container-fluid">
-    <div class="sidebar">
-      <h3>Search Min Latency:
-      <span id="min"></span>
-      </h3>
-      <h3>Search Max Latency:
-      <span id="max"></span>
-      </h3>
-      <h3>Events Per Second:
-      <span id="eventsPerSec"></span>
-      </h3>
-      <h3>Indexing Latency (ms):
-      <span id="idxLatency"></span>
-      </h3>
+    <div class="sidebar" style="width:350px;padding-top:20px">
+      <h3>Merics:</h3>
+      <div class="row">
+        <div style="font-size:15px;font-weight:bold" class="span3">
+        Search Min Latency:
+        </div>
+        <div style="font-size:18px;font-weight:bold;color:navy" class="span2"><span id="min"></span>
+        </div>
+      </div>
+      <div class="row">
+        <div style="font-size:15px;font-weight:bold"  class="span3">
+        Search Max Latency:
+        </div>
+        <div style="font-size:18px;font-weight:bold;color:navy" class="span2">
+        <span id="max"></span>
+        </div>
+      </div>
+      <div style="font-size:15px;font-weight:bold" class="row">
+        <div class="span3">
+        Events Per Second:
+        </div>
+        <div style="font-size:18px;font-weight:bold;color:navy" class="span2">
+          <span id="eventsPerSec"></span>
+        </div>
+      </div>
+      <div style="font-size:15px;font-weight:bold" class="row">
+        <div class="span3">
+        Indexing Latency (ms):
+        </div>
+        <div style="font-size:18px;font-weight:bold;color:navy" class="span2">
+        <span id="idxLatency"></span>
+        </div>
+      </div>
     </div>
     <div style="text-align:center" class="container">
       <h1>Zoie Perf Console</h1>

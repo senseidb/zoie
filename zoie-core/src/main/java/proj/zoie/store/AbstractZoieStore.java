@@ -56,6 +56,7 @@ public abstract class AbstractZoieStore implements ZoieStore {
 	public abstract String getPersistedVersion() throws IOException;
 
 	public abstract void close() throws IOException;
+	public abstract void open() throws IOException;
 	
 	public static byte[] compress(byte[] src) throws IOException{
 		ByteArrayOutputStream bout = new ByteArrayOutputStream();

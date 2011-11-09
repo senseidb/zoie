@@ -9,6 +9,7 @@ public interface ZoieStore {
 	String getVersion();
 	void delete(long uid,String version) throws IOException;
 	String getPersistedVersion() throws IOException;
+	void open() throws IOException;
 	void close() throws IOException;
 	void commit() throws IOException;
 }

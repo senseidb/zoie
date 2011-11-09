@@ -94,18 +94,27 @@ public class LuceneStore extends AbstractZoieStore {
 	}
 	
 	private final String _field;
+	private final Directory _dir;
 	private IndexWriter _idxWriter;
 	private volatile ReaderData _currentReaderData;
 	private volatile ReaderData _oldReaderData;
+	private volatile boolean _closed = true;
 	
 	private LuceneStore(Directory dir,String field) throws IOException{
 		_field = field;
-		
-		IndexWriterConfig idxWriterConfig = new IndexWriterConfig(Version.LUCENE_34,new StandardAnalyzer(Version.LUCENE_34));
-		idxWriterConfig.setMergePolicy(new ZoieMergePolicy());
-		idxWriterConfig.setOpenMode(OpenMode.CREATE_OR_APPEND);
-		_idxWriter = new IndexWriter(dir,idxWriterConfig);
-		updateReader();
+		_idxWriter = null;
+		_dir = dir;
+	}
+	
+	public void open() throws IOException{
+		if (_closed){
+		  IndexWriterConfig idxWriterConfig = new IndexWriterConfig(Version.LUCENE_34,new StandardAnalyzer(Version.LUCENE_34));
+		  idxWriterConfig.setMergePolicy(new ZoieMergePolicy());
+		  idxWriterConfig.setOpenMode(OpenMode.CREATE_OR_APPEND);
+		  _idxWriter = new IndexWriter(_dir,idxWriterConfig);
+		  updateReader();
+		  _closed = false;
+		}
 	}
 	
 	private void updateReader() throws IOException{
@@ -259,6 +268,9 @@ public class LuceneStore extends AbstractZoieStore {
 
 	@Override
 	public void close() throws IOException {
-		_idxWriter.close();
+		if (!_closed){
+		  _idxWriter.close();
+		  _closed = true;
+		}
 	}
 }

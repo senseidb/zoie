@@ -2,7 +2,6 @@ package proj.zoie.store;
 
 import it.unimi.dsi.fastutil.longs.Long2IntRBTreeMap;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,7 +20,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
 
 import proj.zoie.api.ZoieSegmentReader;
@@ -45,13 +44,18 @@ public class LuceneStore extends AbstractZoieStore {
 			long maxUID = Long.MIN_VALUE;
 			
 			uidMap = new Long2IntRBTreeMap();
+			uidMap.defaultReturnValue(-1);
 			int maxDoc = reader.maxDoc();
+			if (maxDoc == 0){
+				_minUID = Long.MIN_VALUE;
+				_maxUID = Long.MIN_VALUE;
+				return;
+			}
 			TermPositions tp = null;
 			byte[] payloadBuffer = new byte[8];       // four bytes for a long
 			try
 			{
 	          tp = reader.termPositions(ZoieSegmentReader.UID_TERM);
-	          int idx = 0;
 	          while (tp.next())
 	          {
 	            int doc = tp.doc();
@@ -62,8 +66,7 @@ public class LuceneStore extends AbstractZoieStore {
 	            long uid = ZoieSegmentReader.bytesToLong(payloadBuffer);
 	            if(uid < minUID) minUID = uid;
 	            if(uid > maxUID) maxUID = uid;
-	            uidMap.put(uid, idx);
-	            idx++;
+	            uidMap.put(uid, doc);
 	    	  }
 			}
 			finally
@@ -95,13 +98,13 @@ public class LuceneStore extends AbstractZoieStore {
 	private volatile ReaderData _currentReaderData;
 	private volatile ReaderData _oldReaderData;
 	
-	private LuceneStore(File idxDir,String field,boolean create) throws IOException{
+	private LuceneStore(Directory dir,String field) throws IOException{
 		_field = field;
 		
 		IndexWriterConfig idxWriterConfig = new IndexWriterConfig(Version.LUCENE_34,new StandardAnalyzer(Version.LUCENE_34));
 		idxWriterConfig.setMergePolicy(new ZoieMergePolicy());
 		idxWriterConfig.setOpenMode(OpenMode.CREATE_OR_APPEND);
-		_idxWriter = new IndexWriter(FSDirectory.open(idxDir),idxWriterConfig);
+		_idxWriter = new IndexWriter(dir,idxWriterConfig);
 		updateReader();
 	}
 	
@@ -130,10 +133,9 @@ public class LuceneStore extends AbstractZoieStore {
 		_currentReaderData = readerData;
 	}
 	
-	public static ZoieStore openStore(File idxDir,String field,boolean compressionOff) throws IOException{
-		boolean create = !idxDir.exists();
-		LuceneStore store = new LuceneStore(idxDir,field,create);
-		store.setDataCompressed(compressionOff);
+	public static ZoieStore openStore(Directory idxDir,String field,boolean compressionOff) throws IOException{
+		LuceneStore store = new LuceneStore(idxDir,field);
+		store.setDataCompressed(!compressionOff);
 		return store;
 	}
 	
@@ -211,6 +213,9 @@ public class LuceneStore extends AbstractZoieStore {
 			
 		});
 		_idxWriter.deleteDocuments(deleteQ);
+		if (_currentReaderData!=null){
+		  _currentReaderData.uidMap.remove(uid);
+		}
 
 	}
 
@@ -222,7 +227,7 @@ public class LuceneStore extends AbstractZoieStore {
 		if (_currentReaderData!=null){
 			reader = _currentReaderData.reader;
 		}
-		if (docid>0 && reader!=null){
+		if (docid>=0 && reader!=null){
 			Document doc = reader.document(docid);
 			if (doc!=null){
 			  return doc.getBinaryValue(_field);

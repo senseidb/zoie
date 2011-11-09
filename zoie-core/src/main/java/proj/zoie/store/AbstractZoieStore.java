@@ -40,7 +40,7 @@ public abstract class AbstractZoieStore implements ZoieStore {
 	public boolean isDataCompressed() {
 		return _dataCompressed;
 	}
-
+	
 	protected abstract void persist(long uid, byte[] data) throws IOException;
 
 	protected abstract void persistDelete(long uid) throws IOException;

@@ -1,12 +1,8 @@
 package proj.zoie.perf.client;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.Configuration;
@@ -15,14 +11,7 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.MultiReader;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MMapDirectory;
@@ -48,7 +37,10 @@ import proj.zoie.impl.indexing.ZoieSystem;
 import proj.zoie.impl.indexing.luceneNRT.ThrottledLuceneNRTDataConsumer;
 import proj.zoie.perf.indexing.LinedFileDataProvider;
 import proj.zoie.perf.indexing.TweetInterpreter;
+import proj.zoie.perf.indexing.ZoieStoreConsumer;
 import proj.zoie.perf.servlet.ZoiePerfServlet;
+import proj.zoie.store.LuceneStore;
+import proj.zoie.store.ZoieStore;
 
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.GaugeMetric;
@@ -61,12 +53,12 @@ public class ZoiePerf {
 
 	private static class PerfTestHandler {
 		final LifeCycleCotrolledDataConsumer<String> consumer;
-		final IndexReaderFactory readerFactory;
+		final QueryHandler queryHandler;
 
 		PerfTestHandler(LifeCycleCotrolledDataConsumer<String> consumer,
-				IndexReaderFactory<IndexReader> readerFactory) {
+				QueryHandler queryHandler) {
 			this.consumer = consumer;
-			this.readerFactory = readerFactory;
+			this.queryHandler = queryHandler;
 		}
 	}
 
@@ -79,7 +71,8 @@ public class ZoiePerf {
 		modeMap.put("nio", DIRECTORY_MODE.NIO);
 	}
 	
-	static PerfTestHandler buildZoieHandler(File idxDir, Configuration topConf,Configuration conf) {
+	
+	static PerfTestHandler buildZoieHandler(File idxDir, Configuration topConf,Configuration conf) throws Exception {
 
 		ZoieConfig zoieConfig = new ZoieConfig();
 		zoieConfig.setAnalyzer(new StandardAnalyzer(Version.LUCENE_34));
@@ -97,11 +90,19 @@ public class ZoiePerf {
 
 		IndexReaderDecorator<IndexReader> indexReaderDecorator = new DefaultIndexReaderDecorator();
 
+		File queryFile = new File(topConf.getString("perf.query.file"));
+		if (!queryFile.exists()) {
+			throw new ConfigurationException(queryFile.getAbsolutePath()+" does not exist!");
+		}
+		
+		
 		ZoieSystem<IndexReader, String> zoieSystem = new ZoieSystem<IndexReader, String>(
 				dirMgr, interpreter, indexReaderDecorator, zoieConfig);
+
+		SearchQueryHandler queryHandler = new SearchQueryHandler(queryFile, (IndexReaderFactory) zoieSystem);
+		
 		return new PerfTestHandler(
-				(LifeCycleCotrolledDataConsumer<String>) zoieSystem,
-				(IndexReaderFactory) zoieSystem);
+				(LifeCycleCotrolledDataConsumer<String>) zoieSystem,queryHandler);
 	}
 
 	static PerfTestHandler buildNrtHandler(File idxDir, Configuration topConf,Configuration conf)
@@ -137,12 +138,26 @@ public class ZoiePerf {
 		boolean appendOnly = conf.getBoolean("appendOnly", false);
 		nrtSystem.setAppendOnly(appendOnly);
 		
+		File queryFile = new File(topConf.getString("perf.query.file"));
+		if (!queryFile.exists()) {
+			throw new ConfigurationException(queryFile.getAbsolutePath()+" does not exist!");
+		}
+		
+		SearchQueryHandler queryHandler = new SearchQueryHandler(queryFile, (IndexReaderFactory) nrtSystem);
+		
 		return new PerfTestHandler(
-				(LifeCycleCotrolledDataConsumer<String>) nrtSystem,
-				(IndexReaderFactory<IndexReader>) nrtSystem);
+				(LifeCycleCotrolledDataConsumer<String>) nrtSystem,queryHandler);
+	}
+	
+	static PerfTestHandler buildZoieStoreHandler(File idxDir, File inputFile) throws Exception {
+		ZoieStore luceneStore = LuceneStore.openStore(idxDir, "src_data", false);
+		StoreQueryHandler queryHandler = new StoreQueryHandler(inputFile,luceneStore,100000);
+		
+		ZoieStoreConsumer consumer = new ZoieStoreConsumer(luceneStore);
+		return new PerfTestHandler(consumer,queryHandler);
 	}
 
-	static PerfTestHandler buildPerfHandler(Configuration conf)
+	static PerfTestHandler buildPerfHandler(Configuration conf,File inputFile)
 			throws Exception {
 		File idxDir = new File(conf.getString("perf.idxDir"));
 
@@ -153,7 +168,10 @@ public class ZoiePerf {
 			return buildZoieHandler(idxDir,conf, subConf);
 		} else if ("nrt".equals(type)) {
 			return buildNrtHandler(idxDir, conf,subConf);
-		} else {
+		} else if ("store".equals(type)){
+			return buildZoieStoreHandler(idxDir, inputFile);
+		}
+		else {
 			throw new ConfigurationException("test type: " + type
 					+ " is not supported");
 		}
@@ -167,13 +185,16 @@ public class ZoiePerf {
 		if (!queryFile.exists()) {
 			System.out.println("query file does not exist");
 		}
+		
+		File inputFile = new File(conf.getString("perf.input"));
 
-		List<String> queryTermList = TermFileBuilder.loadFile(queryFile);
-		final String[] queryTerms = queryTermList.toArray(new String[0]);
+		if (!inputFile.exists()) {
+			throw new ConfigurationException("input file: "
+					+ inputFile.getAbsolutePath() + " does not exist.");
+		}
 
-		final Random rand = new Random(System.currentTimeMillis());
 
-		final PerfTestHandler testHandler = buildPerfHandler(conf);
+		final PerfTestHandler testHandler = buildPerfHandler(conf,inputFile);
 
 
 		boolean doSearchTest = conf.getBoolean("perf.test.search", true);
@@ -201,41 +222,9 @@ public class ZoiePerf {
 			}
 
 			public void run() {
-				QueryParser parser = new QueryParser(Version.LUCENE_34,"contents",new StandardAnalyzer(Version.LUCENE_34));
 				while (!stop) {
-					int qidx = rand.nextInt(queryTerms.length);
 					try {
-						final Query tq = parser.parse(queryTerms[qidx]);
-						searchTimer.time(new Callable<TopDocs>() {
-
-							@Override
-							public TopDocs call() throws Exception {
-								List<IndexReader> readers = null;
-								IndexSearcher searcher = null;
-								try {
-									readers = testHandler.readerFactory
-											.getIndexReaders();
-									MultiReader reader = new MultiReader(
-											readers.toArray(new IndexReader[0]),
-											false);
-									searcher = new IndexSearcher(reader);
-									return searcher.search(tq, 10);
-								} finally {
-									if (searcher != null) {
-										try {
-											searcher.close();
-										} catch (IOException e) {
-
-										}
-									}
-									if (readers != null) {
-										testHandler.readerFactory
-												.returnIndexReaders(readers);
-									}
-								}
-							}
-
-						});
+						testHandler.queryHandler.handleQuery();
 					} catch (Exception e) {
 						errorMeter.mark();
 					}
@@ -249,13 +238,6 @@ public class ZoiePerf {
 					}
 				}
 			}
-		}
-
-		File inputFile = new File(conf.getString("perf.input"));
-
-		if (!inputFile.exists()) {
-			throw new ConfigurationException("input file: "
-					+ inputFile.getAbsolutePath() + " does not exist.");
 		}
 
 		long maxSize = conf.getLong("perf.maxSize");
@@ -369,7 +351,7 @@ public class ZoiePerf {
 						long timeDelta = newTime - prevTime;
 						long countDelta = newCount - prevCount;
 						
-						String currentReaderVersion = testHandler.readerFactory.getCurrentReaderVersion();
+						String currentReaderVersion = testHandler.queryHandler.getCurrentVersion();
 						long readerMarker = ZoiePerfVersion.fromString(currentReaderVersion).countVersion;
 
 						prevTime = newTime;

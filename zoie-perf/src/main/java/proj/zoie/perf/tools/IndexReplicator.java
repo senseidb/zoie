@@ -6,7 +6,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
 
@@ -52,11 +52,12 @@ public class IndexReplicator {
 		IndexWriter writer = null;
 		try
 		{
-			writer = new IndexWriter(targetDir,new StandardAnalyzer(Version.LUCENE_CURRENT),true,MaxFieldLength.UNLIMITED);
+			IndexWriterConfig idxWriterConf = new IndexWriterConfig(Version.LUCENE_34,new StandardAnalyzer(Version.LUCENE_34));
+			writer = new IndexWriter(targetDir,idxWriterConf);
 			for (int i=0;i<numReplicas;++i)
 			{
 			  System.out.println("replicating "+(i+1)+" time(s)");
-			  writer.addIndexesNoOptimize(new Directory[]{srcDirMgr.getDirectory()});
+			  writer.addIndexes(new Directory[]{srcDirMgr.getDirectory()});
 			}
 			System.out.println("optimizing....");
 			writer.optimize();

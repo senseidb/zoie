@@ -317,7 +317,7 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
     {
       try
       {
-        return new StandardMBean(new HourglassAdmin(this), HourglassAdminMBean.class);
+        return new StandardMBean(getAdminMBean(), HourglassAdminMBean.class);
       } catch (NotCompliantMBeanException e)
       {
         log.info(e);
@@ -325,6 +325,12 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
       }
     }
     return null;
+  }
+
+  @Override
+  public HourglassAdminMBean getAdminMBean()
+  {
+    return new HourglassAdmin(this);
   }
 
   public static String HOURGLASSADMIN = "hourglass-admin";

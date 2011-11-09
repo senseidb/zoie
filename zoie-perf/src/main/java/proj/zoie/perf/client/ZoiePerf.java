@@ -149,8 +149,22 @@ public class ZoiePerf {
 				(LifeCycleCotrolledDataConsumer<String>) nrtSystem,queryHandler);
 	}
 	
-	static PerfTestHandler buildZoieStoreHandler(File idxDir, File inputFile) throws Exception {
-		ZoieStore luceneStore = LuceneStore.openStore(idxDir, "src_data", false);
+	static PerfTestHandler buildZoieStoreHandler(Configuration topConf,File idxDir, File inputFile) throws Exception {
+		String modeConf = topConf.getString("perf.directory.type", "file");
+		Directory dir;
+		if ("file".equals(modeConf)){
+			dir = FSDirectory.open(idxDir);
+		}
+		else if ("mmap".equals(modeConf)){
+			dir = MMapDirectory.open(idxDir);
+		}
+		else if ("nio".equals(modeConf)){
+			dir = NIOFSDirectory.open(idxDir);
+		}
+		else{
+			dir = FSDirectory.open(idxDir);
+		}
+		ZoieStore luceneStore = LuceneStore.openStore(dir, "src_data", false);
 		StoreQueryHandler queryHandler = new StoreQueryHandler(inputFile,luceneStore,100000);
 		
 		ZoieStoreConsumer consumer = new ZoieStoreConsumer(luceneStore);
@@ -169,7 +183,7 @@ public class ZoiePerf {
 		} else if ("nrt".equals(type)) {
 			return buildNrtHandler(idxDir, conf,subConf);
 		} else if ("store".equals(type)){
-			return buildZoieStoreHandler(idxDir, inputFile);
+			return buildZoieStoreHandler(conf,idxDir, inputFile);
 		}
 		else {
 			throw new ConfigurationException("test type: " + type

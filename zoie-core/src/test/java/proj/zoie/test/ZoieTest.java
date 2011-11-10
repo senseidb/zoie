@@ -264,7 +264,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 				idxDir, true, ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 		idxSystem.start();
 		String query = "zoie";
-		QueryParser parser = new QueryParser(Version.LUCENE_33,
+		QueryParser parser = new QueryParser(Version.LUCENE_34,
 				"contents", idxSystem.getAnalyzer());
 		Query q = null;
 		try {
@@ -499,7 +499,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 			queryThreads[i] = new QueryThread() {
 				public void run() {
 					QueryParser parser = new QueryParser(
-							Version.LUCENE_33, "contents",
+							Version.LUCENE_34, "contents",
 							idxSystem.getAnalyzer());
 					Query q;
 					try {
@@ -713,7 +713,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 
 			idxSystem.syncWithVersion(10000, ""+(count-1));
 
-			QueryParser parser = new QueryParser(Version.LUCENE_30,
+			QueryParser parser = new QueryParser(Version.LUCENE_34,
 					"contents", idxSystem.getAnalyzer());
 			Query q;
 			Searcher searcher = null;
@@ -1076,7 +1076,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 		DirectoryManager dirMgr = new DefaultDirectoryManager(idxDir);
 
 		String query = "zoie";
-		QueryParser parser = new QueryParser(Version.LUCENE_CURRENT,
+		QueryParser parser = new QueryParser(Version.LUCENE_34,
 				"contents", idxSystem.getAnalyzer());
 		Query q = null;
 		try {

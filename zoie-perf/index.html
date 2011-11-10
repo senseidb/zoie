@@ -1,0 +1,337 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"> 
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Zoie Perf Console</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <link rel="stylesheet" href="http://twitter.github.com/bootstrap/1.3.0/bootstrap.css" type="text/css" media="screen"/>
+    <link rel="stylesheet" href="http://wonlay.github.com/sin/styles/prettify.css" type="text/css" media="screen"/>
+    <script src="http://code.jquery.com/jquery-1.4.4.js"></script>
+    <script src="http://www.highcharts.com/js/highcharts.js"></script>
+    
+    <!--[if IE]>
+			<script type="text/javascript" src="http://www.highcharts.com/js/excanvas.compiled.js"></script>
+		<![endif]-->
+		
+		
+		<!-- 2. Add the JavaScript to initialize the chart on document ready -->
+		<script type="text/javascript">
+		var searchChart;
+		var searchDataOffset = 0;
+		
+		$(document).ready(function() {
+			//search perf chart
+			function reqSearchData(){
+			  var url = "/servlets/zoie-perf/?type=searchTimer&offset="+searchDataOffset;
+			  $.get(url, function(data) {
+			    if (data.length>0){
+			      var items = data.split(":");
+			      searchDataOffset = parseFloat(items[0]);
+			      var vals = items[1].split(',');
+			      var point= new Array();
+			      var xVal = 0;
+			      $.each(vals, function(itemNo, item) {
+							if (itemNo == 0) {
+							    xVal = parseInt(item);
+							}
+							else if (itemNo == 1){
+							    var val = parseFloat(item);
+							    $("#min").html(val);
+							} 
+							else if (itemNo == 2){
+							    var val = parseFloat(item);
+							    $("#max").html(val);
+							}
+							else {
+							    point[0]=xVal;
+							    point[1]=parseFloat(item);
+							    var series = searchChart.series[itemNo-3];
+							    shift = series.data.length>20;
+								series.addPoint(point,true,shift);
+							}
+						});
+			    }
+			    setTimeout(reqSearchData, 2000);  
+			  });
+			}
+			
+			var searchPerfOptions = {
+				chart: {
+					renderTo: 'searchPerf',
+					defaultSeriesType: 'spline',
+					events: {
+					  load : reqSearchData
+					}
+				},
+				title: {
+					text: 'Search Performance'
+				},
+				xAxis: {
+					categories: []
+				},
+				yAxis: {
+					title: {
+						text: 'Latency(ms)'
+					}
+				},
+				series: [
+				{
+				  name:'mean',
+				  data:[]
+				},
+				{
+				  name:'median',
+				  data:[]
+				},
+				{
+				  name:'stddev',
+				  data:[]
+				},
+				{
+				  name:'90%',
+				  data:[]
+				},
+				{
+				  name:'95%',
+				  data:[]
+				},
+				{
+				  name:'99%',
+				  data:[]
+				}]
+				
+			};
+			
+			searchChart = new Highcharts.Chart(searchPerfOptions);
+			
+			var indexingEventChart;
+			var indexCountOffset=0;
+			
+			// index event rate chart
+			function reqIndexingEventData(){
+			var url = "/servlets/zoie-perf/?type=consumeRateCount&offset="+indexCountOffset;
+			  $.get(url, function(data) {
+			    if (data.length>0){
+			      var items = data.split(":");
+			      indexCountOffset = parseFloat(items[0]);
+			      var vals = items[1].split(',');
+			      var point= new Array();
+			      var xVal = 0;
+			      $.each(vals, function(itemNo, item) {
+							if (itemNo == 0) {
+							    xVal = parseInt(item);
+							} else {
+							    point[0]=xVal;
+							    point[1]=parseFloat(item);
+							    var series = indexingEventChart.series[itemNo-1];
+							    shift = series.data.length>20;
+								series.addPoint(point,true,shift);
+							    $("#eventsPerSec").html(point[1]);
+							}
+						});
+			    }
+			    setTimeout(reqIndexingEventData, 2000);  
+			  });
+			}
+			
+			var indexingEventOptions = {
+				chart: {
+					renderTo: 'indexingEvent',
+					defaultSeriesType: 'spline',
+					events: {
+					  load : reqIndexingEventData
+					}
+				},
+				title: {
+					text: 'Indexing Event Rate'
+				},
+				xAxis: {
+					categories: []
+				},
+				yAxis: {
+					title: {
+						text: 'count per second'
+					}
+				},
+				series: [{
+				  name:'event rate',
+				  data:[]
+				}]
+				
+			};
+			
+			indexingEventChart = new Highcharts.Chart(indexingEventOptions);
+			
+			
+			// index MB rate chart
+			
+			
+			var indexingSizeChart;
+			var indexSizeOffset=0;
+			
+			function reqIndexingSizeData(){
+			var url = "/servlets/zoie-perf/?type=consumeRateMB&offset="+indexSizeOffset;
+			  $.get(url, function(data) {
+			    if (data.length>0){
+			      var items = data.split(":");
+			      indexSizeOffset = parseFloat(items[0]);
+			      var vals = items[1].split(',');
+			      var point= new Array();
+			      var xVal = 0;
+			      $.each(vals, function(itemNo, item) {
+							if (itemNo == 0) {
+							    xVal = parseInt(item);
+							} else {
+							    point[0]=xVal;
+							    point[1]=parseFloat(item);
+							    var series = indexingSizeChart.series[itemNo-1];
+							    shift = series.data.length>20;
+								series.addPoint(point,true,shift);
+								
+							}
+						});
+			    }
+			    setTimeout(reqIndexingSizeData, 2000);  
+			  });
+			}
+			
+			var indexingSizeOptions = {
+				chart: {
+					renderTo: 'indexingSize',
+					defaultSeriesType: 'spline',
+					events: {
+					  load : reqIndexingSizeData
+					}
+				},
+				title: {
+					text: 'Indexing Size Rate'
+				},
+				xAxis: {
+					categories: []
+				},
+				yAxis: {
+					title: {
+						text: 'bytes per second'
+					}
+				},
+				series: [{
+				  name:'size rate',
+				  data:[]
+				}]
+				
+			};
+			indexingSizeChart = new Highcharts.Chart(indexingSizeOptions);
+			
+			// index MB rate chart
+			
+			
+			var indexingLatencyChart;
+			var indexLatencyOffset=0;
+			
+			function reqIndexingLatency(){
+			var url = "/servlets/zoie-perf/?type=indexLatency&offset="+indexLatencyOffset;
+			  $.get(url, function(data) {
+			    if (data.length>0){
+			      var items = data.split(":");
+			      indexLatencyOffset = parseFloat(items[0]);
+			      var vals = items[1].split(',');
+			      var point= new Array();
+			      var xVal = 0;
+			      $.each(vals, function(itemNo, item) {
+							if (itemNo == 0) {
+							    xVal = parseInt(item);
+							} else {
+							    point[0]=xVal;
+							    point[1]=parseFloat(item);
+							    var series = indexingLatencyChart.series[itemNo-1];
+							    shift = series.data.length>20;
+								series.addPoint(point,true,shift);
+								
+								
+							    $("#idxLatency").html(point[1]);
+							}
+						});
+			    }
+			    setTimeout(reqIndexingLatency, 2000);  
+			  });
+			}
+			
+			var indexingLatencyOptions = {
+				chart: {
+					renderTo: 'indexingLatency',
+					defaultSeriesType: 'spline',
+					events: {
+					  load : reqIndexingLatency
+					}
+				},
+				title: {
+					text: 'Indexing Latency'
+				},
+				xAxis: {
+					categories: []
+				},
+				yAxis: {
+					title: {
+						text: 'indexing latency (ms)'
+					}
+				},
+				series: [{
+				  name:'indexing latency',
+				  data:[]
+				}]
+				
+			};
+			indexingLatencyChart = new Highcharts.Chart(indexingLatencyOptions);
+		});
+		</script>
+</head>
+
+<body>
+   <div class="container-fluid">
+    <div class="sidebar" style="width:350px;padding-top:20px">
+      <h3>Merics:</h3>
+      <div class="row">
+        <div style="font-size:15px;font-weight:bold" class="span3">
+        Search Min Latency:
+        </div>
+        <div style="font-size:18px;font-weight:bold;color:navy" class="span2"><span id="min"></span>
+        </div>
+      </div>
+      <div class="row">
+        <div style="font-size:15px;font-weight:bold"  class="span3">
+        Search Max Latency:
+        </div>
+        <div style="font-size:18px;font-weight:bold;color:navy" class="span2">
+        <span id="max"></span>
+        </div>
+      </div>
+      <div style="font-size:15px;font-weight:bold" class="row">
+        <div class="span3">
+        Events Per Second:
+        </div>
+        <div style="font-size:18px;font-weight:bold;color:navy" class="span2">
+          <span id="eventsPerSec"></span>
+        </div>
+      </div>
+      <div style="font-size:15px;font-weight:bold" class="row">
+        <div class="span3">
+        Indexing Latency (ms):
+        </div>
+        <div style="font-size:18px;font-weight:bold;color:navy" class="span2">
+        <span id="idxLatency"></span>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center" class="container">
+      <h1>Zoie Perf Console</h1>
+      
+      <!-- 3. Add the container -->
+	  <div id="searchPerf" style="width: 800px; height: 400px; margin: 0 auto"></div>
+	  
+	  <div id="indexingLatency" style="width: 800px; height: 400px; margin: 0 auto"></div>
+	  <div id="indexingEvent" style="width: 800px; height: 400px; margin: 0 auto"></div>
+	  <div id="indexingSize" style="width: 800px; height: 400px; margin: 0 auto"></div>
+    </div>
+  </div>
+</body>
+</html>

@@ -43,8 +43,8 @@ import proj.zoie.impl.indexing.internal.ZoieSegmentTermDocs;
 import proj.zoie.impl.indexing.internal.ZoieSegmentTermPositions;
 
 public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>{
-	static final String termVal="_UID";
-	static final Term UID_TERM = new Term(AbstractZoieIndexable.DOCUMENT_ID_PAYLOAD_FIELD,termVal);
+	public static final String termVal="_UID";
+	public static final Term UID_TERM = new Term(AbstractZoieIndexable.DOCUMENT_ID_PAYLOAD_FIELD,termVal);
     private R _decoratedReader;
     private long[] _uidArray;
     private IntRBTreeSet _delDocIdSet = new IntRBTreeSet();
@@ -226,7 +226,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 		}
 	}
 	
-	private static long bytesToLong(byte[] bytes){
+	public static long bytesToLong(byte[] bytes){
         return ((long)(bytes[7] & 0xFF) << 56) | ((long)(bytes[6] & 0xFF) << 48) | ((long)(bytes[5] & 0xFF) << 40) | ((long)(bytes[4] & 0xFF) << 32) | ((long)(bytes[3] & 0xFF) << 24) | ((long)(bytes[2] & 0xFF) << 16)
            | ((long)(bytes[1] & 0xFF) <<  8) |  (long)(bytes[0] & 0xFF);
 	}

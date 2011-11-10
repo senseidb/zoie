@@ -45,4 +45,10 @@ public interface IndexReaderFactory<R extends IndexReader>
 	 * @param r Returns the list of index reader instances.
 	 */
 	void returnIndexReaders(List<R> r);
+	
+	/**
+	 * Returns the current version reader is at
+	 * @return String version of the reader
+	 */
+	String getCurrentReaderVersion();
 }

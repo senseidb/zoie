@@ -41,7 +41,7 @@ public class SearchUtil
     List<ZoieIndexReader<?>> readers = null;
     IndexSearcher searcher = null;
     QueryParser parser = null;
-    parser = new QueryParser(Version.LUCENE_CURRENT, field, zoie.getAnalyzer());
+    parser = new QueryParser(Version.LUCENE_34, field, zoie.getAnalyzer());
     parser.setAllowLeadingWildcard(true);
     Query q = null;
     try

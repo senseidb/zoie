@@ -1,6 +1,5 @@
 package proj.zoie.impl.indexing.luceneNRT;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -11,7 +10,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -19,19 +17,19 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 
-import proj.zoie.api.DataConsumer;
 import proj.zoie.api.IndexReaderFactory;
+import proj.zoie.api.LifeCycleCotrolledDataConsumer;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 
-public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexReaderFactory<IndexReader>
+public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledDataConsumer<D>,IndexReaderFactory<IndexReader>
 {
 	private static final Logger logger = Logger.getLogger(ThrottledLuceneNRTDataConsumer.class);
 
@@ -51,29 +49,40 @@ public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexR
 	private ReopenThread _reopenThread;
 	private HashSet<IndexReader> _returnSet = new HashSet<IndexReader>();
 	private ConcurrentLinkedQueue<IndexReader> _returnList = new ConcurrentLinkedQueue<IndexReader>();
+	private final MergePolicy _mergePolicy;
+	private boolean _appendOnly = false;
+	private volatile String _version = null;
 	
-	public ThrottledLuceneNRTDataConsumer(File dir,ZoieIndexableInterpreter<D> interpreter,long throttleFactor) throws IOException{
-		this(FSDirectory.open(dir),new StandardAnalyzer(Version.LUCENE_33),interpreter,throttleFactor);
-	}
-	
-	public ThrottledLuceneNRTDataConsumer(File dir,Analyzer analyzer,ZoieIndexableInterpreter<D> interpreter,long throttleFactor) throws IOException{
-		this(FSDirectory.open(dir),analyzer,interpreter,throttleFactor);
-	}
-	
-	public ThrottledLuceneNRTDataConsumer(Directory dir,Analyzer analyzer,ZoieIndexableInterpreter<D> interpreter,long throttleFactor){
+	public ThrottledLuceneNRTDataConsumer(Directory dir,Analyzer analyzer,ZoieIndexableInterpreter<D> interpreter,long throttleFactor,MergePolicy mergePolicy){
 		_writer = null;
 		_analyzer = analyzer;
 		_interpreter = interpreter;
 		_dir = dir;
 		_throttleFactor = throttleFactor;
+		_mergePolicy = mergePolicy;
 		_currentReader = null;
 		if (_throttleFactor<=0) throw new IllegalArgumentException("throttle factor must be > 0");
 		_reopenThread = new ReopenThread();
 	}
 	
+	
+	public boolean isAppendOnly() {
+		return _appendOnly;
+	}
+
+
+	public void setAppendOnly(boolean _appendOnly) {
+		this._appendOnly = _appendOnly;
+	}
+
+
+	@Override
 	public void start(){
 		try {
-			IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_33,_analyzer);
+			IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_34,_analyzer);
+			if (_mergePolicy!=null){
+			  config.setMergePolicy(_mergePolicy);
+			}
 			_writer = new IndexWriter(_dir, config);
 			_reopenThread.start();
 		} catch (IOException e) {
@@ -81,7 +90,9 @@ public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexR
 		}
 	}
 	
-	public void shutdown(){
+
+	@Override
+	public void stop(){
 		_reopenThread.terminate();
 		if (_currentReader!=null){
 			try {
@@ -107,13 +118,15 @@ public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexR
 		
 		if (events.size() > 0){
 			for (DataEvent<D> event : events){
+				_version = event.getVersion();
 				ZoieIndexable indexable = _interpreter.convertAndInterpret(event.getData());
 				if (indexable.isSkip()) continue;
-				
-				try {
-				  _writer.deleteDocuments(new Term(DOCUMENT_ID_FIELD,String.valueOf(indexable.getUID())));
-				} catch(IOException e) {
-				  throw new ZoieException(e.getMessage(),e);
+				if (!_appendOnly){
+				  try {
+				    _writer.deleteDocuments(new Term(DOCUMENT_ID_FIELD,String.valueOf(indexable.getUID())));
+				  } catch(IOException e) {
+				    throw new ZoieException(e.getMessage(),e);
+				  }
 				}
 				  
 			  IndexingReq[] reqs = indexable.buildIndexingReqs();
@@ -121,7 +134,7 @@ public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexR
 				Analyzer localAnalyzer = req.getAnalyzer();
 				Document doc = req.getDocument();
 				Field uidField = new Field(DOCUMENT_ID_FIELD,String.valueOf(indexable.getUID()),Store.NO,Index.NOT_ANALYZED_NO_NORMS);
-				uidField.setOmitTermFreqAndPositions(true);
+				uidField.setOmitNorms(true);
 				doc.add(uidField);
 				if (localAnalyzer == null) localAnalyzer = _analyzer;
 				try {
@@ -131,18 +144,6 @@ public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexR
 				}
 			  }
 			}
-			
-			
-			int numdocs;
-			try {
-				// for realtime commit is not needed per lucene mailing list
-				//_writer.commit();
-				numdocs = _writer.numDocs();
-			} catch (IOException e) {
-				throw new ZoieException(e.getMessage(),e);
-			}
-			
-			logger.info("flushed "+events.size()+" events to index, index now contains "+numdocs+" docs.");
 		}
 	}
 
@@ -152,6 +153,13 @@ public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexR
 
 	public IndexReader getDiskIndexReader() throws IOException {
 		return _currentReader;
+	}
+	
+	private volatile String _currentReaderVersion = null;
+
+	@Override
+	public String getCurrentReaderVersion() {
+		return _currentReaderVersion;
 	}
 
 	public List<IndexReader> getIndexReaders() throws IOException {
@@ -219,6 +227,7 @@ public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexR
 						logger.info("updating reader...");
 						IndexReader oldReader = ThrottledLuceneNRTDataConsumer.this._currentReader;
 						ThrottledLuceneNRTDataConsumer.this._currentReader=IndexReader.open(ThrottledLuceneNRTDataConsumer.this._writer, true);
+						_currentReaderVersion = _version;
 						if (oldReader!=null){
 							returnReader(oldReader);
 						}
@@ -232,7 +241,7 @@ public class ThrottledLuceneNRTDataConsumer<D> implements DataConsumer<D>,IndexR
   
   public String getVersion()
   {
-    throw new UnsupportedOperationException();
+    return _version;
   }
 
 	public Comparator<String> getVersionComparator()

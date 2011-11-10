@@ -22,6 +22,8 @@ import java.util.LinkedList;
 import org.apache.log4j.Logger;
 
 import proj.zoie.api.DataConsumer;
+import proj.zoie.api.DataConsumer.DataEvent;
+import proj.zoie.api.LifeCycleCotrolledDataConsumer;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieHealth;
 
@@ -40,7 +42,7 @@ import proj.zoie.api.ZoieHealth;
  * 
  * @param <V>
  */
-public class AsyncDataConsumer<D> implements DataConsumer<D> 
+public class AsyncDataConsumer<D> implements LifeCycleCotrolledDataConsumer<D> 
 {
   private static final Logger log = Logger.getLogger(AsyncDataConsumer.class);
   
@@ -75,6 +77,7 @@ public class AsyncDataConsumer<D> implements DataConsumer<D>
    * <br>
    * If this method is not called, all threads trying to send in data events will eventually be blocked.
    */
+  @Override
   public void start()
   {
     _consumerThread = new ConsumerThread();
@@ -88,6 +91,7 @@ public class AsyncDataConsumer<D> implements DataConsumer<D>
    * It will stop the thread that sends data events to background DataConsumer.
    * If more data events comes in, the sender of those events will be blocked.
    */
+  @Override
   public void stop()
   {
     _consumerThread.terminate();

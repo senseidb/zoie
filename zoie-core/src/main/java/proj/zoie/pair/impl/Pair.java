@@ -604,7 +604,22 @@ public class Pair<R extends IndexReader, D> implements Zoie<R, D>
     return _zoieConfig.getVersionComparator().compare(v2, v1) > 0 ? v2 : v1;
   }
 
-	public Comparator<String> getVersionComparator() {
+  @Override
+  public String getCurrentReaderVersion()
+  {
+    String v1 = null, v2 = null;
+    Zoie zoieOne = _zoieOne;
+    if (zoieOne != null)
+      v1 = zoieOne.getCurrentReaderVersion();
+
+    if (_zoieTwo != null)
+      v2 = _zoieTwo.getCurrentReaderVersion();
+
+    return _zoieConfig.getVersionComparator().compare(v2, v1) > 0 ? v2 : v1;
+  }
+
+	public Comparator<String> getVersionComparator()
+  {
     return _zoieConfig.getVersionComparator();
   }
 

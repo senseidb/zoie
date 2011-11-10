@@ -19,6 +19,7 @@ package proj.zoie.impl.indexing.internal;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.log4j.Logger;
@@ -56,13 +57,20 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
 	  private final Object _memLock = new Object();
 	  private final RAMIndexFactory<R> _ramIndexFactory;
 	  
+	  private volatile String _memAVersion = null;
+	  private volatile String _memBVersion = null;
+	  private volatile String _diskVersion = null;
+	  
+	  private final Comparator<String> _versionComparator;
+	  
 	  /**
 	   * @param location 
 	   * @param indexReaderDecorator
 	   */
-	  public SearchIndexManager(DirectoryManager dirMgr,IndexReaderDecorator<R> indexReaderDecorator,DocIDMapperFactory docIDMapperFactory, RAMIndexFactory<R> ramIndexFactory)
+	  public SearchIndexManager(DirectoryManager dirMgr,Comparator<String> versionComparator,IndexReaderDecorator<R> indexReaderDecorator,DocIDMapperFactory docIDMapperFactory, RAMIndexFactory<R> ramIndexFactory)
 	  {
 	    _dirMgr = dirMgr;
+	    _versionComparator = versionComparator;
 	    _docIDMapperFactory = docIDMapperFactory;
 	    _ramIndexFactory = ramIndexFactory;
 	    if (indexReaderDecorator!=null)
@@ -225,6 +233,7 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
 	        // the following order, e.g. B,A,Disk matters, see ZoieIndexReader.getSubZoieReaderAccessor:
 	        // when doing UID->docid mapping, the freshest index needs to be first
 
+	        String currentVersion = null;
 	        if (memIndexB != null)                           // load memory index B
 	        {
             synchronized(memIndexB)
@@ -237,6 +246,7 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
                 readers.add(reader);
               }
             }
+            _memBVersion = memIndexB.getVersion();
 	        }
 
 	        if (memIndexA != null)                           // load memory index A
@@ -251,6 +261,7 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
                 readers.add(reader);
               }
             }
+	          _memAVersion = memIndexA.getVersion();
 	        }
 
 	        // load disk index
@@ -262,13 +273,30 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
 	            reader.setDelDocIds();
 	            readers.add(reader);
 	          }
+	          
+	          _diskVersion = getCurrentDiskVersion();
 	        }
 	      }
 	    }
 	    return readers;
 	  }
+	  
+	  
 
-	  public void returnIndexReaders(List<ZoieIndexReader<R>> readers)
+	@Override
+	public String getCurrentReaderVersion() {
+	  String version = _memAVersion;
+	  if (_versionComparator.compare(version, _memBVersion)<0){
+		  version = _memBVersion;
+	  }
+	  if (_versionComparator.compare(version, _diskVersion) < 0){
+		  version = _diskVersion;
+	  }
+	  return version;
+	  
+	}
+
+	public void returnIndexReaders(List<ZoieIndexReader<R>> readers)
 	  {
 	    for(ZoieIndexReader<R> r : readers)
 	    {

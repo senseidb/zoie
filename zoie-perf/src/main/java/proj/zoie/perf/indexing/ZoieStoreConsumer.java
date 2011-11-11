@@ -14,7 +14,7 @@ import proj.zoie.store.ZoieStore;
 public class ZoieStoreConsumer implements LifeCycleCotrolledDataConsumer<String> {
 
 	private static final Logger logger = Logger.getLogger(ZoieStoreConsumer.class);
-	private static final int DEFAULT_BATCH_SIZE = 100000;
+	private static final int DEFAULT_BATCH_SIZE = 1000;
 	private final ZoieStore _store;
 	private final int _batchSize;
 	private volatile int _count;
@@ -54,6 +54,7 @@ public class ZoieStoreConsumer implements LifeCycleCotrolledDataConsumer<String>
 				//System.out.println("Skipping: "+jsonString);
 			}
 		}
+
 		
 		if (_count>=_batchSize){
 			try{

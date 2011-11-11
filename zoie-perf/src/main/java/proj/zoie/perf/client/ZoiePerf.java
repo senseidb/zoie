@@ -1,8 +1,10 @@
 package proj.zoie.perf.client;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.Configuration;
@@ -28,6 +30,7 @@ import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DirectoryManager.DIRECTORY_MODE;
 import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.LifeCycleCotrolledDataConsumer;
+import proj.zoie.api.ZoieException;
 import proj.zoie.api.impl.ZoieMergePolicy;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.impl.indexing.DefaultIndexReaderDecorator;
@@ -76,9 +79,9 @@ public class ZoiePerf {
 
 		ZoieConfig zoieConfig = new ZoieConfig();
 		zoieConfig.setAnalyzer(new StandardAnalyzer(Version.LUCENE_34));
-		zoieConfig.setBatchSize(10000);
+		zoieConfig.setBatchSize(100000);
 		zoieConfig.setBatchDelay(10000);
-		zoieConfig.setMaxBatchSize(10000);
+		zoieConfig.setMaxBatchSize(100000);
 		zoieConfig.setRtIndexing(true);
 		zoieConfig.setVersionComparator(ZoiePerfVersion.COMPARATOR);
 		zoieConfig.setReadercachefactory(SimpleReaderCache.FACTORY);
@@ -170,6 +173,52 @@ public class ZoiePerf {
 		ZoieStoreConsumer consumer = new ZoieStoreConsumer(luceneStore);
 		return new PerfTestHandler(consumer,queryHandler);
 	}
+	
+	static PerfTestHandler buildFeedOnlyHandler() throws Exception {
+		return new PerfTestHandler(new LifeCycleCotrolledDataConsumer<String>(){
+
+			private volatile String version=null;
+			@Override
+			public void consume(
+					Collection<proj.zoie.api.DataConsumer.DataEvent<String>> data)
+					throws ZoieException {
+				for (DataEvent<String> datum : data){
+					version = datum.getVersion();
+				}
+			}
+
+			@Override
+			public String getVersion() {
+				return version;
+			}
+
+			@Override
+			public void start() {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void stop() {
+				// TODO Auto-generated method stub
+				
+			}
+			
+		},new QueryHandler<Object>() {
+
+			@Override
+			public Object handleQuery() throws Exception {
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+			@Override
+			public String getCurrentVersion() {
+				// TODO Auto-generated method stub
+				return null;
+			}
+		});
+	}
 
 	static PerfTestHandler buildPerfHandler(Configuration conf,File inputFile)
 			throws Exception {
@@ -184,6 +233,9 @@ public class ZoiePerf {
 			return buildNrtHandler(idxDir, conf,subConf);
 		} else if ("store".equals(type)){
 			return buildZoieStoreHandler(conf,idxDir, inputFile);
+		}
+		else if ("feed".equals(type)){
+			return buildFeedOnlyHandler();
 		}
 		else {
 			throw new ConfigurationException("test type: " + type
@@ -215,7 +267,7 @@ public class ZoiePerf {
 		
 		
 		final TimerMetric searchTimer = Metrics.newTimer(ZoiePerf.class,
-				"searchTimer", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+				"searchTimer", TimeUnit.NANOSECONDS, TimeUnit.SECONDS);
 		final MeterMetric errorMeter = Metrics.newMeter(ZoiePerf.class,
 				"errorMeter", "error", TimeUnit.SECONDS);
 		
@@ -238,7 +290,13 @@ public class ZoiePerf {
 			public void run() {
 				while (!stop) {
 					try {
-						testHandler.queryHandler.handleQuery();
+						searchTimer.time(new Callable(){
+							@Override
+							public Object call() throws Exception {
+								return testHandler.queryHandler.handleQuery();
+							}
+						});
+						
 					} catch (Exception e) {
 						errorMeter.mark();
 					}
@@ -255,9 +313,15 @@ public class ZoiePerf {
 		}
 
 		long maxSize = conf.getLong("perf.maxSize");
+		
+		int feedBatchSize = conf.getInt("perf.feed.batchsize",100);
 
 		final LinedFileDataProvider dataProvider = new LinedFileDataProvider(
 				inputFile, 0L);
+		
+		dataProvider.setBatchSize(feedBatchSize);
+		
+		dataProvider.setDataConsumer(testHandler.consumer);
 
 		testHandler.consumer.start();
 
@@ -305,7 +369,6 @@ public class ZoiePerf {
 						long newTime = System.currentTimeMillis();
 						
 						long newCount =  dataProvider.getEventCount();
-
 						long timeDelta = newTime - prevTime;
 						long countDelta = newCount - prevCount;
 
@@ -364,7 +427,7 @@ public class ZoiePerf {
 
 						long timeDelta = newTime - prevTime;
 						long countDelta = newCount - prevCount;
-						
+	System.out.println("count delta: "+countDelta);					
 						String currentReaderVersion = testHandler.queryHandler.getCurrentVersion();
 						long readerMarker = ZoiePerfVersion.fromString(currentReaderVersion).countVersion;
 
@@ -406,7 +469,6 @@ public class ZoiePerf {
 		int updateInterval = conf.getInt("perf.update.intervalSec", 2);
 		csvReporter.start(updateInterval, TimeUnit.SECONDS);
 
-		dataProvider.setDataConsumer(testHandler.consumer);
 		long maxEventsPerMin = conf.getLong("perf.maxEventsPerMin");
 
 		dataProvider.setMaxEventsPerMinute(maxEventsPerMin);

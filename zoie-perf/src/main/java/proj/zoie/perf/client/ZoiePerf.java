@@ -25,6 +25,7 @@ import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 
+import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.api.DefaultDirectoryManager;
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DirectoryManager.DIRECTORY_MODE;
@@ -360,20 +361,13 @@ public class ZoiePerf {
 		name = "consumeRateCount";
 		metric = Metrics.newGauge(ZoiePerf.class, name,
 				new GaugeMetric<Long>() {
-
-					long prevCount = 0L;
-					long prevTime = 0L;
-
 					@Override
 					public Long value() {
 						long newTime = System.currentTimeMillis();
 						
 						long newCount =  dataProvider.getEventCount();
-						long timeDelta = newTime - prevTime;
-						long countDelta = newCount - prevCount;
-
-						prevTime = newTime;
-						prevCount = newCount;
+						long timeDelta = newTime - start;
+						long countDelta = newCount;
 
 						if (timeDelta == 0)
 							return 0L;
@@ -389,20 +383,14 @@ public class ZoiePerf {
 		name = "consumeRateMB";
 		metric = Metrics.newGauge(ZoiePerf.class, name,
 				new GaugeMetric<Long>() {
-					long prevMB = 0L;
-					long prevTime = 0L;
-
 					@Override
 					public Long value() {
 						long newTime = System.currentTimeMillis();
 						ZoiePerfVersion ver = ZoiePerfVersion.fromString(testHandler.consumer.getVersion());
 						long newMB = ver.offsetVersion;
 
-						long timeDelta = newTime - prevTime;
-						long mbdelta = newMB - prevMB;
-
-						prevTime = newTime;
-						prevMB = newMB;
+						long timeDelta = newTime - start;
+						long mbdelta = newMB;
 
 						if (timeDelta == 0)
 							return 0L;
@@ -417,38 +405,18 @@ public class ZoiePerf {
 		metric = Metrics.newGauge(ZoiePerf.class, name,
 				new GaugeMetric<Long>() {
 
-					long prevCount = 0L;
-					long prevTime = start;
-
 					@Override
 					public Long value() {
-						long newTime = System.currentTimeMillis();
 						long newCount =  dataProvider.getEventCount();
 
-						long timeDelta = newTime - prevTime;
-						long countDelta = newCount - prevCount;
-	System.out.println("count delta: "+countDelta);					
 						String currentReaderVersion = testHandler.queryHandler.getCurrentVersion();
 						long readerMarker = ZoiePerfVersion.fromString(currentReaderVersion).countVersion;
-
-						prevTime = newTime;
-						prevCount = newCount;
 						
 						long countsBehind = newCount - readerMarker;
 
-/*
-						System.out.println("counts behind: "+countsBehind);
-						System.out.println("new count: "+newCount);
 						System.out.println("reader marker: "+readerMarker);
-						System.out.println("time delta: "+timeDelta);
-						System.out.println("count delta: "+countDelta);
-						*/
-						if (countDelta > 0){
-						  return timeDelta*countsBehind/countDelta;
-						}
-						else{
-						  return 0L;
-						}
+						System.out.println("new count: "+newCount);
+						return countsBehind;
 						
 						
 					}
@@ -465,6 +433,7 @@ public class ZoiePerf {
 		File csvOut = new File("csvout");
 		csvOut.mkdirs();
 		CsvReporter csvReporter = new CsvReporter(csvOut,Metrics.defaultRegistry());
+		//GangliaReporter csvReporter = new GangliaReporter(Metrics.defaultRegistry(),"localhost",8649,"zoie-perf");
 		
 		int updateInterval = conf.getInt("perf.update.intervalSec", 2);
 		csvReporter.start(updateInterval, TimeUnit.SECONDS);

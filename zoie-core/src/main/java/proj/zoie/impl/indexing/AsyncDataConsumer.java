@@ -72,6 +72,10 @@ public class AsyncDataConsumer<D> implements LifeCycleCotrolledDataConsumer<D>
     _consumerThread = null;
   }
   
+  public Comparator<String> getVersionComparator(){
+	return _versionComparator;
+  }
+  
   /**
    * Start the background thread that batch-processes the incoming data events by sending them to the background DataConsumer.
    * <br>

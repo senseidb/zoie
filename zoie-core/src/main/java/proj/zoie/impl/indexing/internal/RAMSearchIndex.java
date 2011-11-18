@@ -44,7 +44,7 @@ import proj.zoie.api.indexing.IndexReaderDecorator;
 
 public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
 {
-  private String _version;
+  private volatile String _version;
   private final Directory _directory;
   private final File _backingdir;
   private final IndexReaderDecorator<R> _decorator;
@@ -178,7 +178,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
     mergePolicy.setMergePolicyParams(_mergePolicyParams);
     mergePolicy.setUseCompoundFile(false);
 
-    IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_33,analyzer);
+    IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_34,analyzer);
     config.setOpenMode(OpenMode.CREATE_OR_APPEND);
     config.setMergeScheduler(_mergeScheduler);
     config.setMergePolicy(mergePolicy);

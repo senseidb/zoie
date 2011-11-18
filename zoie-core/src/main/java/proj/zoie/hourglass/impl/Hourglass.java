@@ -337,4 +337,9 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
   {
 	  _currentZoie.flushEvents(timeout);
   }
+  
+  @Override
+  public String getCurrentReaderVersion() {
+	return _currentZoie == null ? null : _currentZoie.getCurrentReaderVersion();
+  }
 }

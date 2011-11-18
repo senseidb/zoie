@@ -20,7 +20,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -29,6 +31,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -111,9 +114,11 @@ public class LuceneNRTDataConsumer<D> implements DataConsumer<D>, IndexReaderFac
 
     if (events.size() > 0)
     {
+      String version = null;
       for (DataEvent<D> event : events)
       {
         ZoieIndexable indexable = _interpreter.convertAndInterpret(event.getData());
+        version = event.getVersion();
         if (indexable.isSkip())
           continue;
 
@@ -131,7 +136,7 @@ public class LuceneNRTDataConsumer<D> implements DataConsumer<D>, IndexReaderFac
           Analyzer localAnalyzer = req.getAnalyzer();
           Document doc = req.getDocument();
           Field uidField = new Field(DOCUMENT_ID_FIELD, String.valueOf(indexable.getUID()), Store.NO, Index.NOT_ANALYZED_NO_NORMS);
-          uidField.setOmitTermFreqAndPositions(true);
+          uidField.setOmitNorms(true);
           doc.add(uidField);
           if (localAnalyzer == null)
             localAnalyzer = _analyzer;
@@ -144,19 +149,15 @@ public class LuceneNRTDataConsumer<D> implements DataConsumer<D>, IndexReaderFac
           }
         }
       }
-
-      int numdocs;
-      try
-      {
-        // for realtime commit is not needed per lucene mailing list
-        // _writer.commit();
-        numdocs = _writer.numDocs();
-      } catch (IOException e)
-      {
-        throw new ZoieException(e.getMessage(), e);
+      if (version!=null){
+    	  HashMap<String,String> versionData = new HashMap<String,String>();
+    	  versionData.put("version",version);
+    	  try {
+			_writer.commit(versionData);
+		  } catch (IOException e) {
+			  throw new ZoieException(e.getMessage(), e);
+		  }
       }
-
-      logger.info("flushed " + events.size() + " events to index, index now contains " + numdocs + " docs.");
     }
   }
 
@@ -164,12 +165,24 @@ public class LuceneNRTDataConsumer<D> implements DataConsumer<D>, IndexReaderFac
   {
     return _analyzer;
   }
+  
+  private volatile String _currentReaderVersion = null;
+
+  @Override
+  public String getCurrentReaderVersion() {
+	return _currentReaderVersion;
+  }
 
   public IndexReader getDiskIndexReader() throws IOException
   {
     if (_writer != null)
     {
-      return _writer.getReader();
+      IndexReader reader = IndexReader.open(LuceneNRTDataConsumer.this._writer, true);
+      Map<String,String> userData = reader.getCommitUserData();
+      if (userData!=null){
+    	  _currentReaderVersion = userData.get("version");
+      }
+      return reader;
     } else
     {
       return null;

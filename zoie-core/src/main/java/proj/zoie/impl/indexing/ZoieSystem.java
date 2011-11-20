@@ -615,7 +615,7 @@ extends AsyncDataConsumer<D> implements Zoie<R, D>
     {
       log.error("zoie shutdown encountered ", e);
     }
-    _rtdc.shutdown();
+    _rtdc.stop();
     super.stop();
     _searchIdxMgr.close();
     log.info("zoie shutdown successfully.");

@@ -172,6 +172,13 @@ public class AsyncDataConsumer<D> implements LifeCycleCotrolledDataConsumer<D>
     syncWithVersion(timeout, _bufferedVersion);
   }
   
+  
+  
+  @Override
+  public void flushEvents() throws ZoieException {
+    flushEvents(Long.MAX_VALUE);
+  }
+
   /**
    * Waits until all the buffered data events up to specified version are processed.
    * @param timeInMillis the max amount of time to wait in milliseconds.

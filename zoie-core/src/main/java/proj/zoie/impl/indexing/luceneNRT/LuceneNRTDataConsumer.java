@@ -221,4 +221,10 @@ public class LuceneNRTDataConsumer<D> implements DataConsumer<D>, IndexReaderFac
   {
     throw new UnsupportedOperationException();
   }
+
+  @Override
+  public void flushEvents() throws ZoieException {
+    // TODO Auto-generated method stub
+    
+  }
 }

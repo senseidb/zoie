@@ -41,10 +41,10 @@ import proj.zoie.impl.indexing.ZoieSystem;
 import proj.zoie.impl.indexing.luceneNRT.ThrottledLuceneNRTDataConsumer;
 import proj.zoie.perf.indexing.LinedFileDataProvider;
 import proj.zoie.perf.indexing.TweetInterpreter;
-import proj.zoie.perf.indexing.ZoieStoreConsumer;
 import proj.zoie.perf.servlet.ZoiePerfServlet;
 import proj.zoie.store.LuceneStore;
 import proj.zoie.store.ZoieStore;
+import proj.zoie.store.ZoieStoreConsumer;
 
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.GaugeMetric;

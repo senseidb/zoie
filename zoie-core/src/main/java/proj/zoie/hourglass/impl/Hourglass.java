@@ -340,6 +340,11 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
   
   @Override
   public String getCurrentReaderVersion() {
-	return _currentZoie == null ? null : _currentZoie.getCurrentReaderVersion();
+	  return _currentZoie == null ? null : _currentZoie.getCurrentReaderVersion();
+  }
+  
+  @Override
+  public void flushEvents() throws ZoieException {
+    flushEvents(Long.MAX_VALUE);
   }
 }

@@ -216,11 +216,13 @@ public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledData
 		
 		public void run(){
 			while(!_stop){
-				try {
-					Thread.sleep(ThrottledLuceneNRTDataConsumer.this._throttleFactor);
-				} catch (InterruptedException e) {
-					continue;
-				}
+			  synchronized(this){
+				  try {
+					  this.wait(ThrottledLuceneNRTDataConsumer.this._throttleFactor);
+				  } catch (InterruptedException e) {
+					  continue;
+				  }
+			  }
 				if (ThrottledLuceneNRTDataConsumer.this._writer!=null){
 					try {
 						logger.info("updating reader...");
@@ -241,5 +243,13 @@ public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledData
   public String getVersion()
   {
     return _version;
+  }
+
+
+  @Override
+  public void flushEvents() throws ZoieException {
+    synchronized(_reopenThread){
+      _reopenThread.notify();
+    }
   }
 }

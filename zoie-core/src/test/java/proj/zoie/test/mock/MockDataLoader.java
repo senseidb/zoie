@@ -63,12 +63,12 @@ public class MockDataLoader<D> implements DataConsumer<D> {
 		}
 		try
 		{
-		      Thread.sleep(_delay);
+		   Thread.sleep(_delay);
         
-        }
+    }
 		catch (InterruptedException e)
-        {
-        }
+    {
+    }
 	}
 	
 	public int getNumCalls()
@@ -86,6 +86,13 @@ public class MockDataLoader<D> implements DataConsumer<D> {
       return _maxBatch;
     }
     
+    
+    @Override
+    public void flushEvents() throws ZoieException {
+      // TODO Auto-generated method stub
+      
+    }
+
   public String getVersion()
   {
     throw new UnsupportedOperationException();

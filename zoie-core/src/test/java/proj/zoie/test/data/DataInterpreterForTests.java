@@ -74,6 +74,17 @@ public class DataInterpreterForTests implements ZoieIndexableInterpreter<String>
 			public boolean isSkip() {
 				return false;
 			}
+
+      @Override
+      public boolean isStorable() {
+        return id%2 == 0;
+      }
+
+      @Override
+      public byte[] getStoreValue() {
+        return src.getBytes();
+      }
+			
 		};
 	}
 

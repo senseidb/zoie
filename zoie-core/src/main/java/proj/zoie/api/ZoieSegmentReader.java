@@ -16,6 +16,7 @@ package proj.zoie.api;
  * limitations under the License.
  */
 import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
+import it.unimi.dsi.fastutil.longs.Long2IntRBTreeMap;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongSet;
 
@@ -49,6 +50,8 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
     private long[] _uidArray;
     private IntRBTreeSet _delDocIdSet = new IntRBTreeSet();
     private int[] _currentDelDocIds;
+
+    private Long2IntRBTreeMap _uidMap = new Long2IntRBTreeMap(); 
     
     static final class UIDTokenStream extends TokenStream {
         private boolean returnToken = false;
@@ -95,6 +98,8 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 		if (!(in instanceof SegmentReader)){
 			throw new IllegalStateException("ZoieSegmentReader can only be constucted from "+SegmentReader.class);
 		}
+		_uidMap = new Long2IntRBTreeMap();
+    _uidMap.defaultReturnValue(-1);
 		init(in);
 		_decoratedReader = (decorator == null ? null : decorator.decorate(this));
 	}
@@ -107,6 +112,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 		_noDedup = copyFrom._noDedup;
 		_docIDMapper = copyFrom._docIDMapper;
 		_delDocIdSet = copyFrom._delDocIdSet;
+		_uidMap = copyFrom._uidMap;
 		
 		if (copyFrom._decorator == null){
 			_decoratedReader = null;
@@ -191,6 +197,27 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 	  return list;
     }
 	
+	private int mapDocId(long uid){
+    if (_maxUID>=uid && _minUID<=uid){
+      return _uidMap.get(uid);
+    }
+    return -1;
+  }
+	
+	@Override
+  public byte[] getStoredValue(long uid) throws IOException {
+    int docid = mapDocId(uid);
+    if (docid<0) return null;
+    
+    if (docid>=0){
+      Document doc = document(docid);
+      if (doc!=null){
+        return doc.getBinaryValue(AbstractZoieIndexable.DOCUMENT_STORE_FIELD);
+      }
+    }
+    return null;
+  }
+	
 	private void init(IndexReader reader) throws IOException
 	{
 		int maxDoc = reader.maxDoc();
@@ -214,6 +241,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
             if(uid < _minUID) _minUID = uid;
             if(uid > _maxUID) _maxUID = uid;
             _uidArray[idx++] = uid;
+            _uidMap.put(uid, doc);
     	  }
           while(idx < maxDoc) _uidArray[idx++] = DELETED_UID; // fill the gap
 		}

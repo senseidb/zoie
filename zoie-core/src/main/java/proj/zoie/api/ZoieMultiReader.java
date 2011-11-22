@@ -20,6 +20,8 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +65,16 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
 		return _starts;
 	}
 	
+	@Override
+	public byte[] getStoredValue(long uid) throws IOException {
+	  byte[] value=null;
+	  for (ZoieSegmentReader r : _subZoieReaders){
+	    value = r.getStoredValue(uid);
+	    if (value!=null) break;
+	  }
+	  return value;
+	}
+	
 	private void init(IndexReader[] subReaders) throws IOException{
 		_subZoieReaders = new ArrayList<ZoieSegmentReader<R>>(subReaders.length);
 		_starts = new int[subReaders.length+1];
@@ -79,6 +91,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
 			}
 			if (zr!=null){
 			    String segmentName = zr.getSegmentName();
+			   // zr.getVersion();
 			    _readerMap.put(segmentName, zr);
 				_subZoieReaders.add(zr);
 				_starts[i]=startCount;
@@ -89,6 +102,18 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
 				throw new IllegalStateException("subreader not instance of "+SegmentReader.class);
 			}
 		}
+		Collections.sort(_subZoieReaders,new Comparator<ZoieSegmentReader>(){
+
+      @Override
+      public int compare(ZoieSegmentReader r1, ZoieSegmentReader r2) {
+        long v1 = r1.getVersion();
+        long v2 = r1.getVersion();
+        if (v1<v2) return -1;
+        if (v1>v2) return 1;
+        return r1.getSegmentName().compareTo(r2.getSegmentName());
+      }
+		  
+		});
 		_starts[subReaders.length]=in.maxDoc();
 		
 		ArrayList<R> decoratedList = new ArrayList<R>(_subZoieReaders.size());

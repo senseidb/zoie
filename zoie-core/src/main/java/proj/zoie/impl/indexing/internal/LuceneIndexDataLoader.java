@@ -30,6 +30,7 @@ import java.util.List;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
@@ -39,6 +40,7 @@ import proj.zoie.api.DataConsumer;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieSegmentReader;
+import proj.zoie.api.indexing.AbstractZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 
@@ -158,6 +160,12 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
 							Document doc = req.getDocument();
 							if (doc!=null){							 
 							  ZoieSegmentReader.fillDocumentID(doc, uid);
+							  if (indexable.isStorable()){
+							    byte[] bytes = indexable.getStoreValue();
+							    if (bytes!=null){
+							      doc.add(new Field(AbstractZoieIndexable.DOCUMENT_STORE_FIELD,bytes));
+							    }
+							  }
 							}
 							// add to the insert list
 							List<IndexingReq> docList = addList.get(uid);

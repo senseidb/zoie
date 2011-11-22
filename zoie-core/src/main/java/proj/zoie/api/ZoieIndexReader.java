@@ -245,6 +245,8 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndex
 	@Override
 	abstract public boolean isDeleted(int docid);
 	
+	abstract public byte[] getStoredValue(long uid) throws IOException;
+	
 	public boolean isDuplicate(int docid)
 	{
 	  int[] delSet = _delDocIds;//.get();

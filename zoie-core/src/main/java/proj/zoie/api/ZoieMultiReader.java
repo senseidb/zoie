@@ -67,12 +67,10 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
 	
 	@Override
 	public byte[] getStoredValue(long uid) throws IOException {
-	  byte[] value=null;
-	  for (ZoieSegmentReader r : _subZoieReaders){
-	    value = r.getStoredValue(uid);
-	    if (value!=null) break;
-	  }
-	  return value;
+	  int docid = this.getDocIDMaper().getDocID(uid);
+	  int idx = readerIndex(docid);
+    ZoieIndexReader<R> subReader = _subZoieReaders.get(idx);
+    return subReader.getStoredValue(uid);
 	}
 	
 	private void init(IndexReader[] subReaders) throws IOException{
@@ -102,18 +100,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
 				throw new IllegalStateException("subreader not instance of "+SegmentReader.class);
 			}
 		}
-		Collections.sort(_subZoieReaders,new Comparator<ZoieSegmentReader>(){
-
-      @Override
-      public int compare(ZoieSegmentReader r1, ZoieSegmentReader r2) {
-        long v1 = r1.getVersion();
-        long v2 = r1.getVersion();
-        if (v1<v2) return -1;
-        if (v1>v2) return 1;
-        return r1.getSegmentName().compareTo(r2.getSegmentName());
-      }
-		  
-		});
+		
 		_starts[subReaders.length]=in.maxDoc();
 		
 		ArrayList<R> decoratedList = new ArrayList<R>(_subZoieReaders.size());

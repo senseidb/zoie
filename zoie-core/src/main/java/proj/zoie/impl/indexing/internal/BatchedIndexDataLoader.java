@@ -448,9 +448,4 @@ public class BatchedIndexDataLoader<R extends IndexReader,D> implements LifeCycl
 	{
 	  throw new UnsupportedOperationException();
 	}
-
-  @Override
-  public void flushEvents() throws ZoieException {
-    flushEvents(Long.MAX_VALUE);
-  }
 }

@@ -1,6 +1,7 @@
 package proj.zoie.perf.client;
 
 import java.io.File;
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,13 +20,13 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.Version;
+import org.json.JSONObject;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.handler.ResourceHandler;
 import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 
-import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.api.DefaultDirectoryManager;
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DirectoryManager.DIRECTORY_MODE;
@@ -45,6 +46,7 @@ import proj.zoie.perf.servlet.ZoiePerfServlet;
 import proj.zoie.store.LuceneStore;
 import proj.zoie.store.ZoieStore;
 import proj.zoie.store.ZoieStoreConsumer;
+import proj.zoie.store.ZoieStoreSerializer;
 
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.GaugeMetric;
@@ -55,6 +57,7 @@ import com.yammer.metrics.reporting.CsvReporter;
 
 public class ZoiePerf {
 
+	static final Charset UTF8 = Charset.forName("UTF-8");
 	private static class PerfTestHandler {
 		final LifeCycleCotrolledDataConsumer<String> consumer;
 		final QueryHandler queryHandler;
@@ -171,7 +174,39 @@ public class ZoiePerf {
 		ZoieStore luceneStore = LuceneStore.openStore(dir, "src_data", false);
 		StoreQueryHandler queryHandler = new StoreQueryHandler(inputFile,luceneStore,100000);
 		
-		ZoieStoreConsumer consumer = new ZoieStoreConsumer(luceneStore);
+		ZoieStoreConsumer<String> consumer = new ZoieStoreConsumer<String>(luceneStore,new ZoieStoreSerializer<String>() {
+
+			@Override
+			public long getUid(String data) {
+				try{
+				  JSONObject obj = new JSONObject(data);
+				  return obj.getLong("id");
+				}
+				catch(Exception e){
+					throw new RuntimeException(e);
+				}
+			}
+
+			@Override
+			public byte[] toBytes(String data) {
+				return data.getBytes(UTF8);
+			}
+
+			@Override
+			public String fromBytes(byte[] data) {
+				return new String(data,UTF8);
+			}
+
+			@Override
+			public boolean isDelete(String data) {
+				return false;
+			}
+
+			@Override
+			public boolean isSkip(String data) {
+				return false;
+			}
+		});
 		return new PerfTestHandler(consumer,queryHandler);
 	}
 	

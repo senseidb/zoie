@@ -244,12 +244,4 @@ public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledData
   {
     return _version;
   }
-
-
-  @Override
-  public void flushEvents() throws ZoieException {
-    synchronized(_reopenThread){
-      _reopenThread.notify();
-    }
-  }
 }

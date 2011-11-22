@@ -85,16 +85,6 @@ public class DelegateIndexDataConsumer<D> implements DataConsumer<D> {
 		  }
 		}
 	}
-  
-	
-	
-  @Override
-  public void flushEvents() throws ZoieException {
-    _ramConsumer.flushEvents();
-    _diskConsumer.flushEvents();
-  }
-
-
 
   public String getVersion()
   {

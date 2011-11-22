@@ -241,14 +241,7 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
         throw new ZoieException(ioe);
       }
     }
-    
-    
-    
-  
-  @Override
-    public void flushEvents() throws ZoieException {
-      
-    }
+ 
 
   /**
    * @return the version number of the search index.

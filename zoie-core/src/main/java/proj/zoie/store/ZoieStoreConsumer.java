@@ -36,10 +36,7 @@ public class ZoieStoreConsumer<D> implements LifeCycleCotrolledDataConsumer<D> {
 			}
 		}
 	}
-	
-	
 
-	@Override
   public void flushEvents() throws ZoieException {
 	  try{
       _store.commit();

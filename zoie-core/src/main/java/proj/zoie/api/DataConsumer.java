@@ -82,8 +82,6 @@ public interface DataConsumer<D> {
 	 * @throws ZoieException
 	 */
 	void consume(Collection<DataEvent<D>> data) throws ZoieException;
-	
-	void flushEvents() throws ZoieException;
 
 	/**
 	 * This method is not meant to be Thread-Safe, since that could add significant

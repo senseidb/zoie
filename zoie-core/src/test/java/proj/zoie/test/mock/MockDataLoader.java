@@ -85,13 +85,6 @@ public class MockDataLoader<D> implements DataConsumer<D> {
     {
       return _maxBatch;
     }
-    
-    
-    @Override
-    public void flushEvents() throws ZoieException {
-      // TODO Auto-generated method stub
-      
-    }
 
   public String getVersion()
   {

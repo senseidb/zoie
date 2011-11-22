@@ -217,11 +217,13 @@ public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledData
 		
 		public void run(){
 			while(!_stop){
-				try {
-					Thread.sleep(ThrottledLuceneNRTDataConsumer.this._throttleFactor);
-				} catch (InterruptedException e) {
-					continue;
-				}
+			  synchronized(this){
+				  try {
+					  this.wait(ThrottledLuceneNRTDataConsumer.this._throttleFactor);
+				  } catch (InterruptedException e) {
+					  continue;
+				  }
+			  }
 				if (ThrottledLuceneNRTDataConsumer.this._writer!=null){
 					try {
 						logger.info("updating reader...");

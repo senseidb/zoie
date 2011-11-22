@@ -191,6 +191,20 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 	  return list;
     }
 	
+	@Override
+  public byte[] getStoredValue(long uid) throws IOException {
+    int docid = this.getDocIDMaper().getDocID(uid);
+    if (docid<0) return null;
+    
+    if (docid>=0){
+      Document doc = document(docid);
+      if (doc!=null){
+        return doc.getBinaryValue(AbstractZoieIndexable.DOCUMENT_STORE_FIELD);
+      }
+    }
+    return null;
+  }
+	
 	private void init(IndexReader reader) throws IOException
 	{
 		int maxDoc = reader.maxDoc();

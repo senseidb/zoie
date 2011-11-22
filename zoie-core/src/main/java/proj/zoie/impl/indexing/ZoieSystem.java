@@ -49,11 +49,13 @@ import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.impl.DefaultDocIDMapperFactory;
 import proj.zoie.api.impl.util.FileUtil;
 import proj.zoie.api.impl.util.SearchUtil;
+import proj.zoie.api.indexing.AbstractZoieIndexable;
 import proj.zoie.api.indexing.DefaultOptimizeScheduler;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.api.indexing.OptimizeScheduler;
 import proj.zoie.api.indexing.ZoieIndexable;
+import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 import proj.zoie.impl.indexing.internal.BatchedIndexDataLoader;
 import proj.zoie.impl.indexing.internal.DefaultRAMIndexFactory;
@@ -405,7 +407,7 @@ extends AsyncDataConsumer<D> implements Zoie<R, D>
 			}
 			catch(Exception e){
 			  log.error(e.getMessage(),e);
-			  return new ZoieIndexable(){
+			  return new AbstractZoieIndexable(){
 
 				@Override
 				public long getUID() {
@@ -615,7 +617,7 @@ extends AsyncDataConsumer<D> implements Zoie<R, D>
     {
       log.error("zoie shutdown encountered ", e);
     }
-    _rtdc.shutdown();
+    _rtdc.stop();
     super.stop();
     _searchIdxMgr.close();
     log.info("zoie shutdown successfully.");

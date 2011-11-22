@@ -1,8 +1,11 @@
 package proj.zoie.perf.client;
 
 import java.io.File;
+import java.nio.charset.Charset;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.Configuration;
@@ -17,6 +20,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.Version;
+import org.json.JSONObject;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.handler.ResourceHandler;
 import org.mortbay.jetty.nio.SelectChannelConnector;
@@ -28,6 +32,7 @@ import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DirectoryManager.DIRECTORY_MODE;
 import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.LifeCycleCotrolledDataConsumer;
+import proj.zoie.api.ZoieException;
 import proj.zoie.api.impl.ZoieMergePolicy;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.impl.indexing.DefaultIndexReaderDecorator;
@@ -37,10 +42,11 @@ import proj.zoie.impl.indexing.ZoieSystem;
 import proj.zoie.impl.indexing.luceneNRT.ThrottledLuceneNRTDataConsumer;
 import proj.zoie.perf.indexing.LinedFileDataProvider;
 import proj.zoie.perf.indexing.TweetInterpreter;
-import proj.zoie.perf.indexing.ZoieStoreConsumer;
 import proj.zoie.perf.servlet.ZoiePerfServlet;
 import proj.zoie.store.LuceneStore;
 import proj.zoie.store.ZoieStore;
+import proj.zoie.store.ZoieStoreConsumer;
+import proj.zoie.store.ZoieStoreSerializer;
 
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.GaugeMetric;
@@ -51,6 +57,7 @@ import com.yammer.metrics.reporting.CsvReporter;
 
 public class ZoiePerf {
 
+	static final Charset UTF8 = Charset.forName("UTF-8");
 	private static class PerfTestHandler {
 		final LifeCycleCotrolledDataConsumer<String> consumer;
 		final QueryHandler queryHandler;
@@ -76,9 +83,9 @@ public class ZoiePerf {
 
 		ZoieConfig zoieConfig = new ZoieConfig();
 		zoieConfig.setAnalyzer(new StandardAnalyzer(Version.LUCENE_34));
-		zoieConfig.setBatchSize(10000);
+		zoieConfig.setBatchSize(100000);
 		zoieConfig.setBatchDelay(10000);
-		zoieConfig.setMaxBatchSize(10000);
+		zoieConfig.setMaxBatchSize(100000);
 		zoieConfig.setRtIndexing(true);
 		zoieConfig.setVersionComparator(ZoiePerfVersion.COMPARATOR);
 		zoieConfig.setReadercachefactory(SimpleReaderCache.FACTORY);
@@ -167,8 +174,86 @@ public class ZoiePerf {
 		ZoieStore luceneStore = LuceneStore.openStore(dir, "src_data", false);
 		StoreQueryHandler queryHandler = new StoreQueryHandler(inputFile,luceneStore,100000);
 		
-		ZoieStoreConsumer consumer = new ZoieStoreConsumer(luceneStore);
+		ZoieStoreConsumer<String> consumer = new ZoieStoreConsumer<String>(luceneStore,new ZoieStoreSerializer<String>() {
+
+			@Override
+			public long getUid(String data) {
+				try{
+				  JSONObject obj = new JSONObject(data);
+				  return obj.getLong("id");
+				}
+				catch(Exception e){
+					throw new RuntimeException(e);
+				}
+			}
+
+			@Override
+			public byte[] toBytes(String data) {
+				return data.getBytes(UTF8);
+			}
+
+			@Override
+			public String fromBytes(byte[] data) {
+				return new String(data,UTF8);
+			}
+
+			@Override
+			public boolean isDelete(String data) {
+				return false;
+			}
+
+			@Override
+			public boolean isSkip(String data) {
+				return false;
+			}
+		});
 		return new PerfTestHandler(consumer,queryHandler);
+	}
+	
+	static PerfTestHandler buildFeedOnlyHandler() throws Exception {
+		return new PerfTestHandler(new LifeCycleCotrolledDataConsumer<String>(){
+
+			private volatile String version=null;
+			@Override
+			public void consume(
+					Collection<proj.zoie.api.DataConsumer.DataEvent<String>> data)
+					throws ZoieException {
+				for (DataEvent<String> datum : data){
+					version = datum.getVersion();
+				}
+			}
+
+			@Override
+			public String getVersion() {
+				return version;
+			}
+
+			@Override
+			public void start() {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void stop() {
+				// TODO Auto-generated method stub
+				
+			}
+			
+		},new QueryHandler<Object>() {
+
+			@Override
+			public Object handleQuery() throws Exception {
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+			@Override
+			public String getCurrentVersion() {
+				// TODO Auto-generated method stub
+				return null;
+			}
+		});
 	}
 
 	static PerfTestHandler buildPerfHandler(Configuration conf,File inputFile)
@@ -184,6 +269,9 @@ public class ZoiePerf {
 			return buildNrtHandler(idxDir, conf,subConf);
 		} else if ("store".equals(type)){
 			return buildZoieStoreHandler(conf,idxDir, inputFile);
+		}
+		else if ("feed".equals(type)){
+			return buildFeedOnlyHandler();
 		}
 		else {
 			throw new ConfigurationException("test type: " + type
@@ -215,7 +303,7 @@ public class ZoiePerf {
 		
 		
 		final TimerMetric searchTimer = Metrics.newTimer(ZoiePerf.class,
-				"searchTimer", TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+				"searchTimer", TimeUnit.NANOSECONDS, TimeUnit.SECONDS);
 		final MeterMetric errorMeter = Metrics.newMeter(ZoiePerf.class,
 				"errorMeter", "error", TimeUnit.SECONDS);
 		
@@ -238,7 +326,13 @@ public class ZoiePerf {
 			public void run() {
 				while (!stop) {
 					try {
-						testHandler.queryHandler.handleQuery();
+						searchTimer.time(new Callable(){
+							@Override
+							public Object call() throws Exception {
+								return testHandler.queryHandler.handleQuery();
+							}
+						});
+						
 					} catch (Exception e) {
 						errorMeter.mark();
 					}
@@ -255,9 +349,15 @@ public class ZoiePerf {
 		}
 
 		long maxSize = conf.getLong("perf.maxSize");
+		
+		int feedBatchSize = conf.getInt("perf.feed.batchsize",100);
 
 		final LinedFileDataProvider dataProvider = new LinedFileDataProvider(
 				inputFile, 0L);
+		
+		dataProvider.setBatchSize(feedBatchSize);
+		
+		dataProvider.setDataConsumer(testHandler.consumer);
 
 		testHandler.consumer.start();
 
@@ -296,21 +396,13 @@ public class ZoiePerf {
 		name = "consumeRateCount";
 		metric = Metrics.newGauge(ZoiePerf.class, name,
 				new GaugeMetric<Long>() {
-
-					long prevCount = 0L;
-					long prevTime = 0L;
-
 					@Override
 					public Long value() {
 						long newTime = System.currentTimeMillis();
 						
 						long newCount =  dataProvider.getEventCount();
-
-						long timeDelta = newTime - prevTime;
-						long countDelta = newCount - prevCount;
-
-						prevTime = newTime;
-						prevCount = newCount;
+						long timeDelta = newTime - start;
+						long countDelta = newCount;
 
 						if (timeDelta == 0)
 							return 0L;
@@ -326,20 +418,14 @@ public class ZoiePerf {
 		name = "consumeRateMB";
 		metric = Metrics.newGauge(ZoiePerf.class, name,
 				new GaugeMetric<Long>() {
-					long prevMB = 0L;
-					long prevTime = 0L;
-
 					@Override
 					public Long value() {
 						long newTime = System.currentTimeMillis();
 						ZoiePerfVersion ver = ZoiePerfVersion.fromString(testHandler.consumer.getVersion());
 						long newMB = ver.offsetVersion;
 
-						long timeDelta = newTime - prevTime;
-						long mbdelta = newMB - prevMB;
-
-						prevTime = newTime;
-						prevMB = newMB;
+						long timeDelta = newTime - start;
+						long mbdelta = newMB;
 
 						if (timeDelta == 0)
 							return 0L;
@@ -354,38 +440,18 @@ public class ZoiePerf {
 		metric = Metrics.newGauge(ZoiePerf.class, name,
 				new GaugeMetric<Long>() {
 
-					long prevCount = 0L;
-					long prevTime = start;
-
 					@Override
 					public Long value() {
-						long newTime = System.currentTimeMillis();
 						long newCount =  dataProvider.getEventCount();
 
-						long timeDelta = newTime - prevTime;
-						long countDelta = newCount - prevCount;
-						
 						String currentReaderVersion = testHandler.queryHandler.getCurrentVersion();
 						long readerMarker = ZoiePerfVersion.fromString(currentReaderVersion).countVersion;
-
-						prevTime = newTime;
-						prevCount = newCount;
 						
 						long countsBehind = newCount - readerMarker;
 
-/*
-						System.out.println("counts behind: "+countsBehind);
-						System.out.println("new count: "+newCount);
 						System.out.println("reader marker: "+readerMarker);
-						System.out.println("time delta: "+timeDelta);
-						System.out.println("count delta: "+countDelta);
-						*/
-						if (countDelta > 0){
-						  return timeDelta*countsBehind/countDelta;
-						}
-						else{
-						  return 0L;
-						}
+						System.out.println("new count: "+newCount);
+						return countsBehind;
 						
 						
 					}
@@ -402,11 +468,11 @@ public class ZoiePerf {
 		File csvOut = new File("csvout");
 		csvOut.mkdirs();
 		CsvReporter csvReporter = new CsvReporter(csvOut,Metrics.defaultRegistry());
+		//GangliaReporter csvReporter = new GangliaReporter(Metrics.defaultRegistry(),"localhost",8649,"zoie-perf");
 		
 		int updateInterval = conf.getInt("perf.update.intervalSec", 2);
 		csvReporter.start(updateInterval, TimeUnit.SECONDS);
 
-		dataProvider.setDataConsumer(testHandler.consumer);
 		long maxEventsPerMin = conf.getLong("perf.maxEventsPerMin");
 
 		dataProvider.setMaxEventsPerMinute(maxEventsPerMin);

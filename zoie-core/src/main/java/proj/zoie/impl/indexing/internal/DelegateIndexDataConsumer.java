@@ -86,7 +86,7 @@ public class DelegateIndexDataConsumer<D> implements DataConsumer<D> {
 		  }
 		}
 	}
-  
+
   public String getVersion()
   {
     throw new UnsupportedOperationException();

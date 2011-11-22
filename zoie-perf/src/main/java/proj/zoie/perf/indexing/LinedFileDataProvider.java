@@ -1,8 +1,11 @@
 package proj.zoie.perf.indexing;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 
 import org.apache.log4j.Logger;
 
@@ -20,7 +23,7 @@ public class LinedFileDataProvider extends StreamDataProvider<String> {
 	private long _offset;
 	private int _count = 0;
 	
-	private RandomAccessFile _rad;
+	private BufferedReader _rad;
 	
 	
 	public LinedFileDataProvider(File file,long startingOffset){
@@ -40,7 +43,7 @@ public class LinedFileDataProvider extends StreamDataProvider<String> {
 			if (line == null) return null;
 			
 			String version = ZoiePerfVersion.toString(_count,_offset);
-			_offset = _rad.getFilePointer();
+			_offset+=version.length();
 			
 			event = new DataEvent<String>(line,version);
 		  }
@@ -55,8 +58,6 @@ public class LinedFileDataProvider extends StreamDataProvider<String> {
 	public int getCount(){
 		return _count;
 	}
-	
-	
 
 	@Override
 	public void setStartingOffset(String version) {
@@ -66,28 +67,26 @@ public class LinedFileDataProvider extends StreamDataProvider<String> {
 
 	@Override
 	public void reset() {
-	  if (_rad!=null){
-		  try {
-			_offset = _startingOffset;
-			_rad.seek(_offset);
-			_count = 0;
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
+	  
+	  try {
+		if (_rad!=null){
+		  _rad.close();
 		}
+		_rad = new BufferedReader(new InputStreamReader(new FileInputStream(_file),Charset.forName("UTF-8")));
+		_offset = _startingOffset;
+		for (long i=0;i<_offset;++i){
+			_rad.read();
+		}
+		_count = 0;
+	  } catch (IOException e) {
+			logger.error(e.getMessage(),e);
 	  }
 	}
 
 	@Override
 	public void start() {
 		super.start();
-		try{
-		  _rad = new RandomAccessFile(_file,"r");
-		  _offset = _startingOffset;
-		  _rad.seek(_offset);
-		}
-		catch(IOException ioe){
-		  logger.error(ioe.getMessage(),ioe);
-		}
+		reset();
 	}
 
 	@Override

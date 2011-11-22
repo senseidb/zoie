@@ -21,6 +21,7 @@ package proj.zoie.api.indexing;
 public abstract class AbstractZoieIndexable implements ZoieIndexable
 {
 	public static final String DOCUMENT_ID_PAYLOAD_FIELD="_ID";
+  public static final String DOCUMENT_STORE_FIELD="_STORE";
 	
 	public abstract IndexingReq[] buildIndexingReqs();
 
@@ -31,11 +32,14 @@ public abstract class AbstractZoieIndexable implements ZoieIndexable
 	public boolean isSkip(){
 		return false;
 	}
-
-	/*
+	
 	@Override
-    public byte[] getStoreValue(){
-      return null;
-    }
-*/
+  public boolean isStorable() {
+    return false;
+  }
+
+  @Override
+  public byte[] getStoreValue(){
+    return null;
+  }
 }

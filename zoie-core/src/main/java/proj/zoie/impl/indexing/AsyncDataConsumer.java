@@ -22,7 +22,6 @@ import java.util.LinkedList;
 import org.apache.log4j.Logger;
 
 import proj.zoie.api.DataConsumer;
-import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.api.LifeCycleCotrolledDataConsumer;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieHealth;
@@ -70,6 +69,10 @@ public class AsyncDataConsumer<D> implements LifeCycleCotrolledDataConsumer<D>
     _batch = new LinkedList<DataEvent<D>>();
     _batchSize = 1; // default
     _consumerThread = null;
+  }
+  
+  public Comparator<String> getVersionComparator(){
+	return _versionComparator;
   }
   
   /**
@@ -168,6 +171,7 @@ public class AsyncDataConsumer<D> implements LifeCycleCotrolledDataConsumer<D>
     syncWithVersion(timeout, _bufferedVersion);
   }
   
+
   /**
    * Waits until all the buffered data events up to specified version are processed.
    * @param timeInMillis the max amount of time to wait in milliseconds.

@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import junit.framework.TestCase;
+
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -255,6 +257,66 @@ public class ZoieTest extends ZoieTestCaseBase {
 			deleteDirectory(idxDir);
 		}
 	}
+	
+	@Test
+  public void testStore() throws ZoieException {
+    File idxDir = getIdxDir();
+    ZoieSystem<IndexReader, String> idxSystem = createZoie(
+        idxDir, true, ZoieConfig.DEFAULT_VERSION_COMPARATOR);
+    idxSystem.start();
+
+    MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
+    memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
+    memoryProvider.setDataConsumer(idxSystem);
+    memoryProvider.start();
+
+    try {
+      int count = DataForTests.testdata.length;
+      List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(
+          count);
+      for (int i = 0; i < count; ++i) {
+        list.add(new DataEvent<String>(
+            DataForTests.testdata[i], ""+i));
+      }
+      memoryProvider.addEvents(list);
+      memoryProvider.flush();
+
+      idxSystem.flushEvents(1000);
+
+      List<ZoieIndexReader<IndexReader>> readers = idxSystem
+          .getIndexReaders();
+
+      
+      byte[] data = null;
+      for (ZoieIndexReader<IndexReader> r : readers) {
+        data = r.getStoredValue(((long)(Integer.MAX_VALUE)*2L));
+        if (data!=null) break;
+      }
+      
+      TestCase.assertNotNull(data);
+      String val = new String(data);
+      String[] parts=val.split(" ");
+      final long id=Long.parseLong(parts[parts.length-1]);
+      TestCase.assertEquals(0L,id);
+      
+      data = null;
+      for (ZoieIndexReader<IndexReader> r : readers) {
+        data = r.getStoredValue(((long)(Integer.MAX_VALUE)*2L)+1L);
+        if (data!=null) break;
+      }
+      TestCase.assertNull(data);
+      
+      idxSystem.returnIndexReaders(readers);
+
+    } catch (IOException ioe) {
+      throw new ZoieException(ioe.getMessage());
+    } finally {
+      memoryProvider.stop();
+      idxSystem.shutdown();
+      deleteDirectory(idxDir);
+    }
+  }
+
 
 	// hao: test for new zoieVersion
 	@Test

@@ -28,6 +28,7 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.index.IndexReader;
 
 import proj.zoie.api.DataConsumer;
+import proj.zoie.api.LifeCycleCotrolledDataConsumer;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.indexing.AbstractZoieIndexable;
@@ -50,7 +51,7 @@ import proj.zoie.impl.indexing.IndexingThread;
  * @param <R>
  * @param <V>
  */
-public class BatchedIndexDataLoader<R extends IndexReader,D> implements DataConsumer<D> {
+public class BatchedIndexDataLoader<R extends IndexReader,D> implements LifeCycleCotrolledDataConsumer<D> {
 
 	protected int _batchSize;
 	protected long _delay;
@@ -395,7 +396,7 @@ public class BatchedIndexDataLoader<R extends IndexReader,D> implements DataCons
       /**
        * Shutdown the build-in indexing thread and wait until it dies.
        */
-	  public void shutdown()
+	  public void stop()
 	  {
 	    synchronized(this)
 	    {

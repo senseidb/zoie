@@ -145,6 +145,7 @@ public class LuceneStore extends AbstractZoieStore {
 	public static ZoieStore openStore(Directory idxDir,String field,boolean compressionOff) throws IOException{
 		LuceneStore store = new LuceneStore(idxDir,field);
 		store.setDataCompressed(!compressionOff);
+		store.open();
 		return store;
 	}
 	

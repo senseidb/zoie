@@ -289,20 +289,21 @@ public class ZoieTest extends ZoieTestCaseBase {
       
       byte[] data = null;
       for (ZoieIndexReader<IndexReader> r : readers) {
-        data = r.getStoredValue(0);
+        data = r.getStoredValue(((long)(Integer.MAX_VALUE)*2L));
         if (data!=null) break;
       }
       
       TestCase.assertNotNull(data);
       String val = new String(data);
-      TestCase.assertEquals(0L,Long.parseLong(val));
+      String[] parts=val.split(" ");
+      final long id=Long.parseLong(parts[parts.length-1]);
+      TestCase.assertEquals(0L,id);
       
       data = null;
       for (ZoieIndexReader<IndexReader> r : readers) {
-        data = r.getStoredValue(1);
+        data = r.getStoredValue(((long)(Integer.MAX_VALUE)*2L)+1L);
         if (data!=null) break;
       }
-      
       TestCase.assertNull(data);
       
       idxSystem.returnIndexReaders(readers);

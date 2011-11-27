@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -41,6 +42,7 @@ import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieSegmentReader;
 import proj.zoie.api.indexing.AbstractZoieIndexable;
+import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 
@@ -53,12 +55,15 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
 	protected final Comparator<String> _versionComparator;
 	private Filter _purgeFilter;
 
-	protected LuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R> idxMgr,Comparator<String> versionComparator) {
+  private final Queue<IndexingEventListener> _lsnrList;
+
+	protected LuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R> idxMgr,Comparator<String> versionComparator,Queue<IndexingEventListener> lsnrList) {
 		_analyzer = analyzer;
 		_similarity = similarity;
 		_idxMgr=idxMgr;
 		_versionComparator = versionComparator;
 		_purgeFilter = null;
+		_lsnrList = lsnrList;
 	}
 	
 	public void setPurgeFilter(Filter purgeFilter){
@@ -187,8 +192,9 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
 			for (List<IndexingReq> tmpList : addList.values()) {
 				docList.addAll(tmpList);
 			}
-      idx.updateIndex(delSet, docList, _analyzer,_similarity);
+
       purgeDocuments();
+      idx.updateIndex(delSet, docList, _analyzer,_similarity);
       propagateDeletes(delSet);
 			synchronized(_idxMgr)
 			{
@@ -228,6 +234,7 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
         idx.clearDeletes(); // clear old deletes as deletes are written to the lucene index
         // hao: update the disk idx reader
         idx.refresh(); // load the index reader
+        purgeDocuments();
         idx.markDeletes(ramIndex.getDelDocs()); // inherit deletes
         idx.commitDeletes();
         idx.incrementEventCount(ramIndex.getEventsHandled());

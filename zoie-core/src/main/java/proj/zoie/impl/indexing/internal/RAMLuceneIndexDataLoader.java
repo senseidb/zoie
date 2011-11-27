@@ -19,17 +19,20 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.Queue;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Similarity;
 
+import proj.zoie.api.indexing.IndexingEventListener;
+
 public class RAMLuceneIndexDataLoader<R extends IndexReader> extends LuceneIndexDataLoader<R>
 {
 
-	public RAMLuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R> idxMgr,Comparator<String> comparator)
+	public RAMLuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R> idxMgr,Comparator<String> comparator,Queue<IndexingEventListener> lsnrList)
 	{
-		super(analyzer, similarity,idxMgr,comparator);
+		super(analyzer, similarity,idxMgr,comparator,lsnrList);
 	}
 
 	@Override

@@ -20,6 +20,7 @@ import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.impl.InRangeDocIDMapperFactory;
 import proj.zoie.api.indexing.IndexReaderDecorator;
+import proj.zoie.impl.indexing.ReaderCacheFactory;
 import proj.zoie.impl.indexing.SimpleReaderCache;
 import proj.zoie.impl.indexing.ZoieConfig;
 import proj.zoie.impl.indexing.ZoieSystem;
@@ -109,6 +110,18 @@ public class ZoieTestCaseBase
     return createZoie(idxDir, realtime, 20, versionComparator);
   }
   
+
+  protected static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime, Comparator<String> versionComparator,boolean immediateRefresh)
+  {
+    return createZoie(idxDir, realtime, 20, versionComparator,immediateRefresh);
+  }
+  
+  protected static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime, long delay, Comparator<String> versionComparator,boolean immediateRefresh)
+  {
+    return createZoie(idxDir,realtime,delay,null,null,versionComparator,immediateRefresh);
+  }
+
+  
   /**
    * @param idxDir
    * @param realtime
@@ -118,12 +131,12 @@ public class ZoieTestCaseBase
    */
   protected static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime, long delay, Comparator<String> versionComparator)
   {
-    return createZoie(idxDir,realtime,delay,null,null,versionComparator);
+    return createZoie(idxDir,realtime,delay,null,null,versionComparator,false);
   }
 
   protected static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime,DocIDMapperFactory docidMapperFactory, Comparator<String> versionComparator)
   {
-    return createZoie(idxDir, realtime, 2,null,docidMapperFactory, versionComparator);
+    return createZoie(idxDir, realtime, 2,null,docidMapperFactory, versionComparator,false);
   }
 
   /**
@@ -135,7 +148,7 @@ public class ZoieTestCaseBase
    * @param zoieVersionFactory
    * @return
    */
-  protected static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime, long delay,Analyzer analyzer,DocIDMapperFactory docidMapperFactory, Comparator<String> versionComparator)
+  protected static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime, long delay,Analyzer analyzer,DocIDMapperFactory docidMapperFactory, Comparator<String> versionComparator,boolean immediateRefresh)
   {
     ZoieConfig config = new ZoieConfig();
     config.setDocidMapperFactory(docidMapperFactory);
@@ -145,8 +158,9 @@ public class ZoieTestCaseBase
     config.setVersionComparator(versionComparator);
     config.setSimilarity(null);
     config.setAnalyzer(null);
-//    config.setReadercachefactory(SimpleReaderCache.FACTORY);
-    
+    if (immediateRefresh){
+      config.setReadercachefactory(SimpleReaderCache.FACTORY);
+    }
     ZoieSystem<IndexReader,String> idxSystem=new ZoieSystem<IndexReader, String>(idxDir,new DataInterpreterForTests(delay,analyzer),
         new TestIndexReaderDecorator(),config);
     return idxSystem;

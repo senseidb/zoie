@@ -458,7 +458,7 @@ extends AsyncDataConsumer<D> implements Zoie<R, D>
 
     super.setBatchSize(Math.max(1, batchSize)); // realtime memory batch size
     _diskLoader = new DiskLuceneIndexDataLoader<R>(_analyzer, _similarity,
-        _searchIdxMgr,versionComparator);
+        _searchIdxMgr,versionComparator,_lsnrList);
     _diskLoader.setOptimizeScheduler(new DefaultOptimizeScheduler(
         getAdminMBean())); // note that the ZoieSystemAdminMBean zoieAdmin
     // parameter for DefaultOptimizeScheduler is not

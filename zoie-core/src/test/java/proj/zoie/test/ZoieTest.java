@@ -28,7 +28,9 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
@@ -36,21 +38,20 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Version;
 import org.junit.Test;
 
+import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.api.DefaultDirectoryManager;
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DocIDMapper;
+import proj.zoie.api.DocIDMapper.DocIDArray;
 import proj.zoie.api.UIDDocIdSet;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
-import proj.zoie.api.DataConsumer.DataEvent;
-import proj.zoie.api.DocIDMapper.DocIDArray;
-
 import proj.zoie.api.impl.DocIDMapperImpl;
 import proj.zoie.api.impl.InRangeDocIDMapperFactory;
 import proj.zoie.impl.indexing.AsyncDataConsumer;
 import proj.zoie.impl.indexing.MemoryStreamDataProvider;
-import proj.zoie.impl.indexing.ZoieSystem;
 import proj.zoie.impl.indexing.ZoieConfig;
+import proj.zoie.impl.indexing.ZoieSystem;
 import proj.zoie.impl.indexing.internal.IndexSignature;
 import proj.zoie.test.data.DataForTests;
 import proj.zoie.test.mock.MockDataLoader;
@@ -96,7 +97,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 		File idxDir = getIdxDir();
 		ZoieSystem<IndexReader, String> idxSystem = createZoie(
 				idxDir, true, 20, new WhitespaceAnalyzer(), null,
-				ZoieConfig.DEFAULT_VERSION_COMPARATOR);
+				ZoieConfig.DEFAULT_VERSION_COMPARATOR,false);
 		idxSystem.start();
 
 		MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
@@ -257,6 +258,81 @@ public class ZoieTest extends ZoieTestCaseBase {
 			deleteDirectory(idxDir);
 		}
 	}
+	
+	@Test
+  public void testPurgeFilter() throws Exception {
+    File idxDir = getIdxDir();
+    ZoieSystem<IndexReader, String> idxSystem = createZoie(
+        idxDir, true, ZoieConfig.DEFAULT_VERSION_COMPARATOR,true);
+    
+    idxSystem.setPurgeFilter(new QueryWrapperFilter(new MatchAllDocsQuery()));
+    idxSystem.start();
+
+    MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
+    memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
+    memoryProvider.setDataConsumer(idxSystem);
+    memoryProvider.start();
+
+    try {
+      int count = DataForTests.testdata.length;
+      List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(
+          count);
+      for (int i = 0; i < count; ++i) {
+        list.add(new DataEvent<String>(
+            DataForTests.testdata[i], ""+i));
+      }
+      memoryProvider.addEvents(list);
+      memoryProvider.flush();
+      
+
+      idxSystem.flushEvents(10000);
+      
+      List<ZoieIndexReader<IndexReader>> readers = idxSystem
+          .getIndexReaders();
+      
+      MultiReader multiReader = new MultiReader(readers.toArray(new IndexReader[0]),false);
+      
+      IndexSearcher searcher = new IndexSearcher(multiReader);
+      
+      int numDocs = searcher.search(new MatchAllDocsQuery(), 10).totalHits;
+
+      searcher.close();
+      log.info("numdocs: "+numDocs);
+      TestCase.assertTrue(numDocs>0);
+
+      idxSystem.returnIndexReaders(readers);
+      
+      idxSystem.getAdminMBean().flushToDiskIndex();
+      
+
+      idxSystem.refreshDiskReader();
+      readers = idxSystem
+          .getIndexReaders();
+      
+
+      multiReader = new MultiReader(readers.toArray(new IndexReader[0]),false);
+      
+      searcher = new IndexSearcher(multiReader);
+      
+      numDocs = searcher.search(new MatchAllDocsQuery(), 10).totalHits;
+
+      searcher.close();
+      
+      numDocs = multiReader.numDocs();
+
+      log.info("new numdocs: "+numDocs);
+      TestCase.assertTrue(numDocs==0);
+
+      idxSystem.returnIndexReaders(readers);
+
+    } catch (IOException ioe) {
+      throw new ZoieException(ioe.getMessage());
+    } finally {
+      memoryProvider.stop();
+      idxSystem.shutdown();
+      deleteDirectory(idxDir);
+    }
+  }
 	
 	@Test
   public void testStore() throws ZoieException {

@@ -382,6 +382,7 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
           }
         }
       }
+      flush();
     }
 
     private long getEventCount()

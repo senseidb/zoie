@@ -26,7 +26,9 @@ import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -259,13 +261,63 @@ public class ZoieTest extends ZoieTestCaseBase {
 		}
 	}
 	
+	private static class EvenIDPurgeFilter extends Filter{
+
+    @Override
+    public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+      if (reader instanceof ZoieIndexReader){
+        final ZoieIndexReader<IndexReader> zoieReader = (ZoieIndexReader<IndexReader>)reader;
+        return new DocIdSet(){
+
+          @Override
+          public DocIdSetIterator iterator() throws IOException {
+            return new DocIdSetIterator(){
+              
+              int doc=-1;
+              int maxdoc = zoieReader.maxDoc();
+
+              @Override
+              public int advance(int target) throws IOException {
+                doc = target-1;
+                return nextDoc();
+              }
+
+              @Override
+              public int docID() {
+                return doc;
+              }
+
+              @Override
+              public int nextDoc() throws IOException {
+                while(doc<maxdoc){
+                  doc++;
+                  long uid = zoieReader.getUID(doc);
+                  if (uid %2 == 0){ // if even
+                    return doc;
+                  }
+                }
+                return DocIdSetIterator.NO_MORE_DOCS;
+              }
+              
+            };
+          }
+          
+        };
+      }
+      else{
+        throw new IllegalStateException("expecting instance of ZoieIndexReader, but got: "+reader.getClass());
+      }
+    }
+	  
+	}
+	
 	@Test
   public void testPurgeFilter() throws Exception {
     File idxDir = getIdxDir();
     ZoieSystem<IndexReader, String> idxSystem = createZoie(
         idxDir, true, ZoieConfig.DEFAULT_VERSION_COMPARATOR,true);
     
-    idxSystem.setPurgeFilter(new QueryWrapperFilter(new MatchAllDocsQuery()));
+    idxSystem.setPurgeFilter(new EvenIDPurgeFilter());
     idxSystem.start();
 
     MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
@@ -321,7 +373,7 @@ public class ZoieTest extends ZoieTestCaseBase {
       numDocs = multiReader.numDocs();
 
       log.info("new numdocs: "+numDocs);
-      TestCase.assertTrue(numDocs==0);
+      TestCase.assertTrue(numDocs==5);
 
       idxSystem.returnIndexReaders(readers);
 

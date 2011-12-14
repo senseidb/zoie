@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Similarity;
@@ -40,6 +41,7 @@ import org.apache.lucene.search.Similarity;
 import proj.zoie.api.DataConsumer;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieHealth;
+import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieSegmentReader;
 import proj.zoie.api.indexing.AbstractZoieIndexable;
 import proj.zoie.api.indexing.IndexingEventListener;
@@ -78,26 +80,29 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
     private final void purgeDocuments(){
     	if (_purgeFilter!=null){
     		BaseSearchIndex<R> idx = getSearchIndex();
-    		IndexReader reader = null;
+    		IndexReader writeReader = null;
     		log.info("purging docs started...");
     		int count = 0;
     		long start = System.currentTimeMillis();
     		try{
-    			reader = idx.openIndexReaderForDelete();
+    		  writeReader = idx.openIndexReaderForDelete();
+          
+    			ZoieIndexReader<R> reader = idx.openIndexReader();
     			DocIdSetIterator iter = _purgeFilter.getDocIdSet(reader).iterator();
+    			
     			int doc;
     			while((doc = iter.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS){
     				count++;
-    				reader.deleteDocument(doc);
+    				writeReader.deleteDocument(doc);
     			}
     		}
     		catch(Throwable th){
     			log.error("problem creating purge filter: "+th.getMessage(),th);
     		}
     		finally{
-    			if (reader!=null){
+    			if (writeReader!=null){
     				try{
-    					reader.close();
+    				  writeReader.close();
     				}
     				catch(IOException ioe){
     					ZoieHealth.setFatal();

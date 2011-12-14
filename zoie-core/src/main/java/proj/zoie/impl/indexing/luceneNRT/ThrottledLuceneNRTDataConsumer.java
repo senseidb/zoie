@@ -3,6 +3,7 @@ package proj.zoie.impl.indexing.luceneNRT;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -78,7 +79,7 @@ public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledData
 	@Override
 	public void start(){
 		try {
-			IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_33,_analyzer);
+			IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_34,_analyzer);
 			if (_mergePolicy!=null){
 			  config.setMergePolicy(_mergePolicy);
 			}
@@ -243,5 +244,10 @@ public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledData
   public String getVersion()
   {
     return _version;
+  }
+
+	public Comparator<String> getVersionComparator()
+  {
+    throw new UnsupportedOperationException();
   }
 }

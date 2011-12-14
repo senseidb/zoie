@@ -3,6 +3,7 @@ package proj.zoie.perf.client;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -227,6 +228,12 @@ public class ZoiePerf {
 			public String getVersion() {
 				return version;
 			}
+
+      @Override
+      public Comparator<String> getVersionComparator()
+      {
+        throw new UnsupportedOperationException("not supported");
+      }
 
 			@Override
 			public void start() {

@@ -3,6 +3,7 @@ package proj.zoie.hourglass.impl;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -290,6 +291,13 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
     return _currentVersion;
   }
 
+  /* (non-Javadoc)
+   * @see proj.zoie.api.DataConsumer#getVersionComparator()
+   */
+	public Comparator<String> getVersionComparator() {
+    return _zConfig.getVersionComparator();
+  }
+
   public long getSizeBytes()
   {
     return _dirMgrFactory.getDiskIndexSizeBytes();
@@ -309,7 +317,7 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
     {
       try
       {
-        return new StandardMBean(new HourglassAdmin(this), HourglassAdminMBean.class);
+        return new StandardMBean(getAdminMBean(), HourglassAdminMBean.class);
       } catch (NotCompliantMBeanException e)
       {
         log.info(e);
@@ -317,6 +325,12 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
       }
     }
     return null;
+  }
+
+  @Override
+  public HourglassAdminMBean getAdminMBean()
+  {
+    return new HourglassAdmin(this);
   }
 
   public static String HOURGLASSADMIN = "hourglass-admin";

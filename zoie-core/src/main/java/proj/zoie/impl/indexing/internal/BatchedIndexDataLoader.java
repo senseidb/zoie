@@ -18,6 +18,7 @@ package proj.zoie.impl.indexing.internal;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -445,6 +446,11 @@ public class BatchedIndexDataLoader<R extends IndexReader,D> implements LifeCycl
 	  }
 	  
 	public String getVersion()
+	{
+	  throw new UnsupportedOperationException();
+	}
+
+	public Comparator<String> getVersionComparator()
 	{
 	  throw new UnsupportedOperationException();
 	}

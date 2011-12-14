@@ -16,6 +16,7 @@ package proj.zoie.api;
  * limitations under the License.
  */
 import java.util.Collection;
+import java.util.Comparator;
 
 /**
  * interface for consuming a collection of data events
@@ -90,4 +91,9 @@ public interface DataConsumer<D> {
    * @return the version number of events that it has received but not necessarily processed.
    */
 	String getVersion();
+
+	/**
+   * @return the version comparator.
+   */
+	Comparator<String> getVersionComparator();
 }

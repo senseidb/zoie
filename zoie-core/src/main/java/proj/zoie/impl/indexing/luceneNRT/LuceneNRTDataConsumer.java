@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,7 +64,7 @@ public class LuceneNRTDataConsumer<D> implements DataConsumer<D>, IndexReaderFac
 
   public LuceneNRTDataConsumer(File dir, ZoieIndexableInterpreter<D> interpreter) throws IOException
   {
-    this(FSDirectory.open(dir), new StandardAnalyzer(Version.LUCENE_33), interpreter);
+    this(FSDirectory.open(dir), new StandardAnalyzer(Version.LUCENE_34), interpreter);
   }
 
   public LuceneNRTDataConsumer(File dir, Analyzer analyzer, ZoieIndexableInterpreter<D> interpreter) throws IOException
@@ -83,7 +84,7 @@ public class LuceneNRTDataConsumer<D> implements DataConsumer<D>, IndexReaderFac
   {
     try
     {
-	  IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_33,_analyzer);
+	  IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_34,_analyzer);
       _writer = new IndexWriter(_dir, config);
     } catch (IOException e)
     {
@@ -218,6 +219,11 @@ public class LuceneNRTDataConsumer<D> implements DataConsumer<D>, IndexReaderFac
   }
 
   public String getVersion()
+  {
+    throw new UnsupportedOperationException();
+  }
+
+	public Comparator<String> getVersionComparator()
   {
     throw new UnsupportedOperationException();
   }

@@ -2,6 +2,7 @@ package proj.zoie.store;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Comparator;
 
 import org.apache.log4j.Logger;
 
@@ -50,6 +51,12 @@ public class ZoieStoreConsumer<D> implements LifeCycleCotrolledDataConsumer<D> {
 	public String getVersion() {
 		return _store.getVersion();
 	}
+
+  @Override
+  public Comparator<String> getVersionComparator()
+  {
+    throw new UnsupportedOperationException("not supported");
+  }
 
 	@Override
 	public void start() {

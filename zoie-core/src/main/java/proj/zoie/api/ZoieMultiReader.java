@@ -67,8 +67,10 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
 	
 	@Override
 	public byte[] getStoredValue(long uid) throws IOException {
-	  int docid = this.getDocIDMaper().getDocID(uid);
-	  int idx = readerIndex(docid);
+    int docid = this.getDocIDMaper().getDocID(uid);
+    if (docid < 0) return null;
+    int idx = readerIndex(docid);
+    if (idx < 0) return null;
     ZoieIndexReader<R> subReader = _subZoieReaders.get(idx);
     return subReader.getStoredValue(uid);
 	}

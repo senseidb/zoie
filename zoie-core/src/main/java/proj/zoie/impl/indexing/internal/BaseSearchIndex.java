@@ -22,6 +22,7 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.log4j.Logger;
@@ -47,10 +48,12 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
 	  protected volatile LongOpenHashSet _delDocs = new LongOpenHashSet();
 	  protected final SearchIndexManager<R> _idxMgr;
 	  protected boolean _closeWriterAfterUpdate;
+	  protected final Comparator<String> _versionComparator;
 	  
 	  protected BaseSearchIndex(SearchIndexManager<R> idxMgr, boolean closeWriterAfterUpdate){
 		  _idxMgr = idxMgr;
 		  _closeWriterAfterUpdate = closeWriterAfterUpdate;
+		  _versionComparator = idxMgr.getVersionComparator();
 	  }
 	  
 	  /**
@@ -81,7 +84,7 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
 	    closeIndexWriter();
 	  }
 	  
-      abstract public ZoieIndexReader<R> openIndexReader() throws IOException;
+    abstract public ZoieIndexReader<R> openIndexReader() throws IOException;
 	  
 	  abstract protected IndexReader openIndexReaderForDelete() throws IOException;
 	  

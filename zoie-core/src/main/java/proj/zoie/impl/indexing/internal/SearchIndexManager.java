@@ -295,6 +295,10 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
 	  return version;
 	  
 	}
+	
+	public Comparator<String> getVersionComparator(){
+	  return _versionComparator;
+	}
 
 	public void returnIndexReaders(List<ZoieIndexReader<R>> readers)
 	  {

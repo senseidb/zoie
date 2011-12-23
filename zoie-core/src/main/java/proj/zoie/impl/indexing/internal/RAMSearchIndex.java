@@ -107,19 +107,26 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
     ZoieIndexReader<R> reader = null;
     try
     {
-      reader = openIndexReader();
-    } catch (IOException e)
+      synchronized(this)
+      {
+        reader = openIndexReader();
+        if (reader == null)
+          return 0;
+        reader.incZoieRef();
+      }
+
+      return reader.numDocs();
+    }
+    catch(IOException e)
     {
       log.error(e.getMessage(), e);
     }
-
-    if (reader != null)
+    finally
     {
-      return reader.numDocs();
-    } else
-    {
-      return 0;
+      if (reader != null)
+        reader.decZoieRef();
     }
+    return 0;
   }
 
   @Override

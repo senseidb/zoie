@@ -84,10 +84,18 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
     		log.info("purging docs started...");
     		int count = 0;
     		long start = System.currentTimeMillis();
+
+        ZoieIndexReader<R> reader = null;
     		try{
+          synchronized(idx)
+          {
+            reader = idx.openIndexReader();
+            if (reader != null)
+              reader.incZoieRef();
+          }
+
     		  writeReader = idx.openIndexReaderForDelete();
-          
-    			ZoieIndexReader<R> reader = idx.openIndexReader();
+
     			DocIdSetIterator iter = _purgeFilter.getDocIdSet(reader).iterator();
     			
     			int doc;
@@ -100,6 +108,8 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
     			log.error("problem creating purge filter: "+th.getMessage(),th);
     		}
     		finally{
+          if (reader != null)
+            reader.decZoieRef();
     			if (writeReader!=null){
     				try{
     				  writeReader.close();

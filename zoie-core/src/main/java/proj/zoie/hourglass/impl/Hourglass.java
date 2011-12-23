@@ -18,6 +18,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 
 import proj.zoie.api.DirectoryManager;
+import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.Zoie;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
@@ -72,6 +73,11 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
       {
         reader = IndexReader.open(dir,true);
         ZoieMultiReader<R> zoiereader = new ZoieMultiReader<R>(reader, _decorator);
+
+        // Initialize docIdMapper
+        DocIDMapper<?> mapper = _zConfig.getDocidMapperFactory().getDocIDMapper(zoiereader);
+        zoiereader.setDocIDMapper(mapper);
+
         archives.add(zoiereader);
       } catch (CorruptIndexException e)
       {

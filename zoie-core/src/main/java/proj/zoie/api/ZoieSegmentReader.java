@@ -101,6 +101,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 	
 	ZoieSegmentReader(ZoieSegmentReader<R> copyFrom,IndexReader innerReader,boolean withDeletes) throws IOException{
 		super(innerReader,copyFrom._decorator);
+    innerReader.incRef();
 		_uidArray = copyFrom._uidArray;
 		_maxUID = copyFrom._maxUID;
 		_minUID = copyFrom._minUID;
@@ -125,6 +126,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
   ZoieSegmentReader(ZoieSegmentReader<R> copyFrom, IndexReader innerReader) throws IOException
   {
     super(innerReader, copyFrom._decorator);
+    innerReader.incRef();
     _uidArray = copyFrom._uidArray;
     _maxUID = copyFrom._maxUID;
     _minUID = copyFrom._minUID;

@@ -20,6 +20,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
 
 import proj.zoie.api.DirectoryManager;
+import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieMultiReader;
@@ -341,6 +342,10 @@ public class HourglassReaderManager<R extends IndexReader, D>
     try
     {
       zoiereader = new ZoieMultiReader<R>(reader, _decorator);
+
+      // Initialize docIdMapper
+      DocIDMapper<?> mapper = hg.getzConfig().getDocidMapperFactory().getDocIDMapper(zoiereader);
+      zoiereader.setDocIDMapper(mapper);
     } catch (IOException e)
     {
       log.error(e);

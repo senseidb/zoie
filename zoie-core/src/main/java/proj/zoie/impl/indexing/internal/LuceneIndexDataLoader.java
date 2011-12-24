@@ -222,8 +222,8 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
 		} finally {
 			try {
 				if (idx != null) {
+          idx.setVersion(version); // update the version of the
 					idx.incrementEventCount(eventCount);
-					idx.setVersion(version); // update the version of the
 												// index
 				}
 			} catch (Exception e) // catch all exceptions, or it would screw

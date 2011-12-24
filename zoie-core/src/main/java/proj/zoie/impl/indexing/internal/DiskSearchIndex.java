@@ -19,6 +19,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -48,6 +49,7 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
   private ZoieIndexDeletionPolicy _deletionPolicy;
 
   public static final Logger log = Logger.getLogger(DiskSearchIndex.class);
+  
 
   public DiskSearchIndex(DirectoryManager dirMgr, IndexReaderDecorator<R> decorator,SearchIndexManager<R> idxMgr){
     super(idxMgr, true);  
@@ -151,6 +153,11 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
         ZoieHealth.setFatal();
         log.error(e.getMessage(),e);
       }
+      finally{
+        synchronized(readerOpenLock){
+          readerOpenLock.notifyAll();
+        }
+      }
     }
   }
 
@@ -201,7 +208,30 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
   {
     // use dispenser to get the reader
     return _dispenser.getIndexReader();
+  }
+  
+  private final Object readerOpenLock = new Object();
+  
+  public ZoieIndexReader<R> openIndexReader(String minVersion,long timeout) throws IOException,TimeoutException{
+    if (_versionComparator.compare(minVersion,_dispenser.getCurrentVersion())<=0){
+      return _dispenser.getIndexReader();
+    }
+    long start = System.currentTimeMillis();
+    
+    while(_versionComparator.compare(minVersion, _dispenser.getCurrentVersion())>0){
+      synchronized(readerOpenLock){
+        try {
+          readerOpenLock.wait(100);
+        } catch (InterruptedException e) {
+          // ignore
+        }
+      }
+      long now = System.currentTimeMillis();
+      if (now-start>=timeout) throw new TimeoutException("timed-out, took: "+(now-start)+" ms");
+    }
 
+    return _dispenser.getIndexReader();
+    
   }
 
 

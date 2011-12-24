@@ -21,6 +21,8 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Comparator;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -100,6 +102,9 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
   public void setVersion(String version) throws IOException
   {
     _version = version;
+    synchronized(readerOpenLock){
+      readerOpenLock.notifyAll();
+    }
   }
 
   public int getNumdocs()
@@ -199,6 +204,32 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
     IndexWriter idxWriter = new IndexWriter(_directory,config);
     _indexWriter = idxWriter;
     return idxWriter;
+  }
+  
+  private final Object readerOpenLock = new Object();
+  
+  public ZoieIndexReader<R> openIndexReader(String minVersion,long timeout) throws IOException,TimeoutException{
+    
+    if (timeout<0) timeout = Long.MAX_VALUE;
+    if (_versionComparator.compare(minVersion, _version)<=0){
+      return _currentReader;
+    }
+    long startTimer = System.currentTimeMillis();
+    while(_versionComparator.compare(minVersion, _version)>0){
+      synchronized(readerOpenLock){
+        try {
+          readerOpenLock.wait(100);
+        } catch (InterruptedException e) {
+          // ignore
+        }
+      }
+
+      long now = System.currentTimeMillis();
+      if (now-startTimer>=timeout) throw new TimeoutException("timed-out, took: "+(now-startTimer)+" ms");
+    }
+    
+    return _currentReader;
+    
   }
 
   @Override

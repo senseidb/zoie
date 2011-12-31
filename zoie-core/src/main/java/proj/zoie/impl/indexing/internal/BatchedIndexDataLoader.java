@@ -330,6 +330,18 @@ public class BatchedIndexDataLoader<R extends IndexReader,D> implements LifeCycl
         {
           long t1=System.currentTimeMillis();
           int eventCount = tmpList.size();
+          Comparator<String> versioComparator = _idxMgr.getVersionComparator();
+          for (DataEvent<ZoieIndexable> evt : tmpList){
+            String newVersion = evt.getVersion();
+            if (currentVersion==null){
+              currentVersion = newVersion;
+            }
+            else{
+              if (versioComparator.compare(currentVersion, newVersion)<0){
+                currentVersion = newVersion;
+              }
+            }
+          }
           try
           {
             _dataLoader.consume(tmpList);
@@ -351,9 +363,9 @@ public class BatchedIndexDataLoader<R extends IndexReader,D> implements LifeCycl
               IndexUpdatedEvent evt = new IndexUpdatedEvent(eventCount,t1,t2,_eventCount);
               fireIndexingEvent(evt);
               try{
-                String newVersion = _idxMgr.getCurrentDiskVersion();
-                if (currentVersion==null || !currentVersion.equals(newVersion)){
-                	fireNewVersionEvent(newVersion);
+                String oldVersion = _idxMgr.getCurrentDiskVersion();
+                if (currentVersion!=null && !currentVersion.equals(oldVersion)){
+                	fireNewVersionEvent(currentVersion);
                 }
               }
               catch(IOException ioe){

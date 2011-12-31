@@ -173,8 +173,9 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D> extends BatchedIn
       long t1=System.currentTimeMillis();
       try
       {
-        if(readOnlyMemIndex != null)
+        if(readOnlyMemIndex != null){
           _luceneDataLoader.loadFromIndex(readOnlyMemIndex);
+        }
       }
       catch (ZoieException e)
       {
@@ -191,14 +192,18 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D> extends BatchedIn
         {
           segmentCount = _idxMgr.getDiskSegmentCount();
           segmentInfo = _idxMgr.getDiskSegmentInfo();
+          
+          IndexUpdatedEvent evt = new IndexUpdatedEvent(eventCount,t1,t2,_eventCount);
+          fireIndexingEvent(evt);
+          fireNewVersionEvent(readOnlyMemIndex.getVersion());
         } catch (IOException e)
         {
-          log.error("error getting new segment count after disk flush", e);
+          log.error("error getting disk information after disk flush", e);
         }
-        log.info("flushed batch of "+eventCount+" events to disk indexer, took: "+(t2-t1)+" current event count: "+_eventCount + ", current disk segment count: " + segmentCount);
-        log.info("post-flush segment info: " + segmentInfo);
-        IndexUpdatedEvent evt = new IndexUpdatedEvent(eventCount,t1,t2,_eventCount);
-        fireIndexingEvent(evt);
+        if (log.isInfoEnabled()){
+          log.info("flushed batch of "+eventCount+" events to disk indexer, took: "+(t2-t1)+" current event count: "+_eventCount + ", current disk segment count: " + segmentCount);
+          log.info("post-flush segment info: " + segmentInfo);
+        }
         notifyAll();
       }
     }

@@ -50,6 +50,8 @@ import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.impl.DocIDMapperImpl;
 import proj.zoie.api.impl.InRangeDocIDMapperFactory;
+import proj.zoie.api.indexing.IndexingEventListener;
+import proj.zoie.api.indexing.IndexingEventListener.IndexingEvent;
 import proj.zoie.impl.indexing.AsyncDataConsumer;
 import proj.zoie.impl.indexing.MemoryStreamDataProvider;
 import proj.zoie.impl.indexing.ZoieConfig;
@@ -311,6 +313,65 @@ public class ZoieTest extends ZoieTestCaseBase {
 	  
 	}
 	
+
+  @Test
+  public void testIndexEventListener() throws Exception {
+    File idxDir = getIdxDir();
+    final int[] flushNum = {0};
+    final String[] flushVersion = {null};
+    
+    ZoieSystem<IndexReader, String> idxSystem = createZoie(
+        idxDir, true, ZoieConfig.DEFAULT_VERSION_COMPARATOR,true);
+    
+    idxSystem.start();
+    
+    idxSystem.addIndexingEventListener(new IndexingEventListener() {
+      
+      @Override
+      public void handleUpdatedDiskVersion(String version) {
+        flushVersion[0] = version;
+      }
+      
+      @Override
+      public void handleIndexingEvent(IndexingEvent evt) {
+        flushNum[0]++;
+      }
+    });
+
+    MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
+    memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
+    memoryProvider.setDataConsumer(idxSystem);
+    memoryProvider.start();
+
+    try {
+      int count = DataForTests.testdata.length;
+      List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(
+          count);
+      for (int i = 0; i < count; ++i) {
+        list.add(new DataEvent<String>(
+            DataForTests.testdata[i], ""+i));
+      }
+      memoryProvider.addEvents(list);
+      memoryProvider.flush();
+      
+
+      idxSystem.flushEvents(10000);
+      String diskVersion = null;
+      while(!"9".equals(diskVersion)){
+        diskVersion = idxSystem.getCurrentDiskVersion();
+        Thread.sleep(500);
+      }
+
+    } finally {
+      memoryProvider.stop();
+      idxSystem.shutdown();
+      deleteDirectory(idxDir);
+    }
+    
+    assertTrue(flushNum[0]>0);
+    assertEquals("9", flushVersion[0]);
+  }
+  
 	@Test
   public void testPurgeFilter() throws Exception {
     File idxDir = getIdxDir();

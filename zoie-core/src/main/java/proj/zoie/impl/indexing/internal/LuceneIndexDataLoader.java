@@ -259,7 +259,7 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
         
         //V newVersion = idx.getVersion().compareTo(ramIndex.getVersion()) < 0 ? ramIndex.getVersion(): idx.getVersion();
         String newVersion = idx.getVersion() == null ? ramIndex.getVersion() : (_versionComparator.compare(idx.getVersion(), ramIndex.getVersion()) < 0 ? ramIndex.getVersion(): idx.getVersion());
-        idx.setVersion(newVersion);
+        idx.setVersion(newVersion);      
         //System.out.println("disk verson from the signature" + newVersion.toString());        
                
         //idx.setVersion(Math.max(idx.getVersion(), ramIndex.getVersion()));

@@ -22,6 +22,7 @@ public class ZoieSolrIndexCommit extends IndexCommit {
     long version;
     final boolean isOptimized;
     final Map userData;
+    final int segmentCount;
 
     ZoieSolrIndexCommit(SegmentInfos infos, Directory dir) throws IOException {
       segmentsFileName = infos.getCurrentSegmentFileName();
@@ -31,6 +32,12 @@ public class ZoieSolrIndexCommit extends IndexCommit {
       version = infos.getVersion();
       generation = infos.getGeneration();
       isOptimized = infos.size() == 1 && !infos.info(0).hasDeletions();
+      segmentCount = infos.size();
+    }
+    
+    @Override
+    public int getSegmentCount(){
+      return segmentCount;
     }
 
     public boolean isOptimized() {

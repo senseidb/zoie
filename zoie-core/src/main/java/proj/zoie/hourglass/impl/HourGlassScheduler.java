@@ -15,6 +15,7 @@ public class HourGlassScheduler
   private int _trimThreshold = Integer.MAX_VALUE;
   private static ThreadLocal<SimpleDateFormat> dateFormatter = new ThreadLocal<SimpleDateFormat>()
   {
+    @Override
     protected SimpleDateFormat initialValue()
     {
       return new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
@@ -65,7 +66,7 @@ public class HourGlassScheduler
   {
     return _trimThreshold;
   }
-  Calendar getNextRoll()
+  protected Calendar getNextRoll()
   {
     long timenow = System.currentTimeMillis();
     Calendar next = Calendar.getInstance();
@@ -137,6 +138,7 @@ public class HourGlassScheduler
   {
     return dateFormatter.get().format(cal.getTime());
   }
+  @Override
   public String toString()
   {
     return "HourGlassScheduler:" + _freq + "  " + _schedule;

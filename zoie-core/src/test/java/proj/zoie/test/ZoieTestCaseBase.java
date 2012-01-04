@@ -15,12 +15,12 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.DocIdSet;
 import org.junit.After;
+import org.junit.Before;
 
 import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.impl.InRangeDocIDMapperFactory;
 import proj.zoie.api.indexing.IndexReaderDecorator;
-import proj.zoie.impl.indexing.ReaderCacheFactory;
 import proj.zoie.impl.indexing.SimpleReaderCache;
 import proj.zoie.impl.indexing.ZoieConfig;
 import proj.zoie.impl.indexing.ZoieSystem;
@@ -36,7 +36,7 @@ public class ZoieTestCaseBase
     layout.setConversionPattern("%d{yyyy/MM/dd HH:mm:ss.SSS} %p [%c{1}] [%x] %m%n");
     try{
 	 appender = new org.apache.log4j.FileAppender(layout,"zoie-test-log.log");
-    }	
+    }
     catch(IOException e){
 	  e.printStackTrace();
     }
@@ -67,12 +67,12 @@ public class ZoieTestCaseBase
   }
 
 
-  @After
+  @After @Before
   public void tearDown()
   {
     deleteDirectory(getIdxDir());
   }
-  
+
   protected static File getIdxDir()
   {
     File tmpDir=new File(System.getProperty("java.io.tmpdir"));
@@ -83,7 +83,8 @@ public class ZoieTestCaseBase
       if (i>10)
       {
         log.info("cannot delete");
-        return tempFile;
+        throw new IllegalStateException("cannot delete");
+
       }
       log.info("deleting " + tempFile);
       deleteDirectory(tempFile);
@@ -109,19 +110,19 @@ public class ZoieTestCaseBase
   {
     return createZoie(idxDir, realtime, 20, versionComparator);
   }
-  
+
 
   protected static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime, Comparator<String> versionComparator,boolean immediateRefresh)
   {
     return createZoie(idxDir, realtime, 20, versionComparator,immediateRefresh);
   }
-  
+
   protected static ZoieSystem<IndexReader,String> createZoie(File idxDir,boolean realtime, long delay, Comparator<String> versionComparator,boolean immediateRefresh)
   {
     return createZoie(idxDir,realtime,delay,null,null,versionComparator,immediateRefresh);
   }
 
-  
+
   /**
    * @param idxDir
    * @param realtime
@@ -168,15 +169,18 @@ public class ZoieTestCaseBase
 
 
   protected static class TestIndexReaderDecorator implements IndexReaderDecorator<IndexReader>{
+    @Override
     public IndexReader decorate(ZoieIndexReader<IndexReader> indexReader) throws IOException {
       return indexReader;
     }
 
+    @Override
     public IndexReader redecorate(IndexReader decorated,ZoieIndexReader<IndexReader> copy,boolean withDeletes) throws IOException {
       return decorated;
     }
 
 
+    @Override
     public void setDeleteSet(IndexReader reader, DocIdSet docIds)
     {
       // do nothing
@@ -197,7 +201,7 @@ public class ZoieTestCaseBase
     ZoieSystem<IndexReader,String> idxSystem=new ZoieSystem<IndexReader, String>(idxDir,new InRangeDataInterpreterForTests(20,null),
         new TestIndexReaderDecorator(),config);
     return idxSystem;
-  } 
+  }
   protected static boolean deleteDirectory(File path) {
     if( path.exists() ) {
       File[] files = path.listFiles();
@@ -213,7 +217,7 @@ public class ZoieTestCaseBase
     return( path.delete() );
   }
 
-  
+
   protected static class QueryThread extends Thread
   {
     public volatile boolean stop = false;

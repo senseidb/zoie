@@ -89,11 +89,6 @@
 			<artifactId>lucene-core</artifactId>
 			<version>3.4.0</version>
 		</dependency>
-    <dependency>
-      <groupId>org.apache.mahout.hadoop</groupId>
-      <artifactId>hadoop-core</artifactId>
-      <version>0.20.1</version>
-    </dependency>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>

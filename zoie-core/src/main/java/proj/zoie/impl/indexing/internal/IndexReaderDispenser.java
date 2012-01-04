@@ -215,7 +215,7 @@ public class IndexReaderDispenser<R extends IndexReader>
     if (_currentReader != reader)
     {
       if (reader!=null){
-        DocIDMapper<?> mapper = _idx._idxMgr._docIDMapperFactory.getDocIDMapper((ZoieMultiReader<R>)reader);
+        DocIDMapper<?> mapper = _idx._idxMgr._docIDMapperFactory.getDocIDMapper(reader);
         reader.setDocIDMapper(mapper);
       }
       // assume that this is the only place that _currentReader gets refreshed 
@@ -258,9 +258,10 @@ public class IndexReaderDispenser<R extends IndexReader>
     {
       try
       {
+        Directory directory = _currentReader.directory();
         _currentReader.decRef();
         int count = _currentReader.getRefCount();
-        log.info("final closeReader in dispenser and current refCount: " + count + " at " + _currentReader.directory());
+        log.info("final closeReader in dispenser and current refCount: " + count + " at " + directory);        
         if (count > 0)
         {
           log.warn("final closeReader call with reference count == " + count + " greater than 0. Potentially, " +

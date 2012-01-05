@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -102,7 +103,16 @@ public class HourglassTest extends ZoieTestCaseBase {
 		oneTest(idxDir, schedule, numTestContent); // test index pick up
 		return;
 	}
-
+  /*@Test
+  public void testMultipleTrimming() throws Exception {
+    for (int i = 0 ; i< 100; i++) {
+      System.out.println("Run - " + i);
+      tearDown();
+      minDirs = Integer.MAX_VALUE; // Minimum number of dirs after system is stable
+      maxDirs = 0;
+      testTrimming();
+    }
+  }*/
   @Test
   public void testTrimming() throws Exception {
 	    File idxDir = getIdxDir();
@@ -258,7 +268,12 @@ public class HourglassTest extends ZoieTestCaseBase {
 		memoryProvider.stop();
 		hourglass.shutdown();
 	}
+	public static String now() {
+    Calendar cal = Calendar.getInstance();
+    SimpleDateFormat sdf = new SimpleDateFormat("hh:mm:ss aaa");
+    return sdf.format(cal.getTime());
 
+  }
   private void doTrimmingTest(File idxDir, String schedule,  int trimThreshold) throws Exception  {
     HourglassDirectoryManagerFactory factory = new HourglassDirectoryManagerFactory(idxDir, new HourGlassScheduler(
         HourGlassScheduler.FREQUENCY.MINUTELY, schedule, trimThreshold) {
@@ -281,7 +296,7 @@ public class HourglassTest extends ZoieTestCaseBase {
           }
     });
     ZoieConfig zConfig = new ZoieConfig();
-    zConfig.setBatchSize(3);
+    zConfig.setBatchSize(1);
     zConfig.setBatchDelay(10);
     zConfig.setFreshness(10);
     Hourglass<IndexReader, String> hourglass = new Hourglass<IndexReader, String>(factory,
@@ -323,38 +338,51 @@ public class HourglassTest extends ZoieTestCaseBase {
     memoryProvider.start();
     int initNumDocs = getTotalNumDocs(hourglass);
     System.out.println("initial number of DOCs: " + initNumDocs);
-
-    for (int i = initNumDocs; i < initNumDocs + 600; i++) {
+    boolean wait = false;
+    for (int i = initNumDocs; i < initNumDocs + 1200; i++) {
       List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(2);
       list.add(new DataEvent<String>("" + i, "" + i));
       memoryProvider.addEvents(list);
 
-      System.out.println((i - initNumDocs + 1) + " of " + (80 - initNumDocs));
+      System.out.println((i - initNumDocs + 1) + " of " + (1200 - initNumDocs));
       if (idxDir.exists()) {
         int numDirs = idxDir.listFiles().length;
-        System.out.println("!!" + numDirs);
+        //System.out.println("!!" + numDirs + "time = " + now());
         if (numDirs > maxDirs) {
           System.out.println("Set maxDirs to " + numDirs);
           maxDirs = numDirs;
         }
+        if (maxDirs >= trimThreshold + 2) wait = true;
         if (maxDirs >= trimThreshold + 2 && numDirs < minDirs) {
+
           boolean stop = false;
-          if (minDirs < 5) {
-            stop = true;
-          }
+
           // We want to make sure that number of directories does shrink
           // to trimThreshold + 1. Exactly when trimming is done is
           // controlled by HourglassReaderManager, which checks trimming
           // condition only once per minute.
           System.out.println("Set minDirs to " + numDirs);
           minDirs = numDirs;
+          if (minDirs == 2) {
+            stop = true;
+          }
           if (stop) {break;}
         }
+      }
+      synchronized (currentZoie) {
+        currentZoie.notifyAll();
+      }
+      if (wait) {
+        Thread.sleep(600);
       }
       synchronized (runnable) {
         runnable.notifyAll();
       }
-      currentZoie.flushEvents(500);
+      synchronized (currentZoie) {
+        //currentZoie.flushEvents(150);
+        Thread.sleep(10);
+      }
+
     }
     Thread.sleep(500);
     synchronized (runnable) {
@@ -363,7 +391,7 @@ public class HourglassTest extends ZoieTestCaseBase {
 
 
     int numDirs = idxDir.listFiles().length;
-    System.out.println("!!!" + numDirs);
+    //System.out.println("!!!" + numDirs);
     try {
       mbeanServer.unregisterMBean(new ObjectName("HouseGlass:name=hourglass"));
     } catch (Exception e) {

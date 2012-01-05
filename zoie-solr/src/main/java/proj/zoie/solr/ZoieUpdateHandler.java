@@ -179,7 +179,7 @@ public class ZoieUpdateHandler extends UpdateHandler {
 
 				@Override
 				public void collect(int doc) throws IOException {
-					long uid = zoieReader.getUID(doc+base);
+					long uid = zoieReader.getUID(doc);
 					if (uid!=DocIDMapper.NOT_FOUND){
 						delList.add(uid);
 					}

@@ -24,16 +24,17 @@ import org.apache.lucene.index.IndexReader;
 
 import proj.zoie.api.DefaultDirectoryManager;
 import proj.zoie.api.DirectoryManager;
-import proj.zoie.api.indexing.IndexReaderDecorator;
-import proj.zoie.api.indexing.ZoieIndexableInterpreter;
+import proj.zoie.api.DirectoryManager.DIRECTORY_MODE;
 import proj.zoie.api.IndexCopier;
 import proj.zoie.api.Zoie;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieIndexReader;
-import proj.zoie.impl.indexing.internal.IndexSignature;
+import proj.zoie.api.indexing.IndexReaderDecorator;
+import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 import proj.zoie.impl.indexing.ZoieConfig;
 import proj.zoie.impl.indexing.ZoieSystem;
+import proj.zoie.impl.indexing.internal.IndexSignature;
 import proj.zoie.mbean.ZoieAdminMBean;
 
 public class Pair<R extends IndexReader, D> implements Zoie<R, D>
@@ -52,10 +53,12 @@ public class Pair<R extends IndexReader, D> implements Zoie<R, D>
   private final ZoieIndexableInterpreter<D> _interpreter;
   private final IndexReaderDecorator<R>     _decorator;
   private final ZoieConfig                  _zoieConfig;
+  private final DIRECTORY_MODE              _dirMode;
 
   private Map<IndexReader, ZoieRef> _activeReaders;
 
   public Pair(File                          zoieOneRoot,
+              DIRECTORY_MODE                dirMode,
               IndexCopier                   indexCopier,
               ZoieIndexableInterpreter<D>   interpreter,
               IndexReaderDecorator<R>       decorator,
@@ -68,6 +71,7 @@ public class Pair<R extends IndexReader, D> implements Zoie<R, D>
     _decorator   = decorator;
     _zoieConfig  = zoieConfig;
     _zoieTwo     = zoieTwo;
+    _dirMode = dirMode;
 
     _activeReaders = new HashMap<IndexReader, ZoieRef>();
 
@@ -83,7 +87,8 @@ public class Pair<R extends IndexReader, D> implements Zoie<R, D>
         if (new File(files[i], COMMIT_FILE).exists())
         {
           log.info("Found latest zoieOne index: " + files[i].getAbsolutePath());
-          _zoieOne = new ZoieSystem(files[i], _interpreter, _decorator, _zoieConfig);
+          DirectoryManager dirMgr = new DefaultDirectoryManager(files[i], dirMode);
+          _zoieOne = new ZoieSystem(dirMgr, _interpreter, _decorator, _zoieConfig);
           break;
         }
       }
@@ -139,7 +144,9 @@ public class Pair<R extends IndexReader, D> implements Zoie<R, D>
       return false;
     }
 
-    Zoie zoie = new ZoieSystem(dest, _interpreter, _decorator, _zoieConfig);
+    // offline line index is not moving, so MMAP should be the most efficient.
+    DirectoryManager dirMgr = new DefaultDirectoryManager(dest, DIRECTORY_MODE.MMAP);
+    Zoie zoie = new ZoieSystem(dirMgr, _interpreter, _decorator, _zoieConfig);
     if (_running)
       zoie.start();
 

@@ -69,6 +69,11 @@ public class ZoieSolrIndexReaderFactory extends IndexReaderFactory
 		}
 
 		@Override
+		public synchronized IndexCommit getIndexCommit() throws IOException{
+			return in.getIndexCommit();
+		}
+
+		@Override
 		public synchronized IndexReader reopen() throws CorruptIndexException,
 				IOException {
 			return reopen(true);

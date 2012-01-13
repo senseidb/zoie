@@ -131,7 +131,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
   }
 
   @Override
-  protected boolean isOptimized(SegmentInfos infos,int maxNumSegments,Map<SegmentInfo,Boolean> segmentsToOptimize) throws IOException {
+  protected boolean isMerged(SegmentInfos infos,int maxNumSegments,Map<SegmentInfo,Boolean> segmentsToOptimize) throws IOException {
     final int numSegments = infos.size();
     int numToOptimize = 0;
     SegmentInfo optimizeInfo = null;
@@ -144,13 +144,14 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
     }
 
     return numToOptimize <= maxNumSegments &&
-    (numToOptimize != 1 || isOptimized(optimizeInfo));
+    (numToOptimize != 1 || isMerged(optimizeInfo));
   }
 
   /** Returns true if this single nfo is optimized (has no
    *  pending norms or deletes, is in the same dir as the
    *  writer, and matches the current compound file setting */
-  protected boolean isOptimized(SegmentInfo info)
+  @Override
+  protected boolean isMerged(SegmentInfo info)
   throws IOException {
     IndexWriter w = writer.get();
     return !info.hasDeletions() &&
@@ -168,13 +169,13 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
    *  (mergeFactor at a time) so the {@link MergeScheduler}
    *  in use may make use of concurrency. */
   @Override
-  public MergeSpecification findMergesForOptimize(SegmentInfos infos, int maxNumSegments, Map<SegmentInfo,Boolean> segmentsToOptimize) throws IOException {
+  public MergeSpecification findForcedMerges(SegmentInfos infos, int maxNumSegments, Map<SegmentInfo,Boolean> segmentsToOptimize) throws IOException {
 
     assert maxNumSegments > 0;
 
     MergeSpecification spec = null;
 
-    if (!isOptimized(infos, maxNumSegments, segmentsToOptimize))
+    if (!isMerged(infos, maxNumSegments, segmentsToOptimize))
     {
       // Find the newest (rightmost) segment that needs to
       // be optimized (other segments may have been flushed
@@ -197,7 +198,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
           // Since we must optimize down to 1 segment, the
           // choice is simple:
          // boolean useCompoundFile = getUseCompoundFile();
-          if (last > 1 || !isOptimized(infos.info(0)))
+          if (last > 1 || !isMerged(infos.info(0)))
           {
             spec = new MergeSpecification();
             spec.add(new OneMerge(infos.asList().subList(0, last)));
@@ -334,7 +335,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
    * index. The number of large segments will stay the same.
    */ 
   @Override
-  public MergeSpecification findMergesToExpungeDeletes(SegmentInfos infos)
+  public MergeSpecification findForcedDeletesMerges(SegmentInfos infos)
   throws CorruptIndexException, IOException
   {
     final int numSegs = infos.size();
@@ -346,7 +347,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
       List<SegmentInfo> smallSegmentList = infos.asList().subList(numLargeSegs, numSegs);
       SegmentInfos smallSegments = new SegmentInfos();
       smallSegments.addAll(smallSegmentList);
-      spec = super.findMergesToExpungeDeletes(smallSegments);
+      spec = super.findForcedDeletesMerges(smallSegments);
     }
 
     if(spec == null) spec = new MergeSpecification();

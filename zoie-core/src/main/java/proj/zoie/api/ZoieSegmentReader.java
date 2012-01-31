@@ -340,7 +340,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 		// not synchronized, since it doesn't do anything anyway
 	}
    @Override
-  public int numDocs() {    
+  public int numDocs() {
      if (_currentDelDocIds != null) {
        return super.numDocs() - _currentDelDocIds.length;
      }  else {

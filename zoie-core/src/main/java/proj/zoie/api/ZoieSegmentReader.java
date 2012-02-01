@@ -342,7 +342,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
    @Override
   public int numDocs() {
      if (_currentDelDocIds != null) {
-       return super.numDocs() - _currentDelDocIds.length;
+       return super.maxDoc() - _currentDelDocIds.length;
      }  else {
        return super.numDocs();
      }

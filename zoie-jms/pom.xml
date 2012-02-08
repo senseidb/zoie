@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>com.linkedin.zoie</groupId>
 		<artifactId>zoie-parent</artifactId>
-		<version>3.1.0</version>
+		<version>3.1.1-SNAPSHOT</version>
 		<relativePath>../zoie-parent/pom.xml</relativePath>
 	</parent>
 

@@ -210,6 +210,10 @@ public class DocIDMapperImpl implements DocIDMapper<DocIDArray>
         else end = mid;
       }
     }
+    
+    public int[] getDocArray() {
+      return _docArray;
+    }
 
     public int getReaderIndex(long uid)
     {

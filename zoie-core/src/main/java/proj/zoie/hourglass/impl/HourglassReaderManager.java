@@ -38,13 +38,15 @@ public class HourglassReaderManager<R extends IndexReader, D>
   private volatile boolean isShutdown = false;
   private final Thread maintenanceThread;
   private final ExecutorService retireThreadPool = Executors.newCachedThreadPool();
+  private final HourglassListener<R, D> listener;
   public HourglassReaderManager(final Hourglass<R, D> hourglass, HourglassDirectoryManagerFactory dirMgrFactory,
       IndexReaderDecorator<R> decorator,
-      List<ZoieIndexReader<R>> initArchives)
+      List<ZoieIndexReader<R>> initArchives, HourglassListener<R, D> listener) 
   {
     hg = hourglass;
     _dirMgrFactory = dirMgrFactory;
     _decorator = decorator;
+    this.listener = listener;
 
     List<ZoieSystem<R, D>> emptyList = Collections.emptyList();
     
@@ -128,6 +130,9 @@ public class HourglassReaderManager<R extends IndexReader, D>
 
       if (foundOldestToKeep)
       {
+        if (listener != null) {
+          listener.onIndexReaderCleanUp(reader);
+        }
         log.info("trimming: remove " + path);
         log.info(dir.getDirectory() + " -before--" + (dir.getDirectory().exists()?" not deleted ":" deleted"));
         FileUtil.rmDir(dir.getDirectory());
@@ -204,12 +209,18 @@ public class HourglassReaderManager<R extends IndexReader, D>
         @Override
         public void run()
         {
+          if (listener != null) {
+            listener.onRetiredZoie(old);
+          }
           retire(old);
         }});
     }
     actives.add(newzoie);
     Box<R, D> newbox = new Box<R, D>(box._archives, retiring, actives, _decorator);
     box = newbox;
+    if (listener != null) {
+      listener.onNewZoie(newzoie);
+    }
     return newzoie;
   }
   /**

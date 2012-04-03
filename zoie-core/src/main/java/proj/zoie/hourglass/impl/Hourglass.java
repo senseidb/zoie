@@ -3,6 +3,7 @@ package proj.zoie.hourglass.impl;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -17,6 +18,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 
 import proj.zoie.api.DirectoryManager;
+import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.Zoie;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
@@ -44,7 +46,7 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
   private long _freshness = 1000;
   final HourGlassScheduler _scheduler;
   public volatile long SLA = 4; // getIndexReaders should return in 4ms or a warning is logged
-  public Hourglass(HourglassDirectoryManagerFactory dirMgrFactory, ZoieIndexableInterpreter<D> interpreter, IndexReaderDecorator<R> readerDecorator,ZoieConfig zoieConfig)
+  public Hourglass(HourglassDirectoryManagerFactory dirMgrFactory, ZoieIndexableInterpreter<D> interpreter, IndexReaderDecorator<R> readerDecorator,ZoieConfig zoieConfig, HourglassListener<R, D> hourglassListener)
   {
     _zConfig = zoieConfig;
     _dirMgrFactory = dirMgrFactory;
@@ -52,12 +54,15 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
     _dirMgrFactory.clearRecentlyChanged();
     _interpreter = interpreter;
     _decorator = readerDecorator;
-    _readerMgr = new HourglassReaderManager<R, D>(this, _dirMgrFactory, _decorator, loadArchives());
+    _readerMgr = new HourglassReaderManager<R, D>(this, _dirMgrFactory, _decorator, loadArchives(), hourglassListener);
     _currentVersion = _dirMgrFactory.getArchivedVersion();
     _currentZoie = _readerMgr.retireAndNew(null);
     _currentZoie.start();
     _freshness = zoieConfig.getFreshness();
     log.info("start Hourglass at version: " + _currentVersion);
+  }
+  public Hourglass(HourglassDirectoryManagerFactory dirMgrFactory, ZoieIndexableInterpreter<D> interpreter, IndexReaderDecorator<R> readerDecorator,ZoieConfig zoieConfig) {
+    this(dirMgrFactory, interpreter, readerDecorator, zoieConfig, null);
   }
   protected List<ZoieIndexReader<R>> loadArchives()
   {
@@ -71,6 +76,11 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
       {
         reader = IndexReader.open(dir,true);
         ZoieMultiReader<R> zoiereader = new ZoieMultiReader<R>(reader, _decorator);
+
+        // Initialize docIdMapper
+        DocIDMapper<?> mapper = _zConfig.getDocidMapperFactory().getDocIDMapper(zoiereader);
+        zoiereader.setDocIDMapper(mapper);
+
         archives.add(zoiereader);
       } catch (CorruptIndexException e)
       {
@@ -290,6 +300,13 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
     return _currentVersion;
   }
 
+  /* (non-Javadoc)
+   * @see proj.zoie.api.DataConsumer#getVersionComparator()
+   */
+	public Comparator<String> getVersionComparator() {
+    return _zConfig.getVersionComparator();
+  }
+
   public long getSizeBytes()
   {
     return _dirMgrFactory.getDiskIndexSizeBytes();
@@ -309,7 +326,7 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
     {
       try
       {
-        return new StandardMBean(new HourglassAdmin(this), HourglassAdminMBean.class);
+        return new StandardMBean(getAdminMBean(), HourglassAdminMBean.class);
       } catch (NotCompliantMBeanException e)
       {
         log.info(e);
@@ -317,6 +334,12 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
       }
     }
     return null;
+  }
+
+  @Override
+  public HourglassAdminMBean getAdminMBean()
+  {
+    return new HourglassAdmin(this);
   }
 
   public static String HOURGLASSADMIN = "hourglass-admin";
@@ -341,10 +364,5 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
   @Override
   public String getCurrentReaderVersion() {
 	  return _currentZoie == null ? null : _currentZoie.getCurrentReaderVersion();
-  }
-  
-  @Override
-  public void flushEvents() throws ZoieException {
-    flushEvents(Long.MAX_VALUE);
   }
 }

@@ -49,11 +49,13 @@ import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.impl.DefaultDocIDMapperFactory;
 import proj.zoie.api.impl.util.FileUtil;
 import proj.zoie.api.impl.util.SearchUtil;
+import proj.zoie.api.indexing.AbstractZoieIndexable;
 import proj.zoie.api.indexing.DefaultOptimizeScheduler;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.api.indexing.OptimizeScheduler;
 import proj.zoie.api.indexing.ZoieIndexable;
+import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 import proj.zoie.impl.indexing.internal.BatchedIndexDataLoader;
 import proj.zoie.impl.indexing.internal.DefaultRAMIndexFactory;
@@ -405,7 +407,7 @@ extends AsyncDataConsumer<D> implements Zoie<R, D>
 			}
 			catch(Exception e){
 			  log.error(e.getMessage(),e);
-			  return new ZoieIndexable(){
+			  return new AbstractZoieIndexable(){
 
 				@Override
 				public long getUID() {
@@ -456,7 +458,7 @@ extends AsyncDataConsumer<D> implements Zoie<R, D>
 
     super.setBatchSize(Math.max(1, batchSize)); // realtime memory batch size
     _diskLoader = new DiskLuceneIndexDataLoader<R>(_analyzer, _similarity,
-        _searchIdxMgr,versionComparator);
+        _searchIdxMgr,versionComparator,_lsnrList);
     _diskLoader.setOptimizeScheduler(new DefaultOptimizeScheduler(
         getAdminMBean())); // note that the ZoieSystemAdminMBean zoieAdmin
     // parameter for DefaultOptimizeScheduler is not

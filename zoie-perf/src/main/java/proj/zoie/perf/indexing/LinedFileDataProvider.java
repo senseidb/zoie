@@ -27,7 +27,7 @@ public class LinedFileDataProvider extends StreamDataProvider<String> {
 	
 	
 	public LinedFileDataProvider(File file,long startingOffset){
-      super(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
+      super(ZoiePerfVersion.COMPARATOR);
 	  _file = file;
 	  _rad = null;
 	  _startingOffset = startingOffset;
@@ -43,7 +43,8 @@ public class LinedFileDataProvider extends StreamDataProvider<String> {
 			if (line == null) return null;
 			
 			String version = ZoiePerfVersion.toString(_count,_offset);
-			_offset+=version.length();
+			_offset+=line.length();
+	    _count++;
 			
 			event = new DataEvent<String>(line,version);
 		  }
@@ -51,7 +52,6 @@ public class LinedFileDataProvider extends StreamDataProvider<String> {
 			logger.error(ioe.getMessage(),ioe);
 		  }
 		}
-		_count++;
 		return event;
 	}
 	

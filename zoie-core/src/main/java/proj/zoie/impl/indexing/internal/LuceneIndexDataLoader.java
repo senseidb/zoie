@@ -26,11 +26,14 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Similarity;
@@ -38,7 +41,10 @@ import org.apache.lucene.search.Similarity;
 import proj.zoie.api.DataConsumer;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieHealth;
+import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieSegmentReader;
+import proj.zoie.api.indexing.AbstractZoieIndexable;
+import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 
@@ -51,12 +57,15 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
 	protected final Comparator<String> _versionComparator;
 	private Filter _purgeFilter;
 
-	protected LuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R> idxMgr,Comparator<String> versionComparator) {
+  private final Queue<IndexingEventListener> _lsnrList;
+
+	protected LuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R> idxMgr,Comparator<String> versionComparator,Queue<IndexingEventListener> lsnrList) {
 		_analyzer = analyzer;
 		_similarity = similarity;
 		_idxMgr=idxMgr;
 		_versionComparator = versionComparator;
 		_purgeFilter = null;
+		_lsnrList = lsnrList;
 	}
 	
 	public void setPurgeFilter(Filter purgeFilter){
@@ -71,26 +80,39 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
     private final void purgeDocuments(){
     	if (_purgeFilter!=null){
     		BaseSearchIndex<R> idx = getSearchIndex();
-    		IndexReader reader = null;
+    		IndexReader writeReader = null;
     		log.info("purging docs started...");
     		int count = 0;
     		long start = System.currentTimeMillis();
+
+        ZoieIndexReader<R> reader = null;
     		try{
-    			reader = idx.openIndexReaderForDelete();
+          synchronized(idx)
+          {
+            reader = idx.openIndexReader();
+            if (reader != null)
+              reader.incZoieRef();
+          }
+
+    		  writeReader = idx.openIndexReaderForDelete();
+
     			DocIdSetIterator iter = _purgeFilter.getDocIdSet(reader).iterator();
+    			
     			int doc;
     			while((doc = iter.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS){
     				count++;
-    				reader.deleteDocument(doc);
+    				writeReader.deleteDocument(doc);
     			}
     		}
     		catch(Throwable th){
     			log.error("problem creating purge filter: "+th.getMessage(),th);
     		}
     		finally{
-    			if (reader!=null){
+          if (reader != null)
+            reader.decZoieRef();
+    			if (writeReader!=null){
     				try{
-    					reader.close();
+    				  writeReader.close();
     				}
     				catch(IOException ioe){
     					ZoieHealth.setFatal();
@@ -158,6 +180,12 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
 							Document doc = req.getDocument();
 							if (doc!=null){							 
 							  ZoieSegmentReader.fillDocumentID(doc, uid);
+							  if (indexable.isStorable()){
+							    byte[] bytes = indexable.getStoreValue();
+							    if (bytes!=null){
+							      doc.add(new Field(AbstractZoieIndexable.DOCUMENT_STORE_FIELD,bytes));
+							    }
+							  }
 							}
 							// add to the insert list
 							List<IndexingReq> docList = addList.get(uid);
@@ -179,8 +207,9 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
 			for (List<IndexingReq> tmpList : addList.values()) {
 				docList.addAll(tmpList);
 			}
-      idx.updateIndex(delSet, docList, _analyzer,_similarity);
+
       purgeDocuments();
+      idx.updateIndex(delSet, docList, _analyzer,_similarity);
       propagateDeletes(delSet);
 			synchronized(_idxMgr)
 			{
@@ -193,8 +222,8 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
 		} finally {
 			try {
 				if (idx != null) {
+          idx.setVersion(version); // update the version of the
 					idx.incrementEventCount(eventCount);
-					idx.setVersion(version); // update the version of the
 												// index
 				}
 			} catch (Exception e) // catch all exceptions, or it would screw
@@ -220,6 +249,7 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
         idx.clearDeletes(); // clear old deletes as deletes are written to the lucene index
         // hao: update the disk idx reader
         idx.refresh(); // load the index reader
+        purgeDocuments();
         idx.markDeletes(ramIndex.getDelDocs()); // inherit deletes
         idx.commitDeletes();
         idx.incrementEventCount(ramIndex.getEventsHandled());
@@ -229,7 +259,7 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
         
         //V newVersion = idx.getVersion().compareTo(ramIndex.getVersion()) < 0 ? ramIndex.getVersion(): idx.getVersion();
         String newVersion = idx.getVersion() == null ? ramIndex.getVersion() : (_versionComparator.compare(idx.getVersion(), ramIndex.getVersion()) < 0 ? ramIndex.getVersion(): idx.getVersion());
-        idx.setVersion(newVersion);
+        idx.setVersion(newVersion);      
         //System.out.println("disk verson from the signature" + newVersion.toString());        
                
         //idx.setVersion(Math.max(idx.getVersion(), ramIndex.getVersion()));
@@ -241,14 +271,7 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
         throw new ZoieException(ioe);
       }
     }
-    
-    
-    
-  
-  @Override
-    public void flushEvents() throws ZoieException {
-      
-    }
+ 
 
   /**
    * @return the version number of the search index.
@@ -259,5 +282,12 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
     String version = null;
     if (idx != null) version = idx.getVersion();
     return version;
+  }
+
+	/**
+   * @return the version comparator.
+   */
+	public Comparator<String> getVersionComparator() {
+    return _versionComparator;
   }
 }

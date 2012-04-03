@@ -17,6 +17,7 @@ package proj.zoie.impl.indexing.internal;
  */
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Iterator;
 
 import org.apache.log4j.Logger;
@@ -85,18 +86,13 @@ public class DelegateIndexDataConsumer<D> implements DataConsumer<D> {
 		  }
 		}
 	}
-  
-	
-	
-  @Override
-  public void flushEvents() throws ZoieException {
-    _ramConsumer.flushEvents();
-    _diskConsumer.flushEvents();
-  }
-
-
 
   public String getVersion()
+  {
+    throw new UnsupportedOperationException();
+  }
+
+	public Comparator<String> getVersionComparator()
   {
     throw new UnsupportedOperationException();
   }

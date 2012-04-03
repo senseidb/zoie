@@ -19,6 +19,10 @@ import org.apache.solr.core.IndexReaderFactory;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 
+
+import proj.zoie.api.DirectoryManager;
+import proj.zoie.api.DirectoryManager.DIRECTORY_MODE;
+import proj.zoie.api.DefaultDirectoryManager;
 import proj.zoie.api.Zoie;
 import proj.zoie.api.ZoieException;
 import proj.zoie.hourglass.impl.HourGlassScheduler;
@@ -98,10 +102,28 @@ public class ZoieSystemHome {
 		log.info("zoie similarity: "+similarity.getClass());
 		log.info("zoie analyzer: "+analyzer.getClass());
 		
+		DIRECTORY_MODE dirMode;
+		String modeValue = config.get("zoie.directory.mode", "SIMPLE");
+		if ("SIMPLE".equals(modeValue)){
+		  dirMode = DIRECTORY_MODE.SIMPLE;
+		}
+		else if ("NIO".equals(modeValue)){
+		  dirMode = DIRECTORY_MODE.NIO;
+		}
+		else if ("MMAP".equals(modeValue)){
+		  dirMode = DIRECTORY_MODE.MMAP;
+		}
+		else{
+		  log.error("directory mode "+modeValue+" is not supported, SIMPLE is used.");
+		  dirMode = DIRECTORY_MODE.SIMPLE;
+		}
+		
+		
 		StandardMBean mbean = null;
 		
 		if (isTypeZoie){
-			ZoieSystem<IndexReader,DocumentWithID> zoieSystem = new ZoieSystem<IndexReader,DocumentWithID>(idxFile,new ZoieSolrIndexableInterpreter(),new DefaultIndexReaderDecorator(),zoieConfig);
+		  DirectoryManager dirMgr = new DefaultDirectoryManager(idxFile, dirMode);
+			ZoieSystem<IndexReader,DocumentWithID> zoieSystem = new ZoieSystem<IndexReader,DocumentWithID>(dirMgr,new ZoieSolrIndexableInterpreter(),new DefaultIndexReaderDecorator(),zoieConfig);
 			try {
 				mbean = new StandardMBean(zoieSystem.getAdminMBean(), ZoieSystemAdminMBean.class);
 			} catch (NotCompliantMBeanException e) {
@@ -128,7 +150,7 @@ public class ZoieSystemHome {
 				throw new IllegalArgumentException("Unsupported frequency: "+freqString);
 			}
 			HourGlassScheduler scheduler = new HourGlassScheduler(freq,schedule,trimThreshold);
-			HourglassDirectoryManagerFactory dirMgrFactory = new HourglassDirectoryManagerFactory(idxFile,scheduler);
+			HourglassDirectoryManagerFactory dirMgrFactory = new HourglassDirectoryManagerFactory(idxFile,scheduler,dirMode);
 			Hourglass<IndexReader,DocumentWithID> zoieSystem = new Hourglass<IndexReader, DocumentWithID>(dirMgrFactory, new ZoieSolrIndexableInterpreter(),new DefaultIndexReaderDecorator(), zoieConfig);
 			
 			try {

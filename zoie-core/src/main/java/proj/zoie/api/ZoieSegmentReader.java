@@ -65,9 +65,9 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
           buffer[5] = (byte) (uid >> 40);
           buffer[6] = (byte) (uid >> 48);
           buffer[7] = (byte) (uid >> 56);
-          payloadAttr = (PayloadAttribute)addAttribute(PayloadAttribute.class);
+          payloadAttr = addAttribute(PayloadAttribute.class);
           payloadAttr.setPayload(new Payload(buffer));
-          termAttr = (CharTermAttribute)addAttribute(CharTermAttribute.class);
+          termAttr = addAttribute(CharTermAttribute.class);
           termAttr.append(termVal);
           returnToken = true;
         }
@@ -191,6 +191,20 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 	  return list;
     }
 	
+	@Override
+  public byte[] getStoredValue(long uid) throws IOException {
+    int docid = this.getDocIDMaper().getDocID(uid);
+    if (docid<0) return null;
+    
+    if (docid>=0){
+      Document doc = document(docid);
+      if (doc!=null){
+        return doc.getBinaryValue(AbstractZoieIndexable.DOCUMENT_STORE_FIELD);
+      }
+    }
+    return null;
+  }
+	
 	private void init(IndexReader reader) throws IOException
 	{
 		int maxDoc = reader.maxDoc();
@@ -228,7 +242,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 	
 	public static long bytesToLong(byte[] bytes){
         return ((long)(bytes[7] & 0xFF) << 56) | ((long)(bytes[6] & 0xFF) << 48) | ((long)(bytes[5] & 0xFF) << 40) | ((long)(bytes[4] & 0xFF) << 32) | ((long)(bytes[3] & 0xFF) << 24) | ((long)(bytes[2] & 0xFF) << 16)
-           | ((long)(bytes[1] & 0xFF) <<  8) |  (long)(bytes[0] & 0xFF);
+           | ((long)(bytes[1] & 0xFF) <<  8) |  (bytes[0] & 0xFF);
 	}
 	
 	@Override
@@ -325,7 +339,14 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 	public void decRef() throws IOException {
 		// not synchronized, since it doesn't do anything anyway
 	}
-
+   @Override
+  public int numDocs() {
+     if (_currentDelDocIds != null) {
+       return super.maxDoc() - _currentDelDocIds.length;
+     }  else {
+       return super.numDocs();
+     }
+  }
 	/**
    * makes exact shallow copy of a given ZoieMultiReader
    * @param <R>

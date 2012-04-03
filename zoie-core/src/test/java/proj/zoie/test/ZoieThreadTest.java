@@ -61,9 +61,10 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
 		QueryRunnable[] queryRunnables = new QueryRunnable[numThreads];
 		for (int i = 0; i < queryRunnables.length; i++) {
 			queryRunnables[i] = new QueryRunnable() {
-				public void run() {
+				@Override
+        public void run() {
 					QueryParser parser = new QueryParser(
-							Version.LUCENE_33, "contents",
+							Version.LUCENE_34, "contents",
 							idxSystem.getAnalyzer());
 					Query q;
 					try {
@@ -271,11 +272,11 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
 
 	private void testDelBigSetImpl() throws ZoieException {
 		long starttime = System.currentTimeMillis();
-		final long testduration = 60000L; // one minute
+		final long testduration = 3000L; // one minute
 		final long endtime = starttime + testduration;
 		final int membatchsize = 1;
 		File idxDir = getIdxDir();
-		final int datacount = 10000;
+		final int datacount = 100;
 		final String[] testdata = new String[datacount];
 		Random r = new Random(0);
 		for (int i = 0; i < datacount; i++) {
@@ -293,9 +294,10 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
 		QueryThread[] queryThreads = new QueryThread[numThreads];
 		for (int i = 0; i < queryThreads.length; i++) {
 			queryThreads[i] = new QueryThread() {
-				public void run() {
+				@Override
+        public void run() {
 					QueryParser parser = new QueryParser(
-							Version.LUCENE_CURRENT, "contents",
+							Version.LUCENE_34, "contents",
 							idxSystem.getAnalyzer());
 					Query q;
 					try {
@@ -335,7 +337,7 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
 								System.out.println(sb.toString());
 								log.info(sb.toString());
 							}
-							Thread.sleep(20);
+							Thread.sleep(2);
 						} catch (Exception ex) {
 							ex.printStackTrace();
 							exception = ex;

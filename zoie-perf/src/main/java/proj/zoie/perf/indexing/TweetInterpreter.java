@@ -6,8 +6,10 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.json.JSONObject;
 
+import proj.zoie.api.indexing.AbstractZoieIndexable;
 import proj.zoie.api.indexing.AbstractZoieIndexableInterpreter;
 import proj.zoie.api.indexing.ZoieIndexable;
+import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 
 public class TweetInterpreter extends AbstractZoieIndexableInterpreter<String> {
 
@@ -17,7 +19,7 @@ public class TweetInterpreter extends AbstractZoieIndexableInterpreter<String> {
 			JSONObject obj = new JSONObject(tweet);
 			final String text = obj.optString("text");
 			final long uid = obj.getLong("id_str");
-			return new ZoieIndexable(){
+			return new AbstractZoieIndexable(){
 
 				@Override
 				public IndexingReq[] buildIndexingReqs() {
@@ -44,7 +46,7 @@ public class TweetInterpreter extends AbstractZoieIndexableInterpreter<String> {
 			};
 		}
 		catch(Exception e){
-			return new ZoieIndexable(){
+			return new AbstractZoieIndexable(){
 
 				@Override
 				public IndexingReq[] buildIndexingReqs() {

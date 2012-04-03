@@ -1,6 +1,7 @@
 package proj.zoie.test.mock;
 
 import java.util.Collection;
+import java.util.Comparator;
 
 import org.apache.log4j.Logger;
 
@@ -85,15 +86,13 @@ public class MockDataLoader<D> implements DataConsumer<D> {
     {
       return _maxBatch;
     }
-    
-    
-    @Override
-    public void flushEvents() throws ZoieException {
-      // TODO Auto-generated method stub
-      
-    }
 
   public String getVersion()
+  {
+    throw new UnsupportedOperationException();
+  }
+
+	public Comparator<String> getVersionComparator()
   {
     throw new UnsupportedOperationException();
   }

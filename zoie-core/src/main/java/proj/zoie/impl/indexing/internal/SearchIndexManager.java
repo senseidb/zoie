@@ -236,26 +236,31 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
 	        String currentVersion = null;
 	        if (memIndexB != null)                           // load memory index B
 	        {
-	          reader = memIndexB.openIndexReader();
-	          if (reader != null)
-	          {
-	            reader = reader.copy();
-	            reader.setDelDocIds();
-	            readers.add(reader);
-	            
-	            _memBVersion = memIndexB.getVersion();
-	          }
+            synchronized(memIndexB)
+            {
+              reader = memIndexB.openIndexReader();
+              if (reader != null)
+              {
+                reader = reader.copy();
+                reader.setDelDocIds();
+                readers.add(reader);
+              }
+            }
+            _memBVersion = memIndexB.getVersion();
 	        }
 
 	        if (memIndexA != null)                           // load memory index A
 	        {
-	          reader = memIndexA.openIndexReader();
-	          if (reader != null)
-	          {
-              reader = reader.copy();
-	            reader.setDelDocIds();
-	            readers.add(reader);
-	          }
+            synchronized(memIndexA)
+            {
+              reader = memIndexA.openIndexReader();
+              if (reader != null)
+              {
+                reader = reader.copy();
+                reader.setDelDocIds();
+                readers.add(reader);
+              }
+            }
 	          _memAVersion = memIndexA.getVersion();
 	        }
 
@@ -289,6 +294,10 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
 	  }
 	  return version;
 	  
+	}
+	
+	public Comparator<String> getVersionComparator(){
+	  return _versionComparator;
 	}
 
 	public void returnIndexReaders(List<ZoieIndexReader<R>> readers)
@@ -334,19 +343,30 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
 	        ZoieIndexReader<R> diskIndexReader = null;
 	        try
 	        {
-	          // a new reader is already loaded in loadFromIndex
-	          diskIndexReader = _diskIndex.openIndexReader();
+            synchronized(_diskIndex)
+            {
+              // a new reader is already loaded in loadFromIndex
+              diskIndexReader = _diskIndex.openIndexReader();
+              if (diskIndexReader != null)
+                diskIndexReader.incZoieRef();
+            }
+
+            Mem<R> oldMem = _mem;
+            Mem<R> mem = new Mem<R>(oldMem.get_memIndexB(), null, oldMem.get_memIndexB(), null, diskIndexReader);
+            if (oldMem.get_memIndexA()!=null){oldMem.get_memIndexA().close();}
+            lockAndSwapMem(diskIndexReader, oldMem.get_diskIndexReader(), mem);
+            log.info("Current writable index is A, B is flushed");
 	        }
 	        catch (IOException e)
 	        {
 	          log.error(e.getMessage(),e);
 	          return;
 	        }
-	        Mem<R> oldMem = _mem;
-	        Mem<R> mem = new Mem<R>(oldMem.get_memIndexB(), null, oldMem.get_memIndexB(), null, diskIndexReader);
-	        if (oldMem.get_memIndexA()!=null){oldMem.get_memIndexA().close();}
-	        lockAndSwapMem(diskIndexReader, oldMem.get_diskIndexReader(), mem);
-	        log.info("Current writable index is A, B is flushed");
+          finally
+          {
+            if (diskIndexReader != null)
+              diskIndexReader.decZoieRef();
+          }
 	      }
 	      _diskIndexerStatus = status;
 	    }

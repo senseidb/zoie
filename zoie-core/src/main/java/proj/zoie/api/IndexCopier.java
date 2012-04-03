@@ -1,6 +1,4 @@
-package proj.zoie.api.indexing;
-
-
+package proj.zoie.api;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,28 +16,7 @@ package proj.zoie.api.indexing;
  * limitations under the License.
  */
 
-public abstract class AbstractZoieIndexable implements ZoieIndexable
+public interface IndexCopier
 {
-	public static final String DOCUMENT_ID_PAYLOAD_FIELD="_ID";
-  public static final String DOCUMENT_STORE_FIELD="_STORE";
-	
-	public abstract IndexingReq[] buildIndexingReqs();
-
-	abstract public long getUID();
-
-	abstract public boolean isDeleted();
-
-	public boolean isSkip(){
-		return false;
-	}
-	
-	@Override
-  public boolean isStorable() {
-    return false;
-  }
-
-  @Override
-  public byte[] getStoreValue(){
-    return null;
-  }
+  boolean copy(String src, String dest);
 }

@@ -4,21 +4,15 @@ import java.io.IOException;
 
 import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
 
 public class ZoieSegmentTermPositions extends ZoieSegmentTermDocs implements TermPositions
 {
 	  final TermPositions _tp;
 	  
-	  public ZoieSegmentTermPositions(TermPositions in, DocIdSetIterator delSetIterator) throws IOException
-	  {
-	    super(in, delSetIterator);
-	    _tp = in;
-	  }
-	  
 	  public ZoieSegmentTermPositions(TermPositions in, DocIdSet delSet) throws IOException
 	  {
-	    this(in,delSet.iterator());
+	    super(in,delSet);
+	    _tp=in;
 	  }
 	  
 	  public int nextPosition() throws IOException

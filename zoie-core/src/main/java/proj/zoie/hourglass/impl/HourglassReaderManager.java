@@ -41,12 +41,12 @@ public class HourglassReaderManager<R extends IndexReader, D>
   private final HourglassListener<R, D> listener;
   public HourglassReaderManager(final Hourglass<R, D> hourglass, HourglassDirectoryManagerFactory dirMgrFactory,
       IndexReaderDecorator<R> decorator,
-      List<ZoieIndexReader<R>> initArchives, HourglassListener<R, D> listener) 
+      List<ZoieIndexReader<R>> initArchives, List<HourglassListener> hourglassListeners) 
   {
     hg = hourglass;
     _dirMgrFactory = dirMgrFactory;
     _decorator = decorator;
-    this.listener = listener;
+    this.listener = new CompositeHourglassListener((List<HourglassListener>)(List)hourglassListeners);
 
     List<ZoieSystem<R, D>> emptyList = Collections.emptyList();
     

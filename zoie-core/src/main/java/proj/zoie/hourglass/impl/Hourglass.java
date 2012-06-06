@@ -3,6 +3,7 @@ package proj.zoie.hourglass.impl;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
@@ -46,15 +47,27 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
   private long _freshness = 1000;
   final HourGlassScheduler _scheduler;
   public volatile long SLA = 4; // getIndexReaders should return in 4ms or a warning is logged
-  public Hourglass(HourglassDirectoryManagerFactory dirMgrFactory, ZoieIndexableInterpreter<D> interpreter, IndexReaderDecorator<R> readerDecorator,ZoieConfig zoieConfig, HourglassListener<R, D> hourglassListener)
+  private final AbstractGCAwareSegmentDisposal gcAwareSegmentDisposal;
+  @SuppressWarnings("rawtypes")
+  public Hourglass(HourglassDirectoryManagerFactory dirMgrFactory, ZoieIndexableInterpreter<D> interpreter, IndexReaderDecorator<R> readerDecorator,ZoieConfig zoieConfig, List<HourglassListener> hourglassListeners, AbstractGCAwareSegmentDisposal gcAwareSegmentDisposal)
   {
     _zConfig = zoieConfig;
     _dirMgrFactory = dirMgrFactory;
+      this.gcAwareSegmentDisposal = gcAwareSegmentDisposal;
+      if (hourglassListeners == null) {
+        hourglassListeners = Collections.EMPTY_LIST;
+      }
+      if (gcAwareSegmentDisposal != null) {
+        List<HourglassListener> listeners = new ArrayList<HourglassListener>();
+        listeners.add(gcAwareSegmentDisposal);
+        listeners.addAll(hourglassListeners);
+        hourglassListeners = listeners;
+      }
     _scheduler = _dirMgrFactory.getScheduler();
     _dirMgrFactory.clearRecentlyChanged();
     _interpreter = interpreter;
     _decorator = readerDecorator;
-    _readerMgr = new HourglassReaderManager<R, D>(this, _dirMgrFactory, _decorator, loadArchives(), hourglassListener);
+    _readerMgr = new HourglassReaderManager<R, D>(this, _dirMgrFactory, _decorator, loadArchives(), hourglassListeners);
     _currentVersion = _dirMgrFactory.getArchivedVersion();
     _currentZoie = _readerMgr.retireAndNew(null);
     _currentZoie.start();
@@ -62,7 +75,10 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
     log.info("start Hourglass at version: " + _currentVersion);
   }
   public Hourglass(HourglassDirectoryManagerFactory dirMgrFactory, ZoieIndexableInterpreter<D> interpreter, IndexReaderDecorator<R> readerDecorator,ZoieConfig zoieConfig) {
-    this(dirMgrFactory, interpreter, readerDecorator, zoieConfig, null);
+    this(dirMgrFactory, interpreter, readerDecorator, zoieConfig, Collections.EMPTY_LIST, null);
+  }
+  public Hourglass(HourglassDirectoryManagerFactory dirMgrFactory, ZoieIndexableInterpreter<D> interpreter, IndexReaderDecorator<R> readerDecorator,ZoieConfig zoieConfig, AbstractGCAwareSegmentDisposal gcAwareSegmentDisposal) {
+    this(dirMgrFactory, interpreter, readerDecorator, zoieConfig, Collections.EMPTY_LIST,  gcAwareSegmentDisposal);
   }
   protected List<ZoieIndexReader<R>> loadArchives()
   {
@@ -131,7 +147,7 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
   {
     long t0 = System.currentTimeMillis();
     try
-    {
+    {      
       _shutdownLock.readLock().lock();
       if (_isShutdown)
       {
@@ -263,19 +279,23 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
   {
     try
     {
-      _shutdownLock.writeLock().lock();
+      _shutdownLock.writeLock().lock();      
       if (_isShutdown)
       {
         log.info("system already shut down");
         return;
       }
       _isShutdown = true;
+      if (gcAwareSegmentDisposal != null) {
+        gcAwareSegmentDisposal.shutdown();
+      }
     } finally
     {
       _shutdownLock.writeLock().unlock();
     }
     clearCachedReaders();
     _readerMgr.shutdown();
+    
     log.info("shut down complete.");
   }
 

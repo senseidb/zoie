@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 
@@ -37,14 +38,18 @@ import org.apache.lucene.search.TopDocs;
 import org.junit.Test;
 
 import proj.zoie.api.DataConsumer.DataEvent;
+import proj.zoie.api.Zoie;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.ZoieMultiReader;
+import proj.zoie.api.ZoieSegmentReader;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.hourglass.api.HourglassIndexable;
 import proj.zoie.hourglass.api.HourglassIndexableInterpreter;
 import proj.zoie.hourglass.impl.HourGlassScheduler;
 import proj.zoie.hourglass.impl.Hourglass;
 import proj.zoie.hourglass.impl.HourglassDirectoryManagerFactory;
+import proj.zoie.hourglass.impl.HourglassListener;
 import proj.zoie.hourglass.mbean.HourglassAdmin;
 import proj.zoie.impl.indexing.MemoryStreamDataProvider;
 import proj.zoie.impl.indexing.ZoieConfig;
@@ -299,6 +304,38 @@ public class HourglassTest extends ZoieTestCaseBase {
     zConfig.setBatchSize(1);
     zConfig.setBatchDelay(10);
     zConfig.setFreshness(10);
+    HourglassListener<IndexReader, String> listener = new HourglassListener<IndexReader, String>() {
+
+      @Override
+      public void onNewZoie(Zoie<IndexReader, String> zoie) {
+        // TODO Auto-generated method stub
+        
+      }
+
+      @Override
+      public void onRetiredZoie(Zoie<IndexReader, String> zoie) {
+        // TODO Auto-generated method stub
+        
+      }
+
+      @Override
+      public void onIndexReaderCleanUp(ZoieIndexReader<IndexReader> indexReader) {
+        if (indexReader instanceof ZoieMultiReader) {
+          ZoieSegmentReader[] segments = (ZoieSegmentReader[]) ((ZoieMultiReader) indexReader).getSequentialSubReaders();
+          for (ZoieSegmentReader segmentReader : segments) {
+            handleSegment(segmentReader);
+          }
+        } else if (indexReader instanceof ZoieSegmentReader) {
+          handleSegment((ZoieSegmentReader) indexReader);
+        } else {
+          throw new UnsupportedOperationException("Only segment and multisegment readers can be handled");
+        }
+        
+      }
+      private void handleSegment(ZoieSegmentReader segmentReader) {    
+        System.out.println("!!!Deleted UID array" + Arrays.toString(segmentReader.getUIDArray()));
+      }
+    };
     Hourglass<IndexReader, String> hourglass = new Hourglass<IndexReader, String>(factory,
         new HourglassTestInterpreter(), new IndexReaderDecorator<IndexReader>() {
 
@@ -391,7 +428,7 @@ public class HourglassTest extends ZoieTestCaseBase {
 
 
     int numDirs = idxDir.listFiles().length;
-    //System.out.println("!!!" + numDirs);
+   
     try {
       mbeanServer.unregisterMBean(new ObjectName("HouseGlass:name=hourglass"));
     } catch (Exception e) {

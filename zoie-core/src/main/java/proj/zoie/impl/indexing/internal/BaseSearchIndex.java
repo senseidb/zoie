@@ -132,7 +132,7 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
 	    return _delDocs;
 	  }
 	  
-	  public void clearDeletes()
+	  public synchronized void clearDeletes()
 	  {
 	    _delDocs = new LongOpenHashSet();
 	  }
@@ -148,8 +148,8 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
           if(reader == null)
             return;
           reader.incZoieRef();
+          reader.markDeletes(delDocs, _delDocs);
         }
-        reader.markDeletes(delDocs, _delDocs);
         reader.decZoieRef();
 	    }
 	  }

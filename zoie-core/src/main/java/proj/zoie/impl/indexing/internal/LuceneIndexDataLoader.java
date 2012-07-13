@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Similarity;
@@ -250,7 +249,8 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
         BaseSearchIndex<R> idx = getSearchIndex();
         //hao: merge the realyOnly ram idx with the disk idx
         idx.loadFromIndex(ramIndex);
-        idx.clearDeletes(); // clear old deletes as deletes are written to the lucene index
+//      duplicate clearDeletes, delDoc may change for realtime delete after loadFromIndex()
+//        idx.clearDeletes(); // clear old deletes as deletes are written to the lucene index
         // hao: update the disk idx reader
         idx.refresh(); // load the index reader
         purgeDocuments();

@@ -101,7 +101,9 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D> extends BatchedIn
       synchronized (this) // this blocks the batch disk loader thread while indexing to RAM
       {
         int size = indexableList.size();
-        _ramConsumer.consume(indexableList);// consumer clear the list!
+        synchronized (_idxMgr) {
+          _ramConsumer.consume(indexableList);// consumer clear the list!
+        }
         _currentBatchSize += size;
         _eventCount += size;
         
@@ -136,36 +138,38 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D> extends BatchedIn
   }
   
   @Override
-  protected synchronized void processBatch()
+  protected void processBatch()
   {
     RAMSearchIndex<R> readOnlyMemIndex = null;
-    long now = System.currentTimeMillis();
-    long duration = now - _lastFlushTime;
     int eventCount = 0;
-    while(_currentBatchSize < _batchSize && !_stop && !_flush && duration < _delay)
-    {
-      try
-      {
-        wait(_delay - duration);
+    synchronized (this) {
+      long now = System.currentTimeMillis();
+      long duration = now - _lastFlushTime;
+      while(_currentBatchSize < _batchSize && !_stop && !_flush && duration < _delay) {
+        try
+        {
+          wait(_delay - duration);
+        }
+        catch (InterruptedException e)
+        {
+          log.warn(e.getMessage());
+        }
+        now = System.currentTimeMillis();
+        duration = now - _lastFlushTime;
       }
-      catch (InterruptedException e)
-      {
-        log.warn(e.getMessage());
-      }
-      now = System.currentTimeMillis();
-      duration = now - _lastFlushTime;
-    }
-    _flush = false;
-    _lastFlushTime = now;
+      _flush = false;
+      _lastFlushTime = now;
 
-    if (_currentBatchSize > 0)
-    {
-      // change the status and get the read only memory index
-      // this has to be done in the block synchronized on CopyingBatchIndexDataLoader
-      _idxMgr.setDiskIndexerStatus(SearchIndexManager.Status.Working);
-      readOnlyMemIndex = _idxMgr.getCurrentReadOnlyMemoryIndex();
-      eventCount = _currentBatchSize;
-      _currentBatchSize = 0;
+      if (_currentBatchSize > 0)
+      {
+        // change the status and get the read only memory index
+        // this has to be done in the block synchronized on CopyingBatchIndexDataLoader
+        _idxMgr.setDiskIndexerStatus(SearchIndexManager.Status.Working);
+        readOnlyMemIndex = _idxMgr.getCurrentReadOnlyMemoryIndex();
+        eventCount = _currentBatchSize;
+        _currentBatchSize = 0;
+      }
+      notifyAll();
     }
 
     if (eventCount > 0)
@@ -184,27 +188,29 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D> extends BatchedIn
       }
       finally
       {
-        long t2=System.currentTimeMillis();
-        _eventCount -= eventCount;
-        int segmentCount = -1;
-        String segmentInfo="";
-        try
-        {
-          segmentCount = _idxMgr.getDiskSegmentCount();
-          segmentInfo = _idxMgr.getDiskSegmentInfo();
-          
-          IndexUpdatedEvent evt = new IndexUpdatedEvent(eventCount,t1,t2,_eventCount);
-          fireIndexingEvent(evt);
-          fireNewVersionEvent(readOnlyMemIndex.getVersion());
-        } catch (IOException e)
-        {
-          log.error("error getting disk information after disk flush", e);
+        synchronized (this) {  
+          long t2=System.currentTimeMillis();
+          _eventCount -= eventCount;
+          int segmentCount = -1;
+          String segmentInfo="";
+          try
+          {
+            segmentCount = _idxMgr.getDiskSegmentCount();
+            segmentInfo = _idxMgr.getDiskSegmentInfo();
+            
+            IndexUpdatedEvent evt = new IndexUpdatedEvent(eventCount,t1,t2,_eventCount);
+            fireIndexingEvent(evt);
+            fireNewVersionEvent(readOnlyMemIndex.getVersion());
+          } catch (IOException e)
+          {
+            log.error("error getting disk information after disk flush", e);
+          }
+          if (log.isInfoEnabled()){
+            log.info("flushed batch of "+eventCount+" events to disk indexer, took: "+(t2-t1)+" current event count: "+_eventCount + ", current disk segment count: " + segmentCount);
+            log.info("post-flush segment info: " + segmentInfo);
+          }
+          notifyAll();
         }
-        if (log.isInfoEnabled()){
-          log.info("flushed batch of "+eventCount+" events to disk indexer, took: "+(t2-t1)+" current event count: "+_eventCount + ", current disk segment count: " + segmentCount);
-          log.info("post-flush segment info: " + segmentInfo);
-        }
-        notifyAll();
       }
     }
     else

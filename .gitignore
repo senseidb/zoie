@@ -13,3 +13,5 @@ MANIFEST.MF
 *~
 TAGS
 cscope.*
+/bin
+/.project

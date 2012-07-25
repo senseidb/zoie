@@ -86,9 +86,10 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D> extends BatchedIn
           DataEvent<D> event = iter.next();
           ZoieIndexable indexable =
                 ((ZoieIndexableInterpreter<D>) _interpreter).convertAndInterpret(event.getData());
-          
-          DataEvent<ZoieIndexable> newEvent =
-              new DataEvent<ZoieIndexable>(indexable,event.getVersion());
+
+          DataEvent<ZoieIndexable> newEvent = new DataEvent<ZoieIndexable>(indexable,
+                                                                           event.getVersion(),
+                                                                           event.isDelete());
           indexableList.add(newEvent);
         }
         catch (Exception e)

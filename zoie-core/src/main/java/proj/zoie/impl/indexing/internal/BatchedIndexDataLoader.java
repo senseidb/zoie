@@ -185,9 +185,9 @@ public class BatchedIndexDataLoader<R extends IndexReader,D> implements LifeCycl
 	        {
 	          DataEvent<D> event = iter.next();
 	          ZoieIndexable indexable = ((ZoieIndexableInterpreter<D>) _interpreter).convertAndInterpret(event.getData());
-	          
-	          DataEvent<ZoieIndexable> newEvent =
-	              new DataEvent<ZoieIndexable>(indexable, event.getVersion());
+	          DataEvent<ZoieIndexable> newEvent = new DataEvent<ZoieIndexable>(indexable,
+                                                                             event.getVersion(),
+                                                                             event.isDelete());
 	          indexableList.add(newEvent);
 	        }
 	        catch (Exception e)

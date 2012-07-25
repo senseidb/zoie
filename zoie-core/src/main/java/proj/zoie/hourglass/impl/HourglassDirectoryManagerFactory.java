@@ -71,6 +71,12 @@ public class HourglassDirectoryManagerFactory
   {
     return _currentDirMgr;
   }
+  
+  public DIRECTORY_MODE getMode()
+  {
+    return _mode;
+  }
+
   private FSDirectory getFSDirectoryFromFile(File f) throws IOException
   {
     FSDirectory dir = null;
@@ -136,18 +142,14 @@ public class HourglassDirectoryManagerFactory
     return FileUtil.sizeFile(_root);
   }
 
-  /**
-   * @return a list that contains all the archived index directories excluding the one
-   * currently accepting updates.
-   */
-  public List<Directory> getAllArchivedDirectories()
+  public List<File> getAllArchivedDirs()
   {
     @SuppressWarnings("unchecked")
-    List<Directory> emptyList = Collections.EMPTY_LIST;
+    List<File> emptyList = Collections.EMPTY_LIST;
     if (!_root.exists()) return emptyList;
     File[] files = _root.listFiles();
     Arrays.sort(files);
-    ArrayList<Directory> list = new ArrayList<Directory>();
+    ArrayList<File> list = new ArrayList<File>();
     Calendar now = Calendar.getInstance();
     long timenow = System.currentTimeMillis();
     now.setTimeInMillis(timenow);
@@ -181,19 +183,40 @@ public class HourglassDirectoryManagerFactory
 
         if (!file.equals(_location))
         { // don't add the current one
-          try
-          {
-            list.add(getFSDirectoryFromFile(file));
-          }
-          catch (IOException e)
-          {
-            log.error("potential index corruption", e);
-          }
+          list.add(file);
         }
 
         if (time.before(threshold))
         {
           foundOldestToKeep = true;
+        }
+      }
+    }
+    if (list.size()==0) return emptyList;
+    return list;
+  }
+
+  /**
+   * @return a list that contains all the archived index directories excluding the one
+   * currently accepting updates.
+   */
+  public List<Directory> getAllArchivedDirectories()
+  {
+    @SuppressWarnings("unchecked")
+    List<Directory> emptyList = Collections.EMPTY_LIST;
+    ArrayList<Directory> list = new ArrayList<Directory>();
+    List<File> dirs = getAllArchivedDirs();
+    if (dirs != null)
+    {
+      for (File dir : dirs)
+      {
+        try
+        {
+          list.add(getFSDirectoryFromFile(dir));
+        }
+        catch (IOException e)
+        {
+          log.error("potential index corruption: " + dir, e);
         }
       }
     }

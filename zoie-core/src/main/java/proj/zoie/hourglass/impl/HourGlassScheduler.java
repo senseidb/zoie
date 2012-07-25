@@ -14,6 +14,7 @@ public class HourGlassScheduler
   private final FREQUENCY _freq;
   private int[] _params = new int[6];
   private int _trimThreshold = Integer.MAX_VALUE;
+  private boolean _appendOnly = true;
   private static ThreadLocal<SimpleDateFormat> dateFormatter = new ThreadLocal<SimpleDateFormat>()
   {
     @Override
@@ -77,6 +78,17 @@ public class HourGlassScheduler
     _trimThreshold = trimThreshold;
     log.info("schedule: " + Arrays.toString(_params) + " frequenty: " + _freq + " trimThreshold: keep last " + _trimThreshold + " rolling periods");
   }
+  public HourGlassScheduler(FREQUENCY freq, String schedule, boolean appendOnly)
+  {
+    this(freq, schedule);
+    _appendOnly = appendOnly;
+  }
+  public HourGlassScheduler(FREQUENCY freq, String schedule, boolean appendOnly, int trimThreshold)
+  {
+    this(freq, schedule, appendOnly);
+    _trimThreshold = trimThreshold;
+    log.info("schedule: " + Arrays.toString(_params) + " frequenty: " + _freq + " trimThreshold: keep last " + _trimThreshold + " rolling periods");
+  }
   private int parseParam(String param)
   {
     if (param.indexOf('*')>=0) return 0;
@@ -97,6 +109,10 @@ public class HourGlassScheduler
   public int getTrimThreshold()
   {
     return _trimThreshold;
+  }
+  public boolean isAppendOnly()
+  {
+    return _appendOnly;
   }
   protected Calendar getNextRoll()
   {

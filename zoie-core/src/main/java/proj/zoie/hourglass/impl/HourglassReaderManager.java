@@ -39,18 +39,23 @@ public class HourglassReaderManager<R extends IndexReader, D>
   private final Thread maintenanceThread;
   private final ExecutorService retireThreadPool = Executors.newCachedThreadPool();
   private final HourglassListener<R, D> listener;
-  public HourglassReaderManager(final Hourglass<R, D> hourglass, HourglassDirectoryManagerFactory dirMgrFactory,
-      IndexReaderDecorator<R> decorator,
-      List<ZoieIndexReader<R>> initArchives, List<HourglassListener> hourglassListeners) 
+  private final boolean _appendOnly;
+  public HourglassReaderManager(final Hourglass<R, D> hourglass,
+                                HourglassDirectoryManagerFactory dirMgrFactory,
+                                IndexReaderDecorator<R> decorator,
+                                List<ZoieIndexReader<R>> initArchives,
+                                List<ZoieSystem<R, D>> initArchiveZoies,
+                                List<HourglassListener> hourglassListeners)
   {
     hg = hourglass;
     _dirMgrFactory = dirMgrFactory;
+    _appendOnly = _dirMgrFactory.getScheduler().isAppendOnly();
     _decorator = decorator;
     this.listener = new CompositeHourglassListener((List<HourglassListener>)(List)hourglassListeners);
 
     List<ZoieSystem<R, D>> emptyList = Collections.emptyList();
     
-    box = new Box<R, D>(initArchives, emptyList, emptyList, _decorator);
+    box = new Box<R, D>(initArchives, initArchiveZoies, emptyList, emptyList, _decorator);
     
     maintenanceThread = new Thread(new Runnable(){
       final int trimThreshold = hourglass._scheduler.getTrimThreshold();
@@ -71,6 +76,8 @@ public class HourglassReaderManager<R extends IndexReader, D>
           }
           List<ZoieIndexReader<R>> archives = new LinkedList<ZoieIndexReader<R>>(box._archives);
           List<ZoieIndexReader<R>> add = new LinkedList<ZoieIndexReader<R>>();
+          List<ZoieSystem<R, D>> archiveZoies = new LinkedList<ZoieSystem<R, D>>(box._archiveZoies);
+          List<ZoieSystem<R, D>> addZoies = new LinkedList<ZoieSystem<R, D>>();
           try
           {
             hourglass._shutdownLock.readLock().lock();
@@ -79,14 +86,26 @@ public class HourglassReaderManager<R extends IndexReader, D>
               log.info("Already shut down. Quiting maintenance thread.");
               break;
             }
-            if (archives.size() > trimThreshold)
-            { 
-              log.info("to maintain");
-            } else continue;
-//            consolidate(archives, add);
-            trim(archives);
-            // swap the archive with consolidated one
-            swapArchives(archives, add);
+            if (_appendOnly)
+            {
+              if (archives.size() > trimThreshold)
+              { 
+                log.info("to maintain");
+              } else continue;
+              trim(archives);
+              // swap the archive with consolidated one
+              swapArchives(archives, add);
+            }
+            else
+            {
+              if (archiveZoies.size() > trimThreshold)
+              { 
+                log.info("to maintain");
+              } else continue;
+              trimZoie(archiveZoies);
+              // swap the archive with consolidated one
+              swapArchiveZoies(archiveZoies, addZoies);
+            }
           } finally
           {
             hourglass._shutdownLock.readLock().unlock();
@@ -95,6 +114,96 @@ public class HourglassReaderManager<R extends IndexReader, D>
       }},"HourglassReaderManager Zoie Maintenanace Thread");
     maintenanceThread.start();
   }
+
+  /**
+   * consolidate the archived Index to one big optimized index and put in add
+   * @param toRemove
+   * @param add
+   */
+  private void trimZoie(List<ZoieSystem<R, D>> toRemove)
+  {
+    long timenow = System.currentTimeMillis();
+    List<ZoieSystem<R, D>> toKeep = new LinkedList<ZoieSystem<R, D>>();
+    Calendar now = Calendar.getInstance();
+    now.setTimeInMillis(timenow);
+    Calendar threshold = hg._scheduler.getTrimTime(now);
+
+    List<ZoieSystem<R, D>> zoieList = new ArrayList<ZoieSystem<R, D>>(toRemove);
+    Collections.sort(zoieList, new Comparator<ZoieSystem<R, D>>()
+                {
+                  @Override
+                  public int compare(ZoieSystem<R, D> r1, ZoieSystem<R, D> r2)
+                  {
+                    String name1 = r1.getIndexDir();
+                    String name2 = r2.getIndexDir();
+                    return name2.compareTo(name1);
+                  }
+                });
+
+    boolean foundOldestToKeep = false;
+
+    for (ZoieSystem<R, D> zoie: zoieList)
+    {
+      File dir = new File(zoie.getIndexDir());
+      String path = dir.getName();
+
+      if (foundOldestToKeep)
+      {
+        if (listener != null) {
+          List<ZoieIndexReader<R>> readers = null;
+          try
+          {
+            readers = zoie.getIndexReaders();
+            if (readers != null)
+            {
+              for (ZoieIndexReader reader : readers)
+                listener.onIndexReaderCleanUp(reader);
+            }
+          }
+          catch(Exception e)
+          {
+            log.error("Error happend on reader cleanup", e);
+          }
+          finally
+          {
+            if (readers != null)
+              zoie.returnIndexReaders(readers);
+          }
+        }
+        zoie.shutdown();
+        log.info("trimming: remove " + path);
+        log.info(path + " -before-- delete");
+        FileUtil.rmDir(dir);
+        log.info(path + " -after-- delete");
+        continue;
+      }
+      else
+      {
+        // Always keep this zoie (when the oldest one to keep has not
+        // been found), no matter the index directory name can be parsed
+        // or not.
+        toKeep.add(zoie);
+
+        Calendar archivetime = null;
+        try
+        {
+          archivetime = HourglassDirectoryManagerFactory.getCalendarTime(path);
+        }
+        catch (ParseException e)
+        {
+          log.error("index directory name bad. potential corruption. Move on without trimming.", e);
+          continue;
+        }
+
+        if (archivetime.before(threshold))
+        {
+          foundOldestToKeep = true;
+        }
+      }
+    }
+    toRemove.removeAll(toKeep);
+  }
+
   /**
    * consolidate the archived Index to one big optimized index and put in add
    * @param toRemove
@@ -167,6 +276,24 @@ public class HourglassReaderManager<R extends IndexReader, D>
   }
  
   /**
+   * Remove and add should be <b>disjoint</b>
+   * @param remove the zoies to be remove. This has to be disjoint from add.
+   * @param add
+   */
+  public synchronized void swapArchiveZoies(List<ZoieSystem<R, D>> remove, List<ZoieSystem<R, D>> add)
+  {
+    List<ZoieSystem<R, D>> archives = new LinkedList<ZoieSystem<R, D>>(add);
+    if (!box._archiveZoies.containsAll(remove))
+    {
+      log.error("swapArchiveZoies: potential sync issue. ");
+    }
+    archives.addAll(box._archiveZoies);
+    archives.removeAll(remove);
+    Box<R, D> newbox = new Box<R, D>(box._archives, archives, box._retiree, box._actives, _decorator);
+    box = newbox;
+  }
+
+  /**
    * The readers removed will also be decRef(). But the readers to be added will NOT get incRef(),
    * which means we assume the newly added ones have already been incRef().
    * remove and add should be <b>disjoint</b>
@@ -190,9 +317,10 @@ public class HourglassReaderManager<R extends IndexReader, D>
         log.debug("remove time " + r.directory() + " refCount: " + r.getRefCount());
       }
     }
-    Box<R, D> newbox = new Box<R, D>(archives, box._retiree, box._actives, _decorator);
+    Box<R, D> newbox = new Box<R, D>(archives, box._archiveZoies, box._retiree, box._actives, _decorator);
     box = newbox;
   }
+
   public synchronized ZoieSystem<R, D> retireAndNew(final ZoieSystem<R, D> old)
   {
     DirectoryManager _dirMgr = _dirMgrFactory.getDirectoryManager();
@@ -216,7 +344,7 @@ public class HourglassReaderManager<R extends IndexReader, D>
         }});
     }
     actives.add(newzoie);
-    Box<R, D> newbox = new Box<R, D>(box._archives, retiring, actives, _decorator);
+    Box<R, D> newbox = new Box<R, D>(box._archives, box._archiveZoies, retiring, actives, _decorator);
     box = newbox;
     if (listener != null) {
       listener.onNewZoie(newzoie);
@@ -229,15 +357,20 @@ public class HourglassReaderManager<R extends IndexReader, D>
    */
   public synchronized void archive(ZoieSystem<R, D> zoie, ZoieMultiReader<R> reader)
   {
-    List<ZoieIndexReader<R>> _archives = new LinkedList<ZoieIndexReader<R>>(box._archives);
+    List<ZoieIndexReader<R>> archives = new LinkedList<ZoieIndexReader<R>>(box._archives);
+    List<ZoieSystem<R, D>> archiveZoies = new LinkedList<ZoieSystem<R, D>>(box._archiveZoies);
     List<ZoieSystem<R, D>> actives = new LinkedList<ZoieSystem<R, D>>(box._actives);
     List<ZoieSystem<R, D>> retiring = new LinkedList<ZoieSystem<R, D>>(box._retiree);
+
     retiring.remove(zoie);
+    if (_appendOnly)
+      archiveZoies.add(zoie);
+
     if (reader != null)
     {
-      _archives.add(reader);
+      archives.add(reader);
     }
-    Box<R, D> newbox = new Box<R, D>(_archives, retiring, actives, _decorator);
+    Box<R, D> newbox = new Box<R, D>(archives, archiveZoies, retiring, actives, _decorator);
     box = newbox;
   }
   private synchronized void preshutdown()
@@ -277,14 +410,28 @@ public class HourglassReaderManager<R extends IndexReader, D>
   public synchronized List<ZoieIndexReader<R>> getIndexReaders() throws IOException
   {
     List<ZoieIndexReader<R>> list = new ArrayList<ZoieIndexReader<R>>();
-    // add the archived index readers
-    for(ZoieIndexReader<R> r : box._archives)
+    if (_appendOnly)
     {
-     if (log.isDebugEnabled()){
-    	log.debug("add reader from box archives");
+      // add the archived index readers.
+      for(ZoieIndexReader<R> r : box._archives)
+      {
+       if (log.isDebugEnabled()){
+        log.debug("add reader from box archives");
+        }
+        r.incZoieRef();
+        list.add(r);
       }
-      r.incZoieRef();
-      list.add(r);
+    }
+    else
+    {
+      // add the archived readers from zoie.
+      for(ZoieSystem<R, D> zoie : box._archiveZoies)
+      {
+        if (log.isDebugEnabled()){
+          log.debug("add reader from box archiveZoies");
+        }
+        list.addAll(zoie.getIndexReaders());
+      }
     }
     // add the retiring index readers
     for(ZoieSystem<R, D> zoie : box._retiree)
@@ -338,34 +485,44 @@ public class HourglassReaderManager<R extends IndexReader, D>
         }
       }
     }
-    IndexReader reader = null;
-    try
-    {
-      reader = getArchive(zoie);
-    } catch (CorruptIndexException e)
-    {
-      log.error("retiring " + zoie.getAdminMBean().getIndexDir() + " Should investigate. But move on now.", e);
-    } catch (IOException e)
-    {
-      log.error("retiring " + zoie.getAdminMBean().getIndexDir() + " Should investigate. But move on now.", e);
-    }
     ZoieMultiReader<R> zoiereader = null;
-    try
-    {
-      zoiereader = new ZoieMultiReader<R>(reader, _decorator);
 
-      // Initialize docIdMapper
-      DocIDMapper<?> mapper = hg.getzConfig().getDocidMapperFactory().getDocIDMapper(zoiereader);
-      zoiereader.setDocIDMapper(mapper);
-    } catch (IOException e)
+    if (_appendOnly)
     {
-      log.error(e);
+      IndexReader reader = null;
+      try
+      {
+        reader = getArchive(zoie);
+      } catch (CorruptIndexException e)
+      {
+        log.error("retiring " + zoie.getAdminMBean().getIndexDir() + " Should investigate. But move on now.", e);
+      } catch (IOException e)
+      {
+        log.error("retiring " + zoie.getAdminMBean().getIndexDir() + " Should investigate. But move on now.", e);
+      }
+      try
+      {
+        zoiereader = new ZoieMultiReader<R>(reader, _decorator);
+
+        // Initialize docIdMapper
+        DocIDMapper<?> mapper = hg.getzConfig().getDocidMapperFactory().getDocIDMapper(zoiereader);
+        zoiereader.setDocIDMapper(mapper);
+      } catch (IOException e)
+      {
+        log.error(e);
+      }
     }
     archive(zoie, zoiereader);
     log.info("retired " + zoie.getAdminMBean().getIndexDir() + " in " + (System.currentTimeMillis()-t0)+"ms");
     log.info("Disk Index Size Total Now: " + (hg.getSizeBytes()/1024L) + "KB");
-    zoie.shutdown();
+    if (_appendOnly) zoie.shutdown();
   }
+
+  public List<ZoieSystem<R, D>> getArchiveZoies()
+  {
+    return box._archiveZoies;
+  }
+
   private IndexReader getArchive(ZoieSystem<R, D> zoie) throws CorruptIndexException, IOException
   {
     String dirName = zoie.getAdminMBean().getIndexDir();

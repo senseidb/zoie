@@ -30,6 +30,8 @@ public interface DataConsumer<D> {
 	{
 		private D _data;
 		private String _version;
+    // This will override ZoieIndexable.isDeleted()
+		private boolean _delete = false;
 				
 		/**
 		 * Create a data event instance
@@ -42,6 +44,19 @@ public interface DataConsumer<D> {
 			_version=version;
 		}
 		
+		/**
+		 * Create a data event instance
+		 * @param data Data for the event
+		 * @param version ZoieVersion of the event
+		 * @param del Is this event a delete event
+		 */
+		public DataEvent(D data, String version, boolean del)
+		{
+			_data=data;
+			_version=version;
+      _delete = del;
+		}
+
 		/**
 		 * Gets the version.
 		 * @return ZoieVersion of the vent
@@ -58,6 +73,15 @@ public interface DataConsumer<D> {
 		public D getData()
 		{
 			return _data;
+		}
+
+		/**
+		 * Gets the delete flag.
+		 * @return Is this a delete event
+		 */
+		public boolean isDelete()
+		{
+			return _delete;
 		}
 	}
 	

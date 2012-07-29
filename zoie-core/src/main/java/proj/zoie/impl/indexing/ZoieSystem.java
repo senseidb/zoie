@@ -754,6 +754,11 @@ public boolean alreadyShutdown()
     }
   }
 
+  public String getIndexDir()
+  {
+    return _dirMgr.getPath();
+  }
+
   public int getCurrentMemBatchSize()
   {
     return getCurrentBatchSize();
@@ -878,7 +883,7 @@ public boolean alreadyShutdown()
 
     public String getIndexDir()
     {
-      return ZoieSystem.this._dirMgr.getPath();
+      return ZoieSystem.this.getIndexDir();
     }
 
     public Date getLastOptimizationTime()

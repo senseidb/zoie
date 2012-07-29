@@ -168,7 +168,7 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements Da
     		    long uid = indexable.getUID();
     		    delSet.add(uid);
     		    addList.remove(uid);
-				if (!indexable.isDeleted()) // update event
+				if (!(indexable.isDeleted() || evt.isDelete())) // update event
 				{
 					try {
   				  IndexingReq[] reqs = indexable.buildIndexingReqs();

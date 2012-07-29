@@ -149,7 +149,7 @@ public class ZoieSystemHome {
 			else{
 				throw new IllegalArgumentException("Unsupported frequency: "+freqString);
 			}
-			HourGlassScheduler scheduler = new HourGlassScheduler(freq,schedule,trimThreshold);
+			HourGlassScheduler scheduler = new HourGlassScheduler(freq,schedule,true,trimThreshold);
 			HourglassDirectoryManagerFactory dirMgrFactory = new HourglassDirectoryManagerFactory(idxFile,scheduler,dirMode);
 			Hourglass<IndexReader,DocumentWithID> zoieSystem = new Hourglass<IndexReader, DocumentWithID>(dirMgrFactory, new ZoieSolrIndexableInterpreter(),new DefaultIndexReaderDecorator(), zoieConfig);
 			

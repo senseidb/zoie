@@ -35,9 +35,11 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.FSDirectory;
 import org.junit.Test;
 
 import proj.zoie.api.DataConsumer.DataEvent;
+import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.Zoie;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
@@ -103,9 +105,11 @@ public class HourglassTest extends ZoieTestCaseBase {
 		}
 		String schedule = "07 15 20";
 		long numTestContent = 10250;
-		oneTest(idxDir, schedule, numTestContent); // test starting from empty
-													// index
-		oneTest(idxDir, schedule, numTestContent); // test index pick up
+		oneTest(idxDir, schedule, numTestContent, true); // test starting from empty index
+		oneTest(idxDir, schedule, numTestContent, true); // test index pick up
+		oneTest(idxDir, schedule, numTestContent, false); // test index pick up
+
+		modifyTest(idxDir, schedule); // test deletes and updates
 		return;
 	}
   /*@Test
@@ -161,11 +165,146 @@ public class HourglassTest extends ZoieTestCaseBase {
 		return;
 	}
 
-	private void oneTest(File idxDir, String schedule, long numTestContent)
+  private void modifyTest(File idxDir, String schedule)
+    throws IOException, InterruptedException
+  {
+    HourglassDirectoryManagerFactory factory = new HourglassDirectoryManagerFactory(
+        idxDir, new HourGlassScheduler(
+            HourGlassScheduler.FREQUENCY.MINUTELY, schedule, false, 100));
+    ZoieConfig zConfig = new ZoieConfig();
+    zConfig.setBatchSize(100000);
+    zConfig.setMaxBatchSize(100000);
+    zConfig.setBatchDelay(30000);
+    zConfig.setFreshness(100);
+    zConfig.setRtIndexing(true);
+    Hourglass<IndexReader, String> hourglass = new Hourglass<IndexReader, String>(
+        factory, new HourglassTestInterpreter(),
+        new IndexReaderDecorator<IndexReader>() {
+
+          @Override
+          public IndexReader decorate(
+              ZoieIndexReader<IndexReader> indexReader)
+              throws IOException {
+            return indexReader;
+          }
+
+          @Override
+          public IndexReader redecorate(IndexReader decorated,
+              ZoieIndexReader<IndexReader> copy,
+              boolean withDeletes) throws IOException {
+            // TODO Auto-generated method stub
+            return decorated;
+          }
+
+          @Override
+          public void setDeleteSet(IndexReader reader, DocIdSet docIds) {
+            // do nothing
+          }
+        }, zConfig);
+    HourglassAdmin mbean = new HourglassAdmin(hourglass);
+    // HourglassAdminMBean mbean = admin.getMBean();
+    MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+    try {
+      mbeanServer.registerMBean(mbean, new ObjectName(
+          "HouseGlass:name=hourglass"));
+    } catch (Exception e) {
+      System.out.println(e);
+    }
+    MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
+    memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
+    memoryProvider.setBatchSize(800);
+    memoryProvider.setDataConsumer(hourglass);
+    memoryProvider.start();
+
+    Thread.sleep(200); // wait freshness time for zoie readers.
+
+    int initNumDocs = getTotalNumDocs(hourglass);
+    System.out.println("initial number of DOCs: " + initNumDocs);
+    assertTrue("initNumDocs should > 2", initNumDocs > 2);
+
+    List<ZoieIndexReader<IndexReader>> readers = hourglass.getIndexReaders();
+    try
+    {
+      assertTrue("before delete, 0 should be found", findUID(readers, 0));
+      assertTrue("before update, 1 should be found", findUID(readers, 1));
+    }
+    finally
+    {
+      hourglass.returnIndexReaders(readers);
+    }
+
+    List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(3);
+    // Delete uid 0
+    list.add(new DataEvent<String>("D" + 0, "" + initNumDocs));
+    // Update uid 1
+    list.add(new DataEvent<String>("U" + 1, "" + (initNumDocs + 1)));
+    // The last one
+    int lastUID = 100000;
+    list.add(new DataEvent<String>("U" + lastUID, "" + (initNumDocs + 2)));
+    memoryProvider.addEvents(list);
+    memoryProvider.flush();
+
+    while(true)
+    {
+      readers = hourglass.getIndexReaders();
+      try
+      {
+        if(findUID(readers, lastUID))
+          break;
+      }
+      finally
+      {
+        hourglass.returnIndexReaders(readers);
+      }
+      Thread.sleep(100);
+    }
+
+    readers = hourglass.getIndexReaders();
+    try
+    {
+      assertTrue("0 is deleted, should not be found", !findUID(readers, 0));
+      assertTrue("1 is updated, should be found", findUID(readers, 1));
+    }
+    finally
+    {
+      hourglass.returnIndexReaders(readers);
+    }
+
+    try {
+      mbeanServer.unregisterMBean(new ObjectName(
+          "HouseGlass:name=hourglass"));
+    } catch (Exception e) {
+      e.printStackTrace();
+      log.error(e);
+    }
+    memoryProvider.stop();
+    hourglass.shutdown();
+  }
+
+  private boolean findUID(List<ZoieIndexReader<IndexReader>> readers, long uid)
+  {
+    boolean found = false;
+    for(ZoieIndexReader reader : readers)
+    {
+      int doc = reader.getDocIDMaper().getDocID(uid);
+      if (doc != DocIDMapper.NOT_FOUND && !reader.isDeleted(doc))
+      {
+        found = true;
+        if (reader.directory() instanceof FSDirectory)
+          System.out.println("Found uid: " + uid + " at: " + ((FSDirectory)reader.directory()).getDirectory());
+        else
+          System.out.println("Found uid: " + uid + " at RAMIndexFactory");
+        break;
+      }
+    }
+    return found;
+  }
+
+	private void oneTest(File idxDir, String schedule, long numTestContent, boolean appendOnly)
 			throws IOException, InterruptedException {
 		HourglassDirectoryManagerFactory factory = new HourglassDirectoryManagerFactory(
 				idxDir, new HourGlassScheduler(
-						HourGlassScheduler.FREQUENCY.MINUTELY, schedule, 100));
+						HourGlassScheduler.FREQUENCY.MINUTELY, schedule, appendOnly, 100));
 		ZoieConfig zConfig = new ZoieConfig();
 		zConfig.setBatchSize(100000);
 		zConfig.setMaxBatchSize(100000);
@@ -210,6 +349,8 @@ public class HourglassTest extends ZoieTestCaseBase {
 		memoryProvider.setBatchSize(800);
 		memoryProvider.setDataConsumer(hourglass);
 		memoryProvider.start();
+
+    Thread.sleep(200); // wait freshness time for zoie readers.
 
 		int initNumDocs = getTotalNumDocs(hourglass);
 		System.out.println("initial number of DOCs: " + initNumDocs);
@@ -281,7 +422,7 @@ public class HourglassTest extends ZoieTestCaseBase {
   }
   private void doTrimmingTest(File idxDir, String schedule,  int trimThreshold) throws Exception  {
     HourglassDirectoryManagerFactory factory = new HourglassDirectoryManagerFactory(idxDir, new HourGlassScheduler(
-        HourGlassScheduler.FREQUENCY.MINUTELY, schedule, trimThreshold) {
+        HourGlassScheduler.FREQUENCY.MINUTELY, schedule, true, trimThreshold) {
       volatile Long nextTime;
       @Override
       protected Calendar getNextRoll() {
@@ -373,6 +514,9 @@ public class HourglassTest extends ZoieTestCaseBase {
     memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
     memoryProvider.setDataConsumer(hourglass);
     memoryProvider.start();
+
+    Thread.sleep(200); // wait freshness time for zoie readers.
+
     int initNumDocs = getTotalNumDocs(hourglass);
     System.out.println("initial number of DOCs: " + initNumDocs);
     boolean wait = false;
@@ -470,12 +614,15 @@ public class HourglassTest extends ZoieTestCaseBase {
 
 	public static class TestHourglassIndexable extends
 			HourglassIndexable {
-		protected static long nextUID = System.currentTimeMillis();
+		protected static long nextUID = 0;
 		public final long UID;
 		final String _str;
 
 		public TestHourglassIndexable(String str) {
-			UID = getNextUID();
+      if (str.charAt(0) < '0' || str.charAt(0) > '9')
+        UID = Long.parseLong(str.substring(1));
+      else
+        UID = getNextUID();
 			_str = str;
 		}
 
@@ -507,6 +654,12 @@ public class HourglassTest extends ZoieTestCaseBase {
     public boolean isSkip() {
 			return false;
 		}
+
+    @Override
+    public final boolean isDeleted()
+    {
+      return _str.charAt(0) == 'D';
+    }
 
 		/*@Override
 		public byte[] getStoreValue() {

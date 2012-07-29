@@ -12,7 +12,7 @@ import proj.zoie.api.indexing.AbstractZoieIndexable;
 public abstract class HourglassIndexable extends AbstractZoieIndexable
 {
   @Override
-  public final boolean isDeleted()
+  public boolean isDeleted()
   {
     return false;
   }

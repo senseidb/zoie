@@ -16,6 +16,7 @@ public class Box<R extends IndexReader, D>
 {
   public static final Logger log = Logger.getLogger(Box.class.getName());
   List<ZoieIndexReader<R>> _archives;
+  List<ZoieSystem<R, D>> _archiveZoies;
   List<ZoieSystem<R, D>> _retiree;
   List<ZoieSystem<R, D>> _actives;
   IndexReaderDecorator<R> _decorator;
@@ -28,9 +29,10 @@ public class Box<R extends IndexReader, D>
    * @param actives
    * @param decorator
    */
-  public Box(List<ZoieIndexReader<R>> archives, List<ZoieSystem<R, D>> retiree, List<ZoieSystem<R, D>> actives, IndexReaderDecorator<R> decorator)
+  public Box(List<ZoieIndexReader<R>> archives, List<ZoieSystem<R, D>> archiveZoies, List<ZoieSystem<R, D>> retiree, List<ZoieSystem<R, D>> actives, IndexReaderDecorator<R> decorator)
   {
     _archives = new LinkedList<ZoieIndexReader<R>>(archives);
+    _archiveZoies = new LinkedList<ZoieSystem<R, D>>(archiveZoies);
     _retiree = new LinkedList<ZoieSystem<R, D>>(retiree);
     _actives = new LinkedList<ZoieSystem<R, D>>(actives);
     _decorator = decorator;
@@ -49,6 +51,10 @@ public class Box<R extends IndexReader, D>
     {
       r.decZoieRef();
       log.info("refCount at shutdown: " + r.getRefCount() + " " + r.directory());
+    }
+    for (ZoieSystem<R, D> zoie : _archiveZoies)
+    {
+      zoie.shutdown();
     }
     for (ZoieSystem<R, D> zoie : _retiree)
     {

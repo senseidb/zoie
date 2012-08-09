@@ -363,7 +363,7 @@ public class HourglassReaderManager<R extends IndexReader, D>
     List<ZoieSystem<R, D>> retiring = new LinkedList<ZoieSystem<R, D>>(box._retiree);
 
     retiring.remove(zoie);
-    if (_appendOnly)
+    if (!_appendOnly)
       archiveZoies.add(zoie);
 
     if (reader != null)

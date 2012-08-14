@@ -38,7 +38,7 @@ public class DocIDMapperImpl implements DocIDMapper<DocIDArray>
 	  {
 	    int len = uidArray.length;
 	    
-	    int mask = len/4;   // 2 uids on average per partition worst case,
+	    int mask = len/4;   // 2 uids on average per partition,
                           // but we divide additional 2 for now
 
       // let's replace all 0's after the first 1 in the mask:
@@ -48,14 +48,14 @@ public class DocIDMapperImpl implements DocIDMapper<DocIDArray>
 	    mask |= (mask >> 8);
 	    mask |= (mask >> 16);
 	    _mask = mask; // all 0's replaced with 1's and we get back most of the additional divide of 2,
-                    // the average per partition is no more than 2 now.
+                    // the average per partition is a little bit more than 2 now.
 
 	    _filter = new long[mask+1]; // one filter bits per partition.
                                   // this filter is optional, just to speed up the false lookup.
 
-      // we will set 2 bits in this 64 bits filter per uid. since on average there are less than 2
-      // uids in each partition, so, most of the false lookup will miss at least one bit. from one
-      // miss, we can tell the uid is definitely not inside the _uidArray.
+      // we will set 2 bits in this 64 bits filter per uid. since on average there are a little bit
+      // more than 2 uids in each partition, so, most of the false lookup will miss at least one
+      // bit. from one miss, we can tell the uid is definitely not inside the _uidArray.
 	    for(long uid : uidArray)
 	    {
 	      if(uid != ZoieIndexReader.DELETED_UID)

@@ -109,6 +109,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
     	for (ZoieSegmentReader<R> subReader : _subZoieReaders){
     		R decoratedReader = subReader.getDecoratedReader();
     		decoratedList.add(decoratedReader);
+    		subReader.incSegmentRef();
     	}
     	_decoratedReaders = decoratedList;
 	}
@@ -261,7 +262,8 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
 	  }
 	  finally{
 	    for (ZoieSegmentReader<R> r : _subZoieReaders){
-	      r.decRef();
+	     // r.decRef();
+	      r.decSegmentRef();
 	    }
 	  }
 	}

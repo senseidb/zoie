@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -331,8 +332,8 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 	}
 
 	@Override
-	protected void doClose() throws IOException {
-		
+	protected synchronized void doClose() throws IOException {
+		_decoratedReader.close();
 	}
 
 	@Override
@@ -359,4 +360,24 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
   {
     return new ZoieSegmentReader<R>(this, this.in);
   }
+  private AtomicLong zoieRefSegmentCounter = new AtomicLong(1);
+  
+  public void incSegmentRef() {
+    zoieRefSegmentCounter.incrementAndGet();
+  }
+
+  public void decSegmentRef() {
+    long refCount = zoieRefSegmentCounter.decrementAndGet();
+    if (refCount < 0) {
+      throw new IllegalStateException("The segment ref count shouldn't be less than zero");
+    }
+    if (refCount == 0) {
+      try {
+        doClose();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+ 
 }

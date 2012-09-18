@@ -22,7 +22,7 @@ Issues are tracked at:
 
 Maven:
 
-groupId: com.linkedin.zoie
+groupId: com.senseidb.zoie
 
 artifactId: zoie-core
 

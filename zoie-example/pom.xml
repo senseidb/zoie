@@ -23,7 +23,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-     <groupId>com.linkedin.zoie</groupId>
+     <groupId>com.senseidb.zoie</groupId>
      <artifactId>zoie-parent</artifactId>	
 	 <version>3.2.1-SNAPSHOT</version>
      <relativePath>../zoie-parent/pom.xml</relativePath>

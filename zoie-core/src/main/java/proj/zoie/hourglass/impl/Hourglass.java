@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -50,6 +51,7 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
   private long _freshness = 1000;
   final HourGlassScheduler _scheduler;
   public volatile long SLA = 4; // getIndexReaders should return in 4ms or a warning is logged
+  private List<HourglassListener> _hourglassListeners;
   
   @SuppressWarnings("rawtypes")
   public Hourglass(HourglassDirectoryManagerFactory dirMgrFactory, ZoieIndexableInterpreter<D> interpreter, IndexReaderDecorator<R> readerDecorator,ZoieConfig zoieConfig, List<HourglassListener> hourglassListeners)
@@ -58,8 +60,10 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
     _dirMgrFactory = dirMgrFactory;      
       if (hourglassListeners == null) {
         hourglassListeners = Collections.EMPTY_LIST;
+      } else {
+        hourglassListeners = new CopyOnWriteArrayList<HourglassListener>(hourglassListeners);
       }
-    
+    _hourglassListeners = hourglassListeners;
     _scheduler = _dirMgrFactory.getScheduler();
     _dirMgrFactory.clearRecentlyChanged();
     _interpreter = interpreter;
@@ -442,5 +446,10 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D>
   @Override
   public String getCurrentReaderVersion() {
 	  return _currentZoie == null ? null : _currentZoie.getCurrentReaderVersion();
+  }
+  public void addHourglassListener(HourglassListener hourglassListener) {
+    if (hourglassListener != null) {
+      _hourglassListeners.add(hourglassListener);
+    }
   }
 }

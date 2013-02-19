@@ -88,13 +88,17 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
 	  
 	  abstract protected IndexReader openIndexReaderForDelete() throws IOException;
 	  
-      abstract public void refresh() throws IOException;
+    abstract public void refresh() throws IOException;
 
-      public void updateIndex(LongSet delDocs, List<IndexingReq> insertDocs,Analyzer defaultAnalyzer,Similarity similarity)
+    public void updateIndex(LongSet delDocs, List<IndexingReq> insertDocs,Analyzer defaultAnalyzer,Similarity similarity)
 	      throws IOException
 	  {
 	    deleteDocs(delDocs);
 		
+	    if (insertDocs == null || insertDocs.size() == 0) {
+	      return;
+	    }
+
 	    IndexWriter idxMod = null;
 	    try
 	    {

@@ -44,7 +44,6 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
   {
     _batchSize = 1;
     _consumer = null;
-
     _versionComparator = versionComparator;
   }
   
@@ -91,6 +90,7 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
   }
 
   private volatile long _maxEventsPerMinute = Long.MAX_VALUE;// begin with no
+  private volatile long _maxVolatileTimeInMillis = Long.MAX_VALUE; // begin with no volatile time limit  
 
   // indexing
 
@@ -101,7 +101,13 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
     if (thread == null)
       return;
     thread.setMaxEventsPerMinute(_maxEventsPerMinute);
-
+  }
+  
+  public void setMaxVolatileTime(long timeInMillis) {
+    _maxVolatileTimeInMillis = timeInMillis;
+    DataThread<D> thread = _thread;
+    if (thread == null) return;
+    thread.setMaxVolatileTime(_maxVolatileTimeInMillis);
   }
 
   public String getStatus()
@@ -165,19 +171,14 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
 
       _thread = new DataThread<D>(this);
       _thread.setMaxEventsPerMinute(_maxEventsPerMinute);
-
+      _thread.setMaxVolatileTime(_maxVolatileTimeInMillis);
       _thread.start();
     }
   }
 
-  public void syncWithVersion(long timeToWait, String version) throws ZoieException
+  public void syncWithVersion(long timeInMillis, String version) throws ZoieException
   {
-    _thread.syncWthVersion(timeToWait, version);
-  }
-
-  public void syncWthVersion(long timeInMillis, String version) throws ZoieException
-  {
-    _thread.syncWthVersion(timeInMillis, version);
+    _thread.syncWithVersion(timeInMillis, version);
   }
 
   private static final class DataThread<D> extends Thread
@@ -188,7 +189,9 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
     private volatile boolean _paused;
     private volatile boolean _stop;
     private AtomicLong _eventCount = new AtomicLong(0);
-    private volatile long _throttle = 40000;// Long.MAX_VALUE;
+    private volatile long _throttle = 40000;
+    private volatile long _maxVolatileTimeInMillis = Long.MAX_VALUE;
+    private volatile long _lastFlushTime = System.currentTimeMillis();
     private boolean _flushing = false;
     private final Comparator<String> _versionComparator;
 
@@ -271,6 +274,7 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
       {
         log.error(e.getMessage(), e);
       }
+      _lastFlushTime = System.currentTimeMillis();
     }
 
     private long lastcount = 0;
@@ -291,7 +295,7 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
       last60[currentslot] += count;
     }
 
-    public void syncWthVersion(long timeInMillis, String version) throws ZoieException
+    public void syncWithVersion(long timeInMillis, String version) throws ZoieException
     {
       if (version == null) return;
       long now = System.currentTimeMillis();
@@ -354,7 +358,8 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
             synchronized (this)
             {
               _batch.add(data);
-              if (_batch.size() >= _dataProvider._batchSize || _flushing)
+              if (_batch.size() >= _dataProvider._batchSize || _flushing
+                  || System.currentTimeMillis() - _lastFlushTime > _maxVolatileTimeInMillis)
               {
                 flush();
                 _currentVersion = version;
@@ -414,6 +419,11 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
     private void setMaxEventsPerMinute(long maxEventsPerMinute)
     {
       _throttle = maxEventsPerMinute;
+    }
+    
+    private void setMaxVolatileTime(long timeInMillis)
+    {
+      _maxVolatileTimeInMillis = timeInMillis;
     }
 
   }

@@ -310,7 +310,7 @@ public class AsyncDataConsumer<D> implements LifeCycleCotrolledDataConsumer<D>
       {
         log.debug("flushBuffer: post-flush: currentVersion: " + _currentVersion);
       }
-      this.notifyAll(); // wake up the thread waiting in syncWthVersion()
+      this.notifyAll(); // wake up the thread waiting in syncWithVersion()
     }    
   }
   

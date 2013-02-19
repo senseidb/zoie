@@ -223,7 +223,6 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
 							DataForTests.testdata[i], ""+version));
 
 					memoryProvider.addEvents(list);
-					// idxSystem.syncWthVersion(100000, version);
 
 					idxSystem.syncWithVersion(100000, ""+version);
 				}

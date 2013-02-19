@@ -711,8 +711,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 			}
 			memoryProvider.addEvents(list);
 
-			// memoryProvider.syncWthVersion(10000, count-1);
-			memoryProvider.syncWthVersion(10000, ""+(count-1));
+			memoryProvider.syncWithVersion(10000, ""+(count-1));
 			int num = consumer.getCount();
 			assertEquals(num, count);
 		} finally {

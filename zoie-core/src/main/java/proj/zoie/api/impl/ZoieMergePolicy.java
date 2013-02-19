@@ -57,7 +57,6 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy
       setNumLargeSegments(params._numLargeSegments);
       setMergeFactor(params._mergeFactor);
       setMaxSmallSegments(params._maxSmallSegments);
-      setPartialExpunge(params._doPartialExpunge);
       setUseCompoundFile(params._useCompoundFile);
       setMaxMergeDocs(params._maxMergeDocs);
     }

@@ -370,7 +370,7 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
           {
             synchronized (this)
             {
-              if (_flushing && (_batch.size() > 0))
+              if (_flushing || _batch.size() > 0)
               {
                 flush();
                 _currentVersion = version;

@@ -334,7 +334,10 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
 
 	        RAMSearchIndex<R> memIndexB = _ramIndexFactory.newInstance(version, _indexReaderDecorator,this);
 	        Mem<R> mem = new Mem<R>(memIndexA, memIndexB, memIndexB, memIndexA, oldMem.get_diskIndexReader());
-	        _mem = mem;
+	        synchronized(_memLock) 
+	        {
+            _mem = mem;
+	        }
 	        log.info("Current writable index is B, new B created");
 	      }
 	      else
@@ -494,8 +497,10 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
     if (_mem.get_memIndexB()!=null){_mem.get_memIndexB().close();}
     RAMSearchIndex<R> memIndexA = _ramIndexFactory.newInstance(_diskIndex.getVersion(), _indexReaderDecorator, this);
     Mem<R> mem = new Mem<R>(memIndexA, null, memIndexA, null, null);
-    _mem = mem;
-
+    synchronized(_memLock) 
+    {
+      _mem = mem;
+    }
     log.info("index purged");
   }
 	  
@@ -515,13 +520,26 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
 		    log.error(e.getMessage(),e);
 		    throw e;
 		  }
-		  Mem<R> oldMem = _mem;
-		  Mem<R> mem = new Mem<R>(oldMem.get_memIndexA(),
-		      oldMem.get_memIndexB(),
-		      oldMem.get_currentWritable(),
-		      oldMem.get_currentReadOnly(),
-		      diskIndexReader);
-		  lockAndSwapMem(diskIndexReader, oldMem.get_diskIndexReader(), mem);
+		  
+	    synchronized(_memLock)
+	    {
+	      Mem<R> oldMem = _mem;
+	      ZoieIndexReader<R> oldDiskIndexReader = oldMem.get_diskIndexReader();
+	      if (diskIndexReader != oldDiskIndexReader)
+	      {
+	        Mem<R> mem = new Mem<R>(oldMem.get_memIndexA(),
+	            oldMem.get_memIndexB(),
+	            oldMem.get_currentWritable(),
+	            oldMem.get_currentReadOnly(),
+	            diskIndexReader);
+	        if (oldDiskIndexReader != null)
+	        {
+	          oldDiskIndexReader.decZoieRef();
+	        }
+	        diskIndexReader.incZoieRef();
+	        _mem = mem;
+	      }
+	    }
 		  log.info("disk reader refreshed");
 	  }
 
@@ -538,21 +556,15 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
   {
     synchronized(_memLock)
     {
-      if (oldDiskReader!=diskIndexReader)
+      if (oldDiskReader != diskIndexReader)
       {
         if (oldDiskReader != null)
         {
-//          try
-//          {
             oldDiskReader.decZoieRef();
-//          } catch (IOException e)
-//          {
-//            log.error("swaping old and new disk reader failure: " + e);
-//          }
         }
         diskIndexReader.incZoieRef();
-        _mem = mem;
       }
+      _mem = mem;
     }
   }
 

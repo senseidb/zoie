@@ -162,7 +162,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R>
         }
       }
 	}
-	
+
 	@Override
 	public void commitDeletes()
 	{

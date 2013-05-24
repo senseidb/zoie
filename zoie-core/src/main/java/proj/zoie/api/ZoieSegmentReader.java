@@ -32,11 +32,8 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.index.TermPositions;
 
 import proj.zoie.api.impl.util.ArrayDocIdSet;
 import proj.zoie.api.indexing.AbstractZoieIndexable;
@@ -56,8 +53,8 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
   static final class UIDTokenStream extends TokenStream {
     private boolean returnToken = false;
 
-    private PayloadAttribute payloadAttr;
-    private CharTermAttribute termAttr;
+    private final PayloadAttribute payloadAttr;
+    private final CharTermAttribute termAttr;
 
     UIDTokenStream(long uid) {
       byte[] buffer = new byte[8];
@@ -109,7 +106,6 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
     _uidArray = copyFrom._uidArray;
     _maxUID = copyFrom._maxUID;
     _minUID = copyFrom._minUID;
-    _noDedup = copyFrom._noDedup;
     _docIDMapper = copyFrom._docIDMapper;
     _delDocIdSet = copyFrom._delDocIdSet;
 
@@ -132,7 +128,6 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
     _uidArray = copyFrom._uidArray;
     _maxUID = copyFrom._maxUID;
     _minUID = copyFrom._minUID;
-    _noDedup = copyFrom._noDedup;
     _docIDMapper = copyFrom._docIDMapper;
     _delDocIdSet = copyFrom._delDocIdSet;
     _currentDelDocIds = copyFrom._currentDelDocIds;
@@ -168,6 +163,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
     _currentDelDocIds = _delDocIdSet.toIntArray();
   }
 
+  @Override
   public void setDelDocIds() {
     _delDocIds = _currentDelDocIds;
     if (_decorator != null && _decoratedReader != null) _decorator.setDeleteSet(_decoratedReader,
@@ -249,15 +245,10 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
   }
 
   @Override
-  protected boolean hasIndexDeletions() {
-    return in.hasDeletions();
-  }
-
-  @Override
   public boolean isDeleted(int docid) {
-    if (!_noDedup) {
-      int[] delSet = _delDocIds;// .get();
-      if (delSet != null && Arrays.binarySearch(delSet, docid) >= 0) return true;
+    int[] delSet = _delDocIds;
+    if (delSet != null && Arrays.binarySearch(delSet, docid) >= 0) {
+      return true;
     }
     return in.isDeleted(docid);
   }
@@ -349,7 +340,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
     return new ZoieSegmentReader<R>(this, this.in);
   }
 
-  private AtomicLong zoieRefSegmentCounter = new AtomicLong(1);
+  private final AtomicLong zoieRefSegmentCounter = new AtomicLong(1);
 
   public void incSegmentRef() {
     zoieRefSegmentCounter.incrementAndGet();

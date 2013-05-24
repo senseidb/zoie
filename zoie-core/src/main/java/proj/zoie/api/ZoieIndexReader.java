@@ -19,50 +19,29 @@ package proj.zoie.api;
 import it.unimi.dsi.fastutil.longs.LongSet;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.log4j.Logger;
-import org.apache.lucene.index.FilterIndexReader;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
-import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.index.TermPositions;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.ReaderUtil;
 
 import proj.zoie.api.impl.DefaultIndexReaderMerger;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
-public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndexReader {
-  private static final Logger log = Logger.getLogger(ZoieIndexReader.class);
+public abstract class ZoieIndexReader<R extends IndexReader> extends IndexReader {
   public static final long DELETED_UID = Long.MIN_VALUE;
-  private AtomicLong zoieRefCounter = new AtomicLong(1);
 
-  public void incZoieRef() {
-    zoieRefCounter.incrementAndGet();
-  }
-
-  public void decZoieRef() {
-    long refCount = zoieRefCounter.decrementAndGet();
-    if (refCount < 0) {
-      log.warn("refCount should never be lower than 0");
-    }
-    if (refCount == 0) {
-      try {
-        in.decRef();
-      } catch (IOException e) {
-        log.error("decZoieRef", e);
-      }
-    }
+  @Override
+  protected void doClose() throws IOException {
+    super.close();
   }
 
   protected int[] _delDocIds;
   protected long _minUID;
   protected long _maxUID;
-  protected boolean _noDedup = false;
   protected final IndexReaderDecorator<R> _decorator;
   protected DocIDMapper<?> _docIDMapper;
 
@@ -89,12 +68,6 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndex
     SubReaderInfo<R> getSubReaderInfo(int docid);
   }
 
-  public interface SubZoieReaderAccessor<R extends IndexReader> {
-    SubReaderInfo<ZoieIndexReader<R>> getSubReaderInfo(int docid);
-
-    SubReaderInfo<ZoieIndexReader<R>> geSubReaderInfoFromUID(long uid);
-  }
-
   public static <R extends IndexReader> SubReaderAccessor<R> getSubReaderAccessor(List<R> readerList) {
     int size = readerList.size();
     final IndexReader[] subR = new IndexReader[size];
@@ -112,52 +85,13 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndex
     starts[size] = maxDoc;
 
     return new SubReaderAccessor<R>() {
+      @Override
       public SubReaderInfo<R> getSubReaderInfo(int docid) {
         int subIdx = ReaderUtil.subIndex(docid, starts);
         int subdocid = docid - starts[subIdx];
+        @SuppressWarnings("unchecked")
         R subreader = (R) (subR[subIdx]);
         return new SubReaderInfo<R>(subreader, subdocid);
-      }
-    };
-  }
-
-  public static <R extends IndexReader> SubZoieReaderAccessor<R> getSubZoieReaderAccessor(
-      List<ZoieIndexReader<R>> readerList) {
-    int size = readerList.size();
-    final ZoieIndexReader<?>[] subR = new ZoieIndexReader<?>[size];
-    final int[] starts = new int[size + 1];
-
-    int maxDoc = 0;
-
-    int i = 0;
-    for (ZoieIndexReader<R> r : readerList) {
-      starts[i] = maxDoc;
-      subR[i] = r;
-      maxDoc += r.maxDoc(); // compute maxDocs
-      i++;
-    }
-    starts[size] = maxDoc;
-
-    return new SubZoieReaderAccessor<R>() {
-
-      public SubReaderInfo<ZoieIndexReader<R>> getSubReaderInfo(int docid) {
-        int subIdx = ReaderUtil.subIndex(docid, starts);
-        int subdocid = docid - starts[subIdx];
-        return new SubReaderInfo<ZoieIndexReader<R>>((ZoieIndexReader<R>) (subR[subIdx]), subdocid);
-      }
-
-      public SubReaderInfo<ZoieIndexReader<R>> geSubReaderInfoFromUID(long uid) {
-        SubReaderInfo<ZoieIndexReader<R>> info = null;
-        for (int i = 0; i < subR.length; ++i) {
-          ZoieIndexReader<R> subReader = (ZoieIndexReader<R>) subR[i];
-          DocIDMapper<?> mapper = subReader.getDocIDMaper();
-          int docid = mapper.getDocID(uid);
-          if (docid != DocIDMapper.NOT_FOUND) {
-            info = new SubReaderInfo<ZoieIndexReader<R>>(subReader, docid);
-            break;
-          }
-        }
-        return info;
       }
     };
   }
@@ -173,7 +107,7 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndex
 
   public static <R extends IndexReader> ZoieIndexReader<R> open(Directory dir,
       IndexReaderDecorator<R> decorator) throws IOException {
-    IndexReader r = IndexReader.open(dir, true);
+    IndexReader r = DirectoryReader.open(dir);
     // load zoie reader
     try {
       return open(r, decorator);
@@ -196,10 +130,9 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndex
   }
 
   protected ZoieIndexReader(IndexReader in, IndexReaderDecorator<R> decorator) throws IOException {
-    super(in);
+    this = in;
     _decorator = decorator;
-    _delDocIds = null;// new ContextAccessor<int[]>(this, "delset");// new
-                      // InheritableThreadLocal<int[]>();
+    _delDocIds = null;
     _minUID = Long.MAX_VALUE;
     _maxUID = Long.MIN_VALUE;
   }
@@ -213,42 +146,24 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndex
   abstract public void commitDeletes();
 
   public IndexReader getInnerReader() {
-    return in;
+    return this;
   }
 
   @Override
   public boolean hasDeletions() {
-    if (!_noDedup) {
-      int[] delSet = _delDocIds;
-      if (delSet != null && delSet.length > 0) return true;
+    int[] delSet = _delDocIds;
+    if (delSet != null && delSet.length > 0) {
+      return true;
     }
-    return in.hasDeletions();
+    return hasDeletions();
   }
 
-  protected abstract boolean hasIndexDeletions();
-
-  public boolean hasDuplicates() {
-    int[] delSet = _delDocIds;// .get();
-    return (delSet != null && delSet.length > 0);
-  }
-
-  @Override
   abstract public boolean isDeleted(int docid);
 
   abstract public byte[] getStoredValue(long uid) throws IOException;
 
-  public boolean isDuplicate(int docid) {
-    int[] delSet = _delDocIds;// .get();
-    return delSet != null && Arrays.binarySearch(delSet, docid) >= 0;
-  }
-
-  public boolean isDuplicateUID(long uid) {
-    int docid = _docIDMapper.getDocID(uid);
-    return isDuplicate(docid);
-  }
-
   public int[] getDelDocIds() {
-    return _delDocIds;// .get();
+    return _delDocIds;
   }
 
   public long getMinUID() {
@@ -269,18 +184,15 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends FilterIndex
     _docIDMapper = docIDMapper;
   }
 
-  public void setNoDedup(boolean noDedup) {
-    _noDedup = noDedup;
-  }
-
-  @Override
   abstract public ZoieIndexReader<R>[] getSequentialSubReaders();
 
-  @Override
-  abstract public TermDocs termDocs() throws IOException;
+  /** TODO
+   @Override
+   abstract public TermDocs termDocs() throws IOException;
 
-  @Override
-  abstract public TermPositions termPositions() throws IOException;
+   @Override
+   abstract public TermPositions termPositions() throws IOException;
+  */
 
   /**
    * makes exact shallow copy of a given ZoieMultiReader

@@ -1,5 +1,5 @@
-
 package proj.zoie.impl.indexing.internal;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -31,88 +31,77 @@ import proj.zoie.impl.indexing.internal.ZoieIndexDeletionPolicy.Snapshot;
  * @author ymatsuda
  *
  */
-public class DiskIndexSnapshot
-{
+public class DiskIndexSnapshot {
   private DirectoryManager _dirMgr;
   private IndexSignature _sig;
   private Snapshot _snapshot;
-  
-  public DiskIndexSnapshot(DirectoryManager dirMgr, IndexSignature sig, Snapshot snapshot)
-  {
+
+  public DiskIndexSnapshot(DirectoryManager dirMgr, IndexSignature sig, Snapshot snapshot) {
     _dirMgr = dirMgr;
     _sig = sig;
     _snapshot = snapshot;
   }
-  
-  public void close()
-  {
+
+  public void close() {
     _snapshot.close();
   }
-  
-  public DirectoryManager getDirecotryManager()
-  {
-    return  _dirMgr;
+
+  public DirectoryManager getDirecotryManager() {
+    return _dirMgr;
   }
-  
-  public long writeTo(WritableByteChannel channel) throws IOException
-  {
+
+  public long writeTo(WritableByteChannel channel) throws IOException {
     // format:
-    //   <format_version> <sig_len> <sig_data> { <idx_file_name_len> <idx_file_name> <idx_file_len> <idx_file_data> }...
-    
+    // <format_version> <sig_len> <sig_data> { <idx_file_name_len> <idx_file_name> <idx_file_len>
+    // <idx_file_data> }...
+
     long amount = 0;
-    
+
     // format version
     amount += ChannelUtil.writeInt(channel, 1);
-    
+
     // index signature
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     _sig.save(baos);
     byte[] sigBytes = baos.toByteArray();
-    
-    amount += ChannelUtil.writeLong(channel, (long)sigBytes.length); // data length
+
+    amount += ChannelUtil.writeLong(channel, (long) sigBytes.length); // data length
     amount += channel.write(ByteBuffer.wrap(sigBytes)); // data
 
     // index files
     Collection<String> fileNames = _snapshot.getFileNames();
     amount += ChannelUtil.writeInt(channel, fileNames.size()); // number of files
-    for(String fileName : fileNames)
-    {
+    for (String fileName : fileNames) {
       amount += ChannelUtil.writeString(channel, fileName);
       amount += _dirMgr.transferFromFileToChannel(fileName, channel);
     }
     return amount;
   }
-  
-  public static void readSnapshot(ReadableByteChannel channel, DirectoryManager dirMgr) throws IOException
-  {
+
+  public static void readSnapshot(ReadableByteChannel channel, DirectoryManager dirMgr)
+      throws IOException {
     // format version
     int formatVersion = ChannelUtil.readInt(channel);
-    if(formatVersion != 1)
-    {
+    if (formatVersion != 1) {
       throw new IOException("snapshot format version mismatch [" + formatVersion + "]");
     }
-    
+
     // index signature
-    if(!dirMgr.transferFromChannelToFile(channel, DirectoryManager.INDEX_DIRECTORY))
-    {
+    if (!dirMgr.transferFromChannelToFile(channel, DirectoryManager.INDEX_DIRECTORY)) {
       throw new IOException("bad snapshot file");
     }
 
     // index files
     int numFiles = ChannelUtil.readInt(channel); // number of files
-    if(numFiles < 0)
-    {
-      throw new IOException("bad snapshot file");      
+    if (numFiles < 0) {
+      throw new IOException("bad snapshot file");
     }
-    while(numFiles-- > 0)
-    {
+    while (numFiles-- > 0) {
       String fileName = ChannelUtil.readString(channel);
-      if(fileName == null)
-      {
+      if (fileName == null) {
         throw new IOException("bad snapshot file");
       }
-      if(!dirMgr.transferFromChannelToFile(channel, fileName))
-      {
+      if (!dirMgr.transferFromChannelToFile(channel, fileName)) {
         throw new IOException("bad snapshot file");
       }
     }

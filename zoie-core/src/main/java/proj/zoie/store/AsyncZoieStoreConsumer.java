@@ -6,7 +6,7 @@ import proj.zoie.impl.indexing.AsyncDataConsumer;
 
 public class AsyncZoieStoreConsumer<D> extends AsyncDataConsumer<D> {
 
-	public AsyncZoieStoreConsumer(Comparator<String> versionComparator) {
-		super(versionComparator);
-	}
+  public AsyncZoieStoreConsumer(Comparator<String> versionComparator) {
+    super(versionComparator);
+  }
 }

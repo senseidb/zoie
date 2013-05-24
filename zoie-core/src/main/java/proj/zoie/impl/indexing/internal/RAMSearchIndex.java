@@ -43,8 +43,7 @@ import proj.zoie.api.impl.util.FileUtil;
 import proj.zoie.api.impl.util.IndexUtil;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
-public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
-{
+public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
   private volatile String _version;
   private final Directory _directory;
   private final File _backingdir;
@@ -56,9 +55,8 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
 
   public static final Logger log = Logger.getLogger(RAMSearchIndex.class);
 
-  public RAMSearchIndex(String version, IndexReaderDecorator<R> decorator, SearchIndexManager<R> idxMgr, Directory ramIdxDir,
-      File backingdir)
-  {
+  public RAMSearchIndex(String version, IndexReaderDecorator<R> decorator,
+      SearchIndexManager<R> idxMgr, Directory ramIdxDir, File backingdir) {
     super(idxMgr, true);
     _directory = ramIdxDir;
     _backingdir = backingdir;
@@ -72,156 +70,128 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
     _mergePolicyParams.setMaxSmallSegments(4);
   }
 
-  public void close()
-  {
+  public void close() {
     super.close();
-    if (_currentReader != null)
-    {
+    if (_currentReader != null) {
       _currentReader.decZoieRef();
     }
-    if (_directory != null)
-    {
-      try
-      {
+    if (_directory != null) {
+      try {
         _directory.close();
-        if (_backingdir != null)
-          FileUtil.rmDir(_backingdir);
-      } catch (IOException e)
-      {
+        if (_backingdir != null) FileUtil.rmDir(_backingdir);
+      } catch (IOException e) {
         log.error(e);
       }
     }
   }
 
-  public String getVersion()
-  {
+  public String getVersion() {
     return _version;
   }
 
-  public void setVersion(String version) throws IOException
-  {
+  public void setVersion(String version) throws IOException {
     _version = version;
-    synchronized(readerOpenLock){
+    synchronized (readerOpenLock) {
       readerOpenLock.notifyAll();
     }
   }
 
-  public int getNumdocs()
-  {
+  public int getNumdocs() {
     ZoieIndexReader<R> reader = null;
-    try
-    {
-      synchronized(this)
-      {
+    try {
+      synchronized (this) {
         reader = openIndexReader();
-        if (reader == null)
-          return 0;
+        if (reader == null) return 0;
         reader.incZoieRef();
       }
 
       return reader.numDocs();
-    }
-    catch(IOException e)
-    {
+    } catch (IOException e) {
       log.error(e.getMessage(), e);
-    }
-    finally
-    {
-      if (reader != null)
-        reader.decZoieRef();
+    } finally {
+      if (reader != null) reader.decZoieRef();
     }
     return 0;
   }
 
   @Override
-  public ZoieIndexReader<R> openIndexReader() throws IOException
-  {
+  public ZoieIndexReader<R> openIndexReader() throws IOException {
     return _currentReader;
   }
 
   @Override
-  protected IndexReader openIndexReaderForDelete() throws IOException
-  {
-    if (IndexReader.indexExists(_directory))
-    {
+  protected IndexReader openIndexReaderForDelete() throws IOException {
+    if (IndexReader.indexExists(_directory)) {
       return IndexReader.open(_directory, false);
-    } else
-    {
+    } else {
       return null;
     }
   }
 
-  private ZoieIndexReader<R> openIndexReaderInternal() throws IOException
-  {
-    if (IndexReader.indexExists(_directory))
-    {
+  private ZoieIndexReader<R> openIndexReaderInternal() throws IOException {
+    if (IndexReader.indexExists(_directory)) {
       IndexReader srcReader = null;
       ZoieIndexReader<R> finalReader = null;
-      try
-      {
+      try {
         // for RAM indexes, just get a new index reader
         srcReader = IndexReader.open(_directory, true);
         finalReader = ZoieIndexReader.open(srcReader, _decorator);
-        DocIDMapper<?> mapper = _idxMgr._docIDMapperFactory.getDocIDMapper((ZoieMultiReader<R>) finalReader);
+        DocIDMapper<?> mapper = _idxMgr._docIDMapperFactory
+            .getDocIDMapper((ZoieMultiReader<R>) finalReader);
         finalReader.setDocIDMapper(mapper);
         return finalReader;
-      } catch (IOException ioe)
-      {
+      } catch (IOException ioe) {
         // if reader decoration fails, still need to close the source reader
-        if (srcReader != null)
-        {
+        if (srcReader != null) {
           srcReader.close();
         }
         throw ioe;
       }
-    } else
-    {
+    } else {
       return null; // null indicates no index exist, following the contract
     }
   }
 
-  public IndexWriter openIndexWriter(Analyzer analyzer, Similarity similarity) throws IOException
-  {
-    if (_indexWriter != null)
-      return _indexWriter;
-    
+  public IndexWriter openIndexWriter(Analyzer analyzer, Similarity similarity) throws IOException {
+    if (_indexWriter != null) return _indexWriter;
+
     ZoieMergePolicy mergePolicy = new ZoieMergePolicy();
     mergePolicy.setMergePolicyParams(_mergePolicyParams);
     mergePolicy.setUseCompoundFile(false);
-    
-    
+
     IndexWriterConfig config = indexWriterConfigStorage.get();
     if (config == null) {
-      config = new IndexWriterConfig(Version.LUCENE_34,analyzer);
+      config = new IndexWriterConfig(Version.LUCENE_34, analyzer);
       indexWriterConfigStorage.set(config);
     }
     config.setOpenMode(OpenMode.CREATE_OR_APPEND);
-   
+
     config.setMergeScheduler(_mergeScheduler);
     config.setMergePolicy(mergePolicy);
-    
+
     config.setReaderPooling(false);
-    if (similarity!=null){
+    if (similarity != null) {
       config.setSimilarity(similarity);
     }
     config.setRAMBufferSizeMB(3);
-    
-    IndexWriter idxWriter = new IndexWriter(_directory,config);
+
+    IndexWriter idxWriter = new IndexWriter(_directory, config);
     _indexWriter = idxWriter;
     return idxWriter;
   }
-  
+
   private final Object readerOpenLock = new Object();
-  
-  public ZoieIndexReader<R> openIndexReader(String minVersion,long timeout) throws IOException,TimeoutException{
-    
-    if (timeout<0) timeout = Long.MAX_VALUE;
-    if (_versionComparator.compare(minVersion, _version)<=0){
+
+  public ZoieIndexReader<R> openIndexReader(String minVersion, long timeout) throws IOException,
+      TimeoutException {
+
+    if (timeout < 0) timeout = Long.MAX_VALUE;
+    if (_versionComparator.compare(minVersion, _version) <= 0) {
       return _currentReader;
     }
     long startTimer = System.currentTimeMillis();
-    while(_versionComparator.compare(minVersion, _version)>0){
-      synchronized(readerOpenLock){
+    while (_versionComparator.compare(minVersion, _version) > 0) {
+      synchronized (readerOpenLock) {
         try {
           readerOpenLock.wait(100);
         } catch (InterruptedException e) {
@@ -230,38 +200,33 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
       }
 
       long now = System.currentTimeMillis();
-      if (now-startTimer>=timeout) throw new TimeoutException("timed-out, took: "+(now-startTimer)+" ms");
+      if (now - startTimer >= timeout) throw new TimeoutException("timed-out, took: "
+          + (now - startTimer) + " ms");
     }
-    
+
     return _currentReader;
-    
+
   }
 
   @Override
-  public void refresh() throws IOException
-  {
-    synchronized (this)
-    {
+  public void refresh() throws IOException {
+    synchronized (this) {
       ZoieIndexReader<R> reader = null;
-      if (_currentReader == null)
-      {
+      if (_currentReader == null) {
         reader = openIndexReaderInternal();
-      } else
-      {
+      } else {
         reader = (ZoieIndexReader<R>) _currentReader.reopen(true);
-        if (reader != _currentReader)
-        {
-          DocIDMapper<?> mapper = _idxMgr._docIDMapperFactory.getDocIDMapper((ZoieMultiReader<R>) reader);
+        if (reader != _currentReader) {
+          DocIDMapper<?> mapper = _idxMgr._docIDMapperFactory
+              .getDocIDMapper((ZoieMultiReader<R>) reader);
           reader.setDocIDMapper(mapper);
         }
       }
 
-      if (_currentReader != reader)
-      {
+      if (_currentReader != reader) {
         ZoieIndexReader<R> oldReader = _currentReader;
         _currentReader = reader;
-        if (oldReader != null)
-          ((ZoieIndexReader<?>) oldReader).decZoieRef();// .decRef();
+        if (oldReader != null) ((ZoieIndexReader<?>) oldReader).decZoieRef();// .decRef();
       }
       LongSet delDocs = _delDocs;
       clearDeletes();
@@ -270,8 +235,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
     }
   }
 
-  public int getSegmentCount() throws IOException
-  {
+  public int getSegmentCount() throws IOException {
     return _directory == null ? -1 : IndexUtil.getNumSegments(_directory);
   }
 }

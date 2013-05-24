@@ -7,88 +7,89 @@ import proj.zoie.api.ZoieException;
 
 public interface ZoieAdminMBean {
 
-    String getIndexDir();
-    boolean isRealtime();
-    long getBatchDelay();
-    void setBatchDelay(long delay);
-    int getBatchSize();
-    void setBatchSize(int batchSize);
+  String getIndexDir();
 
-    Date getLastDiskIndexModifiedTime();
+  boolean isRealtime();
 
+  long getBatchDelay();
 
-    int getMaxBatchSize();
+  void setBatchDelay(long delay);
 
-    void setMaxBatchSize(int maxBatchSize);
+  int getBatchSize();
 
+  void setBatchSize(int batchSize);
 
-    void setMergeFactor(int mergeFactor);
+  Date getLastDiskIndexModifiedTime();
 
-    int getMergeFactor();
-    int getRamAIndexSize();
+  int getMaxBatchSize();
 
-    String getRamAVersion();
+  void setMaxBatchSize(int maxBatchSize);
 
-    int getRamBIndexSize();
+  void setMergeFactor(int mergeFactor);
 
-    String getRamBVersion();
+  int getMergeFactor();
 
+  int getRamAIndexSize();
 
-    String getDiskIndexerStatus();
-    String getCurrentDiskVersion() throws IOException;
+  String getRamAVersion();
 
-    void refreshDiskReader() throws IOException;
+  int getRamBIndexSize();
 
+  String getRamBVersion();
 
-    void flushToDiskIndex() throws ZoieException;
+  String getDiskIndexerStatus();
 
-    void flushToMemoryIndex() throws ZoieException;
+  String getCurrentDiskVersion() throws IOException;
 
-    int getMaxMergeDocs();  
-    void setMaxMergeDocs(int maxMergeDocs);
-    
-    void setNumLargeSegments(int numLargeSegments);
+  void refreshDiskReader() throws IOException;
 
-    int getNumLargeSegments();
+  void flushToDiskIndex() throws ZoieException;
 
-    void setMaxSmallSegments(int maxSmallSegments);
+  void flushToMemoryIndex() throws ZoieException;
 
-    public int getMaxSmallSegments();
-    
+  int getMaxMergeDocs();
 
-    long getDiskIndexSizeBytes();
+  void setMaxMergeDocs(int maxMergeDocs);
 
-    long getDiskFreeSpaceBytes();
+  void setNumLargeSegments(int numLargeSegments);
 
-    boolean isUseCompoundFile();
-    
+  int getNumLargeSegments();
 
-    int getDiskIndexSegmentCount() throws IOException;
+  void setMaxSmallSegments(int maxSmallSegments);
 
-    int getRAMASegmentCount();
+  public int getMaxSmallSegments();
 
-    int getRAMBSegmentCount();
-    /**
-     * @return the response time threshold for getIndexReaders
-     */
-    long getSLA();
-    
-    /**
-     * @param sla set the response time threshold (expected max response time) for getIndexReaders
-     */
-    void setSLA(long sla);
-    
-    /**
-     * @return heahth of the system. Non-zero value means the system need immediate attention and the logs need to be checked.
-     */
-    long getHealth();
-    
-    void resetHealth();
-    
+  long getDiskIndexSizeBytes();
 
-    int getCurrentMemBatchSize();
+  long getDiskFreeSpaceBytes();
 
-    int getCurrentDiskBatchSize();
-    
+  boolean isUseCompoundFile();
+
+  int getDiskIndexSegmentCount() throws IOException;
+
+  int getRAMASegmentCount();
+
+  int getRAMBSegmentCount();
+
+  /**
+   * @return the response time threshold for getIndexReaders
+   */
+  long getSLA();
+
+  /**
+   * @param sla set the response time threshold (expected max response time) for getIndexReaders
+   */
+  void setSLA(long sla);
+
+  /**
+   * @return heahth of the system. Non-zero value means the system need immediate attention and the logs need to be checked.
+   */
+  long getHealth();
+
+  void resetHealth();
+
+  int getCurrentMemBatchSize();
+
+  int getCurrentDiskBatchSize();
 
 }

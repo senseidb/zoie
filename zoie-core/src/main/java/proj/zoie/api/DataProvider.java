@@ -1,4 +1,5 @@
 package proj.zoie.api;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,6 +20,5 @@ package proj.zoie.api;
 /**
  * Abstraction of a data feed.
  */
-public interface DataProvider<V>
-{
+public interface DataProvider<V> {
 }

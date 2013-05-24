@@ -1,4 +1,5 @@
 package proj.zoie.mbean;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,17 +20,26 @@ package proj.zoie.mbean;
 /**
  * Interface for monitoring a data provider
  */
-public interface DataProviderAdminMBean
-{
-	void start();
-	void stop();
-	void pause();
-	void resume();
-	void setBatchSize(int batchSize);
-	void setMaxEventsPerMinute(long maxEventsPerMinute);
-	int getBatchSize();
-	long getEventCount();
-	long getEventsPerMinute();
-	long getMaxEventsPerMinute();
+public interface DataProviderAdminMBean {
+  void start();
+
+  void stop();
+
+  void pause();
+
+  void resume();
+
+  void setBatchSize(int batchSize);
+
+  void setMaxEventsPerMinute(long maxEventsPerMinute);
+
+  int getBatchSize();
+
+  long getEventCount();
+
+  long getEventsPerMinute();
+
+  long getMaxEventsPerMinute();
+
   public String getStatus();
 }

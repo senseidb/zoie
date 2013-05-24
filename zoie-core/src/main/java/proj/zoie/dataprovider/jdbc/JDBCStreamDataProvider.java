@@ -23,7 +23,8 @@ public class JDBCStreamDataProvider<T> extends StreamDataProvider<T> {
   private ResultSet _res;
   private long _pullTime;
 
-  public JDBCStreamDataProvider(JDBCConnectionFactory connFactory, PreparedStatementBuilder<T> stmtBuilder, Comparator<String> versionComparator) {
+  public JDBCStreamDataProvider(JDBCConnectionFactory connFactory,
+      PreparedStatementBuilder<T> stmtBuilder, Comparator<String> versionComparator) {
     super(versionComparator);
     _connFactory = connFactory;
     _stmtBuilder = stmtBuilder;
@@ -34,83 +35,73 @@ public class JDBCStreamDataProvider<T> extends StreamDataProvider<T> {
     _pullTime = DEFAULT_PULL_TIME;
   }
 
-  public void setPullTime(long pullTime){
+  public void setPullTime(long pullTime) {
     _pullTime = pullTime;
   }
 
-  public long getPullTime(){
+  public long getPullTime() {
     return _pullTime;
   }
 
   @Override
   public DataEvent<T> next() {
     DataEvent<T> event = null;
-    try
-    {
-      if(!_res.next())
-      {
-        try{
+    try {
+      if (!_res.next()) {
+        try {
           _res.close();
-        }
-        finally{
+        } finally {
           _stmt.close();
         }
         try {
           Thread.sleep(_pullTime);
         } catch (InterruptedException e) {
-          log.error(e.getMessage(),e);
+          log.error(e.getMessage(), e);
         }
         _stmt = _stmtBuilder.buildStatment(_conn, _version);
         _res = _stmt.executeQuery();
-      } else
-      {
+      } else {
         event = _stmtBuilder.buildDataEvent(_res);
         _version = event.getVersion();
       }
-    } 
-    catch (SQLException sqle)
-    {
-      log.error(sqle.getMessage(),sqle);
+    } catch (SQLException sqle) {
+      log.error(sqle.getMessage(), sqle);
     }
     return event;
   }
 
-  
   @Override
   public void setStartingOffset(String version) {
-	_version = version;
+    _version = version;
   }
 
-@Override
+  @Override
   public void reset() {
-    if (_res!=null){
-      try{
+    if (_res != null) {
+      try {
         _res.close();
-      }
-      catch(SQLException sqle){
-        log.error(sqle.getMessage(),sqle);
+      } catch (SQLException sqle) {
+        log.error(sqle.getMessage(), sqle);
         _res = null;
-      }
-      finally{
+      } finally {
         try {
           _stmt.close();
         } catch (SQLException e) {
-          log.error(e.getMessage(),e);
+          log.error(e.getMessage(), e);
         }
       }
     }
 
-    DataConsumer<T> dc = getDataConsumer(); 
-    if (dc == null)
-    {
+    DataConsumer<T> dc = getDataConsumer();
+    if (dc == null) {
       // ? Hao: needs to fix later
       _version = null;
       log.warn("problem opening index, maynot exist, defaulting version to null");
-      //log.warn("problem opening index, maynot exist, defaulting version to 0");
-    } else{
+      // log.warn("problem opening index, maynot exist, defaulting version to 0");
+    } else {
       _version = dc.getVersion();
     }
-    if (_conn == null){
+    if (_conn == null) {
       try {
         _conn = _connFactory.getConnection();
         _stmt = _stmtBuilder.buildStatment(_conn, _version);
@@ -124,26 +115,22 @@ public class JDBCStreamDataProvider<T> extends StreamDataProvider<T> {
 
   @Override
   public void stop() {
-    try{
+    try {
       super.stop();
-    }
-    finally{
-      try{
-        if (_res!=null){
+    } finally {
+      try {
+        if (_res != null) {
           _res.close();
         }
-      }
-      catch(SQLException sqle){
-        log.error(sqle.getMessage(),sqle);
-      }
-      finally{
-        try{
-          if (_stmt!=null){
+      } catch (SQLException sqle) {
+        log.error(sqle.getMessage(), sqle);
+      } finally {
+        try {
+          if (_stmt != null) {
             _stmt.close();
           }
-        }
-        catch(SQLException sqle){
-          log.error(sqle.getMessage(),sqle);
+        } catch (SQLException sqle) {
+          log.error(sqle.getMessage(), sqle);
         }
       }
     }

@@ -17,85 +17,79 @@ import proj.zoie.api.ZoieIndexReader;
 /**
  * @param <VALUE> the type for the data to be put in the associated Key-Value store.
  */
-public class ZoieSolrIndexReaderFactory extends IndexReaderFactory
-{
-	private Zoie<IndexReader,DocumentWithID> _zoieSystem = null;
-	private List<ZoieIndexReader<IndexReader>> _readerList = null; 
-	@Override
-	public void init(NamedList args){
-		super.init(args);
-	}
-	
-	public void setZoieSystem(Zoie<IndexReader,DocumentWithID> zoieSystem)
-	{
-		_zoieSystem = zoieSystem;
-	}
+public class ZoieSolrIndexReaderFactory extends IndexReaderFactory {
+  private Zoie<IndexReader, DocumentWithID> _zoieSystem = null;
+  private List<ZoieIndexReader<IndexReader>> _readerList = null;
 
-	@Override
-	public IndexReader newReader(Directory dir, boolean readOnly)
-			throws IOException {
-		IndexReader reader = null;
-		if (_zoieSystem!=null){
-			
-			List<ZoieIndexReader<IndexReader>> readerList = _readerList;
-			_readerList	= _zoieSystem.getIndexReaders();
-			if (readerList!=null){
-				_zoieSystem.returnIndexReaders(_readerList);
-			}
-			reader = new ZoieSolrMultiReader<IndexReader>(_readerList, _zoieSystem);
-		}
-		else{
-			reader = new InitialIndexReader(IndexReader.open(dir, null, readOnly, termInfosIndexDivisor));
-		}
-		return reader;
-		
-	}
+  @Override
+  public void init(NamedList args) {
+    super.init(args);
+  }
 
-	@Override
-	protected void finalize() throws Throwable {
-		try{
-			if (_zoieSystem!=null){
-				_zoieSystem.shutdown();
-			}
-		}
-		finally{
-			super.finalize();
-		}
-	}
-	
-	private class InitialIndexReader extends FilterIndexReader{
-		public InitialIndexReader(IndexReader in) {
-			super(in);
-		}
+  public void setZoieSystem(Zoie<IndexReader, DocumentWithID> zoieSystem) {
+    _zoieSystem = zoieSystem;
+  }
 
-		@Override
-		public synchronized IndexCommit getIndexCommit() throws IOException{
-			return in.getIndexCommit();
-		}
+  @Override
+  public IndexReader newReader(Directory dir, boolean readOnly) throws IOException {
+    IndexReader reader = null;
+    if (_zoieSystem != null) {
 
-		@Override
-		public synchronized IndexReader reopen() throws CorruptIndexException,
-				IOException {
-			return reopen(true);
-		}
+      List<ZoieIndexReader<IndexReader>> readerList = _readerList;
+      _readerList = _zoieSystem.getIndexReaders();
+      if (readerList != null) {
+        _zoieSystem.returnIndexReaders(_readerList);
+      }
+      reader = new ZoieSolrMultiReader<IndexReader>(_readerList, _zoieSystem);
+    } else {
+      reader = new InitialIndexReader(IndexReader.open(dir, null, readOnly, termInfosIndexDivisor));
+    }
+    return reader;
 
-		@Override
-		public synchronized IndexReader reopen(boolean openReadOnly)
-				throws CorruptIndexException, IOException {
-			if (ZoieSolrIndexReaderFactory.this._zoieSystem==null){
-				return this;
-			}
-			else{
-				_readerList	= _zoieSystem.getIndexReaders();
-				return new ZoieSolrMultiReader<IndexReader>(_readerList, _zoieSystem);
-			}
-		}
+  }
 
-		@Override
-		public synchronized IndexReader reopen(IndexCommit commit)
-				throws CorruptIndexException, IOException {
-			return reopen(true);
-		}
-	}
+  @Override
+  protected void finalize() throws Throwable {
+    try {
+      if (_zoieSystem != null) {
+        _zoieSystem.shutdown();
+      }
+    } finally {
+      super.finalize();
+    }
+  }
+
+  private class InitialIndexReader extends FilterIndexReader {
+    public InitialIndexReader(IndexReader in) {
+      super(in);
+    }
+
+    @Override
+    public synchronized IndexCommit getIndexCommit() throws IOException {
+      return in.getIndexCommit();
+    }
+
+    @Override
+    public synchronized IndexReader reopen() throws CorruptIndexException, IOException {
+      return reopen(true);
+    }
+
+    @Override
+    public synchronized IndexReader reopen(boolean openReadOnly) throws CorruptIndexException,
+        IOException {
+      if (ZoieSolrIndexReaderFactory.this._zoieSystem == null) {
+        return this;
+      } else {
+        _readerList = _zoieSystem.getIndexReaders();
+        return new ZoieSolrMultiReader<IndexReader>(_readerList, _zoieSystem);
+      }
+    }
+
+    @Override
+    public synchronized IndexReader reopen(IndexCommit commit) throws CorruptIndexException,
+        IOException {
+      return reopen(true);
+    }
+  }
 
 }

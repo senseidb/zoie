@@ -1,4 +1,5 @@
 package proj.zoie.api.indexing;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,12 +17,13 @@ package proj.zoie.api.indexing;
  * limitations under the License.
  */
 public abstract class OptimizeScheduler {
-  public enum OptimizeType
-  {
+  public enum OptimizeType {
     FULL, PARTIAL, NONE
   };
-  
+
   abstract public OptimizeType getScheduledOptimizeType();
+
   abstract public void finished();
+
   abstract public void shutdown();
 }

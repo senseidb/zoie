@@ -1,4 +1,5 @@
 package proj.zoie.impl.indexing.internal;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -40,8 +41,8 @@ import proj.zoie.api.impl.ZoieMergePolicy.MergePolicyParams;
 import proj.zoie.api.impl.util.IndexUtil;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
-public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
-  private final DirectoryManager        _dirMgr;
+public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
+  private final DirectoryManager _dirMgr;
   private final IndexReaderDispenser<R> _dispenser;
 
   final MergePolicyParams _mergePolicyParams;
@@ -49,23 +50,22 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
   private ZoieIndexDeletionPolicy _deletionPolicy;
 
   public static final Logger log = Logger.getLogger(DiskSearchIndex.class);
-  
 
-  public DiskSearchIndex(DirectoryManager dirMgr, IndexReaderDecorator<R> decorator,SearchIndexManager<R> idxMgr){
-    super(idxMgr, true);  
+  public DiskSearchIndex(DirectoryManager dirMgr, IndexReaderDecorator<R> decorator,
+      SearchIndexManager<R> idxMgr) {
+    super(idxMgr, true);
     _dirMgr = dirMgr;
     _mergePolicyParams = new MergePolicyParams();
-    _dispenser = new IndexReaderDispenser<R>(_dirMgr, decorator,this);
+    _dispenser = new IndexReaderDispenser<R>(_dirMgr, decorator, this);
     _mergeScheduler = new SerialMergeScheduler();
     _deletionPolicy = new ZoieIndexDeletionPolicy();
   }
 
-  public String getVersion()
-  {
+  public String getVersion() {
     return _dispenser.getCurrentVersion();
   }
 
-  public MergePolicyParams getMergePolicyParams(){
+  public MergePolicyParams getMergePolicyParams() {
     return _mergePolicyParams;
   }
 
@@ -73,48 +73,39 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
    * Gets the number of docs in the current loaded index
    * @return number of docs
    */
-  public int getNumdocs()
-  {
-    IndexReader reader=_dispenser.getIndexReader();
-    if (reader!=null)
-    {
+  public int getNumdocs() {
+    IndexReader reader = _dispenser.getIndexReader();
+    if (reader != null) {
       return reader.numDocs();
-    }
-    else
-    {
+    } else {
       return 0;
     }
   }
 
-  public int getSegmentCount() throws IOException{
-    if (_dirMgr == null || !_dirMgr.exists()){
+  public int getSegmentCount() throws IOException {
+    if (_dirMgr == null || !_dirMgr.exists()) {
       return 0;
     }
 
     Directory dir = null;
-    try{
+    try {
       dir = _dirMgr.getDirectory();
-    }
-    catch(Exception e){
+    } catch (Exception e) {
       return 0;
     }
     if (dir == null) return 0;
     return IndexUtil.getNumSegments(dir);
   }
-  public String getSegmentInfo()
-  {
-    if (_dirMgr == null || !_dirMgr.exists())
-    {
+
+  public String getSegmentInfo() {
+    if (_dirMgr == null || !_dirMgr.exists()) {
       return "";
     }
 
     Directory dir = null;
-    try
-    {
+    try {
       dir = _dirMgr.getDirectory();
-    }
-    catch(Exception e)
-    {
+    } catch (Exception e) {
       return "";
     }
     if (dir == null) return "";
@@ -124,13 +115,11 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
   /**
    * Close and releases dispenser and clean up
    */
-  public void close()
-  {
+  public void close() {
     super.close();
 
     // close the dispenser
-    if (_dispenser != null)
-    {
+    if (_dispenser != null) {
       _dispenser.close();
     }
   }
@@ -139,10 +128,8 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
    * Refreshes the index reader
    */
   @Override
-  public void refresh()
-  {
-    synchronized(this)
-    {
+  public void refresh() {
+    synchronized (this) {
       try {
         LongSet delDocs = _delDocs;
         clearDeletes();
@@ -151,51 +138,47 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
         commitDeletes();
       } catch (IOException e) {
         ZoieHealth.setFatal();
-        log.error(e.getMessage(),e);
-      }
-      finally{
-        synchronized(readerOpenLock){
+        log.error(e.getMessage(), e);
+      } finally {
+        synchronized (readerOpenLock) {
           readerOpenLock.notifyAll();
         }
       }
     }
   }
 
-	  @Override
-	  protected void finalize()
-	  {
-	    close();
-	  }
-	  
+  @Override
+  protected void finalize() {
+    close();
+  }
 
   /**
    * Opens an index modifier.
    * @param analyzer Analyzer
    * @return IndexModifer instance
    */
-  public IndexWriter openIndexWriter(Analyzer analyzer,Similarity similarity) throws IOException
-  {
-    if(_indexWriter != null) return _indexWriter;
+  public IndexWriter openIndexWriter(Analyzer analyzer, Similarity similarity) throws IOException {
+    if (_indexWriter != null) return _indexWriter;
 
     Directory directory = _dirMgr.getDirectory(true);
 
-    log.info("opening index writer at: "+_dirMgr.getPath());
-    
+    log.info("opening index writer at: " + _dirMgr.getPath());
+
     ZoieMergePolicy mergePolicy = new ZoieMergePolicy();
     mergePolicy.setMergePolicyParams(_mergePolicyParams);
 
     // hao: autocommit is set to false with this constructor
-    IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_34,analyzer);
+    IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_34, analyzer);
     config.setOpenMode(OpenMode.CREATE_OR_APPEND);
     config.setIndexDeletionPolicy(_deletionPolicy);
     config.setMergeScheduler(_mergeScheduler);
     config.setMergePolicy(mergePolicy);
     config.setReaderPooling(false);
-    if (similarity!=null){
+    if (similarity != null) {
       config.setSimilarity(similarity);
     }
     config.setRAMBufferSizeMB(5);
-    IndexWriter idxWriter = new IndexWriter(directory,config);
+    IndexWriter idxWriter = new IndexWriter(directory, config);
 
     _indexWriter = idxWriter;
     return idxWriter;
@@ -204,22 +187,22 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
   /**
    * Gets the current reader
    */
-  public ZoieIndexReader<R> openIndexReader() throws IOException
-  {
+  public ZoieIndexReader<R> openIndexReader() throws IOException {
     // use dispenser to get the reader
     return _dispenser.getIndexReader();
   }
-  
+
   private final Object readerOpenLock = new Object();
-  
-  public ZoieIndexReader<R> openIndexReader(String minVersion,long timeout) throws IOException,TimeoutException{
-    if (_versionComparator.compare(minVersion,_dispenser.getCurrentVersion())<=0){
+
+  public ZoieIndexReader<R> openIndexReader(String minVersion, long timeout) throws IOException,
+      TimeoutException {
+    if (_versionComparator.compare(minVersion, _dispenser.getCurrentVersion()) <= 0) {
       return _dispenser.getIndexReader();
     }
     long start = System.currentTimeMillis();
-    
-    while(_versionComparator.compare(minVersion, _dispenser.getCurrentVersion())>0){
-      synchronized(readerOpenLock){
+
+    while (_versionComparator.compare(minVersion, _dispenser.getCurrentVersion()) > 0) {
+      synchronized (readerOpenLock) {
         try {
           readerOpenLock.wait(100);
         } catch (InterruptedException e) {
@@ -227,21 +210,20 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
         }
       }
       long now = System.currentTimeMillis();
-      if (now-start>=timeout) throw new TimeoutException("timed-out, took: "+(now-start)+" ms");
+      if (now - start >= timeout) throw new TimeoutException("timed-out, took: " + (now - start)
+          + " ms");
     }
 
     return _dispenser.getIndexReader();
-    
-  }
 
+  }
 
   @Override
   protected IndexReader openIndexReaderForDelete() throws IOException {
     Directory directory = _dirMgr.getDirectory(true);
-    if (IndexReader.indexExists(directory)){		
+    if (IndexReader.indexExists(directory)) {
       return IndexReader.open(directory, _deletionPolicy, false);
-    }
-    else{
+    } else {
       return null;
     }
   }
@@ -251,10 +233,8 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
    * @return
    * @throws IOException
    */
-  public ZoieIndexReader<R> getNewReader() throws IOException
-  {
-    synchronized(this)
-    {
+  public ZoieIndexReader<R> getNewReader() throws IOException {
+    synchronized (this) {
       refresh();
       commitDeletes();
       ZoieIndexReader<R> reader = _dispenser.getIndexReader();
@@ -265,27 +245,22 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
   /**
    * Writes the current version/SCN to the disk
    */
-  public void setVersion(String version) throws IOException
-  {
+  public void setVersion(String version) throws IOException {
     _dirMgr.setVersion(version);
   }
 
-  public DiskIndexSnapshot getSnapshot() throws IOException
-  {
+  public DiskIndexSnapshot getSnapshot() throws IOException {
     IndexSignature sig = new IndexSignature(_dirMgr.getVersion());
-    if(sig != null)
-    {
+    if (sig != null) {
       ZoieIndexDeletionPolicy.Snapshot snapshot = _deletionPolicy.getSnapshot();
-      if(snapshot != null)
-      {
+      if (snapshot != null) {
         return new DiskIndexSnapshot(_dirMgr, sig, snapshot);
       }
     }
     return null;
   }
 
-  public void importSnapshot(ReadableByteChannel channel) throws IOException
-  {
+  public void importSnapshot(ReadableByteChannel channel) throws IOException {
     DiskIndexSnapshot.readSnapshot(channel, _dirMgr);
   }
 }

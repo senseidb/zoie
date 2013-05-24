@@ -1,4 +1,5 @@
 package proj.zoie.impl.indexing;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -25,18 +26,17 @@ import proj.zoie.api.indexing.IndexReaderDecorator;
 
 public class DefaultIndexReaderDecorator implements IndexReaderDecorator<IndexReader> {
 
-	public IndexReader decorate(ZoieIndexReader<IndexReader> indexReader) throws IOException {
-		return indexReader;
-	}
+  public IndexReader decorate(ZoieIndexReader<IndexReader> indexReader) throws IOException {
+    return indexReader;
+  }
 
-	public IndexReader redecorate(IndexReader decorated, ZoieIndexReader<IndexReader> copy,boolean withDeletes)
-			throws IOException {
-		return copy;
-	}
+  public IndexReader redecorate(IndexReader decorated, ZoieIndexReader<IndexReader> copy,
+      boolean withDeletes) throws IOException {
+    return copy;
+  }
 
-  public void setDeleteSet(IndexReader reader, DocIdSet docIds)
-  {
-    // do nothing 
+  public void setDeleteSet(IndexReader reader, DocIdSet docIds) {
+    // do nothing
   }
 
 }

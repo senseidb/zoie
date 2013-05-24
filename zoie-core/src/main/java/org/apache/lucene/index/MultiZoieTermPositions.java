@@ -6,9 +6,8 @@ import proj.zoie.api.ZoieIndexReader;
 
 public class MultiZoieTermPositions extends MultiTermPositions {
 
-	public MultiZoieTermPositions(ZoieIndexReader<?> reader, ZoieIndexReader<?>[] readers,
-			int[] s) {
-		super(reader, readers, s);
-	}
+  public MultiZoieTermPositions(ZoieIndexReader<?> reader, ZoieIndexReader<?>[] readers, int[] s) {
+    super(reader, readers, s);
+  }
 
 }

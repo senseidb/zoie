@@ -1,4 +1,5 @@
 package proj.zoie.mbean;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,8 +19,11 @@ package proj.zoie.mbean;
 import java.util.Date;
 
 public interface ZoieOptimizeSchedulerAdminMBean {
-	long getOptimizationDuration();  
-	void setOptimizationDuration(long duration);
-	void setDateToStartOptimize(Date optimizeStartDate);
-	Date getDateToStartOptimize();
+  long getOptimizationDuration();
+
+  void setOptimizationDuration(long duration);
+
+  void setDateToStartOptimize(Date optimizeStartDate);
+
+  Date getDateToStartOptimize();
 }

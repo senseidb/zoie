@@ -1,14 +1,13 @@
 package proj.zoie.api.indexing;
 
-
 public class DefaultIndexingEventListener implements IndexingEventListener {
 
-	public void handleIndexingEvent(IndexingEvent evt) {
+  public void handleIndexingEvent(IndexingEvent evt) {
 
-	}
+  }
 
-	public void handleUpdatedDiskVersion(String version) {
+  public void handleUpdatedDiskVersion(String version) {
 
-	}
+  }
 
 }

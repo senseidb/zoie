@@ -1,4 +1,5 @@
 package proj.zoie.impl.indexing.internal;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -27,51 +28,45 @@ import org.apache.lucene.search.Similarity;
 
 import proj.zoie.api.indexing.IndexingEventListener;
 
-public class RAMLuceneIndexDataLoader<R extends IndexReader> extends LuceneIndexDataLoader<R>
-{
+public class RAMLuceneIndexDataLoader<R extends IndexReader> extends LuceneIndexDataLoader<R> {
 
-	public RAMLuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R> idxMgr,Comparator<String> comparator,Queue<IndexingEventListener> lsnrList)
-	{
-		super(analyzer, similarity,idxMgr,comparator,lsnrList);
-	}
+  public RAMLuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,
+      SearchIndexManager<R> idxMgr, Comparator<String> comparator,
+      Queue<IndexingEventListener> lsnrList) {
+    super(analyzer, similarity, idxMgr, comparator, lsnrList);
+  }
 
-	@Override
-	protected BaseSearchIndex<R> getSearchIndex() {
-		return _idxMgr.getCurrentWritableMemoryIndex();
-	}
+  @Override
+  protected BaseSearchIndex<R> getSearchIndex() {
+    return _idxMgr.getCurrentWritableMemoryIndex();
+  }
 
-	@Override
-	protected void propagateDeletes(LongSet delDocs) throws IOException
-	{
-	  if (delDocs == null || delDocs.size() == 0) {
-	    return;
-	  }
-	  RAMSearchIndex<R> readOnlyMemoryIdx = _idxMgr.getCurrentReadOnlyMemoryIndex();
-	  if(readOnlyMemoryIdx != null)
-	  {
-	    readOnlyMemoryIdx.markDeletes(delDocs);
-	  }
-	  
-	  DiskSearchIndex<R> diskIdx = _idxMgr.getDiskIndex();
-	  if(diskIdx != null)
-	  {
-	    diskIdx.markDeletes(delDocs);
-	  }
-	}
-	
-	@Override
-	protected void commitPropagatedDeletes() throws IOException
-	{
-	  RAMSearchIndex<R> readOnlyMemoryIdx = _idxMgr.getCurrentReadOnlyMemoryIndex();
-	  if(readOnlyMemoryIdx != null)
-	  {
-	    readOnlyMemoryIdx.commitDeletes();
-	  }
-	  
-	  DiskSearchIndex<R> diskIdx = _idxMgr.getDiskIndex();
-	  if(diskIdx != null)
-	  {
-	    diskIdx.commitDeletes();
-	  }
-	}
+  @Override
+  protected void propagateDeletes(LongSet delDocs) throws IOException {
+    if (delDocs == null || delDocs.size() == 0) {
+      return;
+    }
+    RAMSearchIndex<R> readOnlyMemoryIdx = _idxMgr.getCurrentReadOnlyMemoryIndex();
+    if (readOnlyMemoryIdx != null) {
+      readOnlyMemoryIdx.markDeletes(delDocs);
+    }
+
+    DiskSearchIndex<R> diskIdx = _idxMgr.getDiskIndex();
+    if (diskIdx != null) {
+      diskIdx.markDeletes(delDocs);
+    }
+  }
+
+  @Override
+  protected void commitPropagatedDeletes() throws IOException {
+    RAMSearchIndex<R> readOnlyMemoryIdx = _idxMgr.getCurrentReadOnlyMemoryIndex();
+    if (readOnlyMemoryIdx != null) {
+      readOnlyMemoryIdx.commitDeletes();
+    }
+
+    DiskSearchIndex<R> diskIdx = _idxMgr.getDiskIndex();
+    if (diskIdx != null) {
+      diskIdx.commitDeletes();
+    }
+  }
 }

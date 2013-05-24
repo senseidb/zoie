@@ -1,4 +1,5 @@
 package proj.zoie.api.impl.util;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,58 +20,48 @@ import java.io.File;
 import java.io.IOException;
 
 public class FileUtil {
-	/**
-	   * utility method to delete a directory
-	   * @param dir
-	   * @throws IOException
-	   */
-	  private static void deleteDir(File dir)
-	  {
-	    if (dir == null) return;
-	    
-	    if (dir.isDirectory())
-	    {
-	      File[] files=dir.listFiles();
-	      for (File file : files)
-	      {
-	        deleteDir(file);
-	      }
-	      dir.delete();
-	    }
-	    else
-	    {
-	      dir.delete();
-	    }
-	  }
+  /**
+     * utility method to delete a directory
+     * @param dir
+     * @throws IOException
+     */
+  private static void deleteDir(File dir) {
+    if (dir == null) return;
 
-	  /**
-	   * Purges an index
-	   */
-	  public static void rmDir(File location)
-	  {
-	    String name=location.getName()+"-"+System.currentTimeMillis();
-	    File parent=location.getParentFile();
-	    File tobeDeleted=new File(parent,name);
-	    location.renameTo(tobeDeleted);
-	    // try to delete the files, ok if it fails, this is just for testing
-	    deleteDir(tobeDeleted);
-	  }
-	public static long sizeFile(File location)
-	{
-	  if (location ==null || !location.exists()) return 0;
-	  long total = 0;
-    if (location.isDirectory())
-    {
-      File[] files=location.listFiles();
-      for (File file : files)
-      {
+    if (dir.isDirectory()) {
+      File[] files = dir.listFiles();
+      for (File file : files) {
+        deleteDir(file);
+      }
+      dir.delete();
+    } else {
+      dir.delete();
+    }
+  }
+
+  /**
+   * Purges an index
+   */
+  public static void rmDir(File location) {
+    String name = location.getName() + "-" + System.currentTimeMillis();
+    File parent = location.getParentFile();
+    File tobeDeleted = new File(parent, name);
+    location.renameTo(tobeDeleted);
+    // try to delete the files, ok if it fails, this is just for testing
+    deleteDir(tobeDeleted);
+  }
+
+  public static long sizeFile(File location) {
+    if (location == null || !location.exists()) return 0;
+    long total = 0;
+    if (location.isDirectory()) {
+      File[] files = location.listFiles();
+      for (File file : files) {
         total += sizeFile(file);
       }
       return total;
-    }
-    else
-    {
+    } else {
       return location.length();
     }
-	}
+  }
 }

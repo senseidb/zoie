@@ -15,70 +15,70 @@ import org.apache.lucene.store.Directory;
 
 public class ZoieSolrIndexCommit extends IndexCommit {
 
-    private String segmentsFileName;
-    Collection files;
-    Directory dir;
-    long generation;
-    long version;
-    final boolean isOptimized;
-    final Map userData;
-    final int segmentCount;
+  private String segmentsFileName;
+  Collection files;
+  Directory dir;
+  long generation;
+  long version;
+  final boolean isOptimized;
+  final Map userData;
+  final int segmentCount;
 
-    ZoieSolrIndexCommit(SegmentInfos infos, Directory dir) throws IOException {
-      segmentsFileName = infos.getCurrentSegmentFileName();
-      this.dir = dir;
-      userData = infos.getUserData();
-      files = Collections.unmodifiableCollection(infos.files(dir, true));
-      version = infos.getVersion();
-      generation = infos.getGeneration();
-      isOptimized = infos.size() == 1 && !infos.info(0).hasDeletions();
-      segmentCount = infos.size();
-    }
-    
-    @Override
-    public int getSegmentCount(){
-      return segmentCount;
-    }
+  ZoieSolrIndexCommit(SegmentInfos infos, Directory dir) throws IOException {
+    segmentsFileName = infos.getCurrentSegmentFileName();
+    this.dir = dir;
+    userData = infos.getUserData();
+    files = Collections.unmodifiableCollection(infos.files(dir, true));
+    version = infos.getVersion();
+    generation = infos.getGeneration();
+    isOptimized = infos.size() == 1 && !infos.info(0).hasDeletions();
+    segmentCount = infos.size();
+  }
 
-    public boolean isOptimized() {
-      return isOptimized;
-    }
+  @Override
+  public int getSegmentCount() {
+    return segmentCount;
+  }
 
-	@Override
-    public String getSegmentsFileName() {
-      return segmentsFileName;
-    }
+  public boolean isOptimized() {
+    return isOptimized;
+  }
 
-	@Override
-    public Collection getFileNames() {
-      return files;
-    }
+  @Override
+  public String getSegmentsFileName() {
+    return segmentsFileName;
+  }
 
-	@Override
-    public Directory getDirectory() {
-      return dir;
-    }
+  @Override
+  public Collection getFileNames() {
+    return files;
+  }
 
-    public long getVersion() {
-      return version;
-    }
+  @Override
+  public Directory getDirectory() {
+    return dir;
+  }
 
-    public long getGeneration() {
-      return generation;
-    }
+  public long getVersion() {
+    return version;
+  }
 
-    public boolean isDeleted() {
-      return false;
-    }
+  public long getGeneration() {
+    return generation;
+  }
 
-    public Map getUserData() {
-      return userData;
-    }
+  public boolean isDeleted() {
+    return false;
+  }
 
-    @Override
-    public void delete()
-    {
-      throw new UnsupportedOperationException("since isDeleted always returns false, we don't support delete operation here");
-    }
+  public Map getUserData() {
+    return userData;
+  }
+
+  @Override
+  public void delete() {
+    throw new UnsupportedOperationException(
+        "since isDeleted always returns false, we don't support delete operation here");
+  }
 
 }

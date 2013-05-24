@@ -1,4 +1,5 @@
 package proj.zoie.api;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,31 +25,30 @@ import org.apache.lucene.index.IndexReader;
 /**
  * This interface is IndexReader instances are to be managed.
  */
-public interface IndexReaderFactory<R extends IndexReader>
-{
-	
-	/**
-	 * Returns a list of index readers.
-	 * @return List of IndexReader instances 
-	 * @throws IOException
-	 */
-	List<R> getIndexReaders() throws IOException;
-	
-	/**
-	 * Gets the default analyzer used for indexing.
-	 * @return Default analyzer
-	 */
-	Analyzer getAnalyzer();
-	
-	/**
-	 * Returns the index readers.
-	 * @param r Returns the list of index reader instances.
-	 */
-	void returnIndexReaders(List<R> r);
-	
-	/**
-	 * Returns the current version reader is at
-	 * @return String version of the reader
-	 */
-	String getCurrentReaderVersion();
+public interface IndexReaderFactory<R extends IndexReader> {
+
+  /**
+   * Returns a list of index readers.
+   * @return List of IndexReader instances 
+   * @throws IOException
+   */
+  List<R> getIndexReaders() throws IOException;
+
+  /**
+   * Gets the default analyzer used for indexing.
+   * @return Default analyzer
+   */
+  Analyzer getAnalyzer();
+
+  /**
+   * Returns the index readers.
+   * @param r Returns the list of index reader instances.
+   */
+  void returnIndexReaders(List<R> r);
+
+  /**
+   * Returns the current version reader is at
+   * @return String version of the reader
+   */
+  String getCurrentReaderVersion();
 }

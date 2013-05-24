@@ -1,4 +1,5 @@
 package proj.zoie.api;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,7 +17,6 @@ package proj.zoie.api;
  * limitations under the License.
  */
 
-public interface IndexCopier
-{
+public interface IndexCopier {
   boolean copy(String src, String dest);
 }

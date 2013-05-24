@@ -58,529 +58,495 @@ import com.yammer.metrics.reporting.CsvReporter;
 
 public class ZoiePerf {
 
-	static final Charset UTF8 = Charset.forName("UTF-8");
-	private static class PerfTestHandler {
-		final LifeCycleCotrolledDataConsumer<String> consumer;
-		final QueryHandler queryHandler;
+  static final Charset UTF8 = Charset.forName("UTF-8");
 
-		PerfTestHandler(LifeCycleCotrolledDataConsumer<String> consumer,
-				QueryHandler queryHandler) {
-			this.consumer = consumer;
-			this.queryHandler = queryHandler;
-		}
-	}
+  private static class PerfTestHandler {
+    final LifeCycleCotrolledDataConsumer<String> consumer;
+    final QueryHandler queryHandler;
 
-	static TweetInterpreter interpreter = new TweetInterpreter();
+    PerfTestHandler(LifeCycleCotrolledDataConsumer<String> consumer, QueryHandler queryHandler) {
+      this.consumer = consumer;
+      this.queryHandler = queryHandler;
+    }
+  }
 
-	static Map<String,DIRECTORY_MODE> modeMap = new HashMap<String,DIRECTORY_MODE>();
-	static{
-		modeMap.put("file", DIRECTORY_MODE.SIMPLE);
-		modeMap.put("mmap", DIRECTORY_MODE.MMAP);
-		modeMap.put("nio", DIRECTORY_MODE.NIO);
-	}
-	
-	
-	static PerfTestHandler buildZoieHandler(File idxDir, Configuration topConf,Configuration conf) throws Exception {
+  static TweetInterpreter interpreter = new TweetInterpreter();
 
-		ZoieConfig zoieConfig = new ZoieConfig();
-		zoieConfig.setAnalyzer(new StandardAnalyzer(Version.LUCENE_34));
-		zoieConfig.setBatchSize(100000);
-		zoieConfig.setBatchDelay(10000);
-		zoieConfig.setMaxBatchSize(100000);
-		zoieConfig.setRtIndexing(true);
-		zoieConfig.setVersionComparator(ZoiePerfVersion.COMPARATOR);
-		zoieConfig.setReadercachefactory(SimpleReaderCache.FACTORY);
-		
-		String modeConf = topConf.getString("perf.directory.type", "file");
-		DIRECTORY_MODE mode = modeMap.get(modeConf);
-		if (mode == null) mode = DIRECTORY_MODE.SIMPLE;
-		DirectoryManager dirMgr = new DefaultDirectoryManager(idxDir,mode);
+  static Map<String, DIRECTORY_MODE> modeMap = new HashMap<String, DIRECTORY_MODE>();
+  static {
+    modeMap.put("file", DIRECTORY_MODE.SIMPLE);
+    modeMap.put("mmap", DIRECTORY_MODE.MMAP);
+    modeMap.put("nio", DIRECTORY_MODE.NIO);
+  }
 
-		IndexReaderDecorator<IndexReader> indexReaderDecorator = new DefaultIndexReaderDecorator();
+  static PerfTestHandler buildZoieHandler(File idxDir, Configuration topConf, Configuration conf)
+      throws Exception {
 
-		File queryFile = new File(topConf.getString("perf.query.file"));
-		if (!queryFile.exists()) {
-			throw new ConfigurationException(queryFile.getAbsolutePath()+" does not exist!");
-		}
-		
-		
-		ZoieSystem<IndexReader, String> zoieSystem = new ZoieSystem<IndexReader, String>(
-				dirMgr, interpreter, indexReaderDecorator, zoieConfig);
+    ZoieConfig zoieConfig = new ZoieConfig();
+    zoieConfig.setAnalyzer(new StandardAnalyzer(Version.LUCENE_34));
+    zoieConfig.setBatchSize(100000);
+    zoieConfig.setBatchDelay(10000);
+    zoieConfig.setMaxBatchSize(100000);
+    zoieConfig.setRtIndexing(true);
+    zoieConfig.setVersionComparator(ZoiePerfVersion.COMPARATOR);
+    zoieConfig.setReadercachefactory(SimpleReaderCache.FACTORY);
 
-		SearchQueryHandler queryHandler = new SearchQueryHandler(queryFile, (IndexReaderFactory) zoieSystem);
-		
-		return new PerfTestHandler(
-				(LifeCycleCotrolledDataConsumer<String>) zoieSystem,queryHandler);
-	}
+    String modeConf = topConf.getString("perf.directory.type", "file");
+    DIRECTORY_MODE mode = modeMap.get(modeConf);
+    if (mode == null) mode = DIRECTORY_MODE.SIMPLE;
+    DirectoryManager dirMgr = new DefaultDirectoryManager(idxDir, mode);
 
-	static PerfTestHandler buildNrtHandler(File idxDir, Configuration topConf,Configuration conf)
-			throws Exception {
-		long throttle = conf.getLong("throttle");
-		String modeConf = topConf.getString("perf.directory.type", "file");
-		Directory dir;
-		if ("file".equals(modeConf)){
-			dir = FSDirectory.open(idxDir);
-		}
-		else if ("mmap".equals(modeConf)){
-			dir = MMapDirectory.open(idxDir);
-		}
-		else if ("nio".equals(modeConf)){
-			dir = NIOFSDirectory.open(idxDir);
-		}
-		else{
-			dir = FSDirectory.open(idxDir);
-		}
-		
-		MergePolicy mergePolicy = null;
-		
-		String mergePolicyConf = conf.getString("mergePolicy");
-		if ("tier".equals(mergePolicyConf)){
-			mergePolicy = new TieredMergePolicy();
-		}
-		else if ("zoie".equals(mergePolicyConf)){
-			mergePolicy = new ZoieMergePolicy();
-		}
-		ThrottledLuceneNRTDataConsumer<String> nrtSystem = new ThrottledLuceneNRTDataConsumer<String>(
-				dir, new StandardAnalyzer(Version.LUCENE_34),interpreter, throttle,mergePolicy);
-		
-		boolean appendOnly = conf.getBoolean("appendOnly", false);
-		nrtSystem.setAppendOnly(appendOnly);
-		
-		File queryFile = new File(topConf.getString("perf.query.file"));
-		if (!queryFile.exists()) {
-			throw new ConfigurationException(queryFile.getAbsolutePath()+" does not exist!");
-		}
-		
-		SearchQueryHandler queryHandler = new SearchQueryHandler(queryFile, (IndexReaderFactory) nrtSystem);
-		
-		return new PerfTestHandler(
-				(LifeCycleCotrolledDataConsumer<String>) nrtSystem,queryHandler);
-	}
-	
-	static PerfTestHandler buildZoieStoreHandler(Configuration topConf,File idxDir, File inputFile) throws Exception {
-		String modeConf = topConf.getString("perf.directory.type", "file");
-		Directory dir;
-		if ("file".equals(modeConf)){
-			dir = FSDirectory.open(idxDir);
-		}
-		else if ("mmap".equals(modeConf)){
-			dir = MMapDirectory.open(idxDir);
-		}
-		else if ("nio".equals(modeConf)){
-			dir = NIOFSDirectory.open(idxDir);
-		}
-		else{
-			dir = FSDirectory.open(idxDir);
-		}
-		ZoieStore luceneStore = LuceneStore.openStore(dir, "src_data", false);
-		StoreQueryHandler queryHandler = new StoreQueryHandler(inputFile,luceneStore,100000);
-		
-		ZoieStoreConsumer<String> consumer = new ZoieStoreConsumer<String>(luceneStore,new ZoieStoreSerializer<String>() {
+    IndexReaderDecorator<IndexReader> indexReaderDecorator = new DefaultIndexReaderDecorator();
 
-			@Override
-			public long getUid(String data) {
-				try{
-				  JSONObject obj = new JSONObject(data);
-				  return obj.getLong("id");
-				}
-				catch(Exception e){
-					throw new RuntimeException(e);
-				}
-			}
+    File queryFile = new File(topConf.getString("perf.query.file"));
+    if (!queryFile.exists()) {
+      throw new ConfigurationException(queryFile.getAbsolutePath() + " does not exist!");
+    }
 
-			@Override
-			public byte[] toBytes(String data) {
-				return data.getBytes(UTF8);
-			}
+    ZoieSystem<IndexReader, String> zoieSystem = new ZoieSystem<IndexReader, String>(dirMgr,
+        interpreter, indexReaderDecorator, zoieConfig);
 
-			@Override
-			public String fromBytes(byte[] data) {
-				return new String(data,UTF8);
-			}
+    SearchQueryHandler queryHandler = new SearchQueryHandler(queryFile,
+        (IndexReaderFactory) zoieSystem);
 
-			@Override
-			public boolean isDelete(String data) {
-				return false;
-			}
+    return new PerfTestHandler((LifeCycleCotrolledDataConsumer<String>) zoieSystem, queryHandler);
+  }
 
-			@Override
-			public boolean isSkip(String data) {
-				return false;
-			}
-		});
-		return new PerfTestHandler(consumer,queryHandler);
-	}
-	
-	static PerfTestHandler buildFeedOnlyHandler() throws Exception {
-		return new PerfTestHandler(new LifeCycleCotrolledDataConsumer<String>(){
+  static PerfTestHandler buildNrtHandler(File idxDir, Configuration topConf, Configuration conf)
+      throws Exception {
+    long throttle = conf.getLong("throttle");
+    String modeConf = topConf.getString("perf.directory.type", "file");
+    Directory dir;
+    if ("file".equals(modeConf)) {
+      dir = FSDirectory.open(idxDir);
+    } else if ("mmap".equals(modeConf)) {
+      dir = MMapDirectory.open(idxDir);
+    } else if ("nio".equals(modeConf)) {
+      dir = NIOFSDirectory.open(idxDir);
+    } else {
+      dir = FSDirectory.open(idxDir);
+    }
 
-			private volatile String version=null;
-			@Override
-			public void consume(
-					Collection<proj.zoie.api.DataConsumer.DataEvent<String>> data)
-					throws ZoieException {
-				for (DataEvent<String> datum : data){
-					version = datum.getVersion();
-				}
-			}
+    MergePolicy mergePolicy = null;
 
-			@Override
-			public String getVersion() {
-				return version;
-			}
+    String mergePolicyConf = conf.getString("mergePolicy");
+    if ("tier".equals(mergePolicyConf)) {
+      mergePolicy = new TieredMergePolicy();
+    } else if ("zoie".equals(mergePolicyConf)) {
+      mergePolicy = new ZoieMergePolicy();
+    }
+    ThrottledLuceneNRTDataConsumer<String> nrtSystem = new ThrottledLuceneNRTDataConsumer<String>(
+        dir, new StandardAnalyzer(Version.LUCENE_34), interpreter, throttle, mergePolicy);
+
+    boolean appendOnly = conf.getBoolean("appendOnly", false);
+    nrtSystem.setAppendOnly(appendOnly);
+
+    File queryFile = new File(topConf.getString("perf.query.file"));
+    if (!queryFile.exists()) {
+      throw new ConfigurationException(queryFile.getAbsolutePath() + " does not exist!");
+    }
+
+    SearchQueryHandler queryHandler = new SearchQueryHandler(queryFile,
+        (IndexReaderFactory) nrtSystem);
+
+    return new PerfTestHandler((LifeCycleCotrolledDataConsumer<String>) nrtSystem, queryHandler);
+  }
+
+  static PerfTestHandler buildZoieStoreHandler(Configuration topConf, File idxDir, File inputFile)
+      throws Exception {
+    String modeConf = topConf.getString("perf.directory.type", "file");
+    Directory dir;
+    if ("file".equals(modeConf)) {
+      dir = FSDirectory.open(idxDir);
+    } else if ("mmap".equals(modeConf)) {
+      dir = MMapDirectory.open(idxDir);
+    } else if ("nio".equals(modeConf)) {
+      dir = NIOFSDirectory.open(idxDir);
+    } else {
+      dir = FSDirectory.open(idxDir);
+    }
+    ZoieStore luceneStore = LuceneStore.openStore(dir, "src_data", false);
+    StoreQueryHandler queryHandler = new StoreQueryHandler(inputFile, luceneStore, 100000);
+
+    ZoieStoreConsumer<String> consumer = new ZoieStoreConsumer<String>(luceneStore,
+        new ZoieStoreSerializer<String>() {
+
+          @Override
+          public long getUid(String data) {
+            try {
+              JSONObject obj = new JSONObject(data);
+              return obj.getLong("id");
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          }
+
+          @Override
+          public byte[] toBytes(String data) {
+            return data.getBytes(UTF8);
+          }
+
+          @Override
+          public String fromBytes(byte[] data) {
+            return new String(data, UTF8);
+          }
+
+          @Override
+          public boolean isDelete(String data) {
+            return false;
+          }
+
+          @Override
+          public boolean isSkip(String data) {
+            return false;
+          }
+        });
+    return new PerfTestHandler(consumer, queryHandler);
+  }
+
+  static PerfTestHandler buildFeedOnlyHandler() throws Exception {
+    return new PerfTestHandler(new LifeCycleCotrolledDataConsumer<String>() {
+
+      private volatile String version = null;
 
       @Override
-      public Comparator<String> getVersionComparator()
-      {
+      public void consume(Collection<proj.zoie.api.DataConsumer.DataEvent<String>> data)
+          throws ZoieException {
+        for (DataEvent<String> datum : data) {
+          version = datum.getVersion();
+        }
+      }
+
+      @Override
+      public String getVersion() {
+        return version;
+      }
+
+      @Override
+      public Comparator<String> getVersionComparator() {
         throw new UnsupportedOperationException("not supported");
       }
 
-			@Override
-			public void start() {
-				// TODO Auto-generated method stub
-				
-			}
+      @Override
+      public void start() {
+        // TODO Auto-generated method stub
 
-			@Override
-			public void stop() {
-				// TODO Auto-generated method stub
-				
-			}
-			
-		},new QueryHandler<Object>() {
+      }
 
-			@Override
-			public Object handleQuery() throws Exception {
-				// TODO Auto-generated method stub
-				return null;
-			}
+      @Override
+      public void stop() {
+        // TODO Auto-generated method stub
 
-			@Override
-			public String getCurrentVersion() {
-				// TODO Auto-generated method stub
-				return null;
-			}
-		});
-	}
+      }
 
-	static PerfTestHandler buildPerfHandler(Configuration conf,File inputFile)
-			throws Exception {
-		File idxDir = new File(conf.getString("perf.idxDir"));
+    }, new QueryHandler<Object>() {
 
-		String type = conf.getString("perf.type");
-		Configuration subConf = conf.subset("perf." + type);
+      @Override
+      public Object handleQuery() throws Exception {
+        // TODO Auto-generated method stub
+        return null;
+      }
 
-		if ("zoie".equals(type)) {
-			return buildZoieHandler(idxDir,conf, subConf);
-		} else if ("nrt".equals(type)) {
-			return buildNrtHandler(idxDir, conf,subConf);
-		} else if ("store".equals(type)){
-			return buildZoieStoreHandler(conf,idxDir, inputFile);
-		}
-		else if ("feed".equals(type)){
-			return buildFeedOnlyHandler();
-		}
-		else {
-			throw new ConfigurationException("test type: " + type
-					+ " is not supported");
-		}
-	}
+      @Override
+      public String getCurrentVersion() {
+        // TODO Auto-generated method stub
+        return null;
+      }
+    });
+  }
 
-	
-	public static void runPerf(Configuration conf) throws Exception{
-        Map<String,Metric> monitoredMetrics = new HashMap<String,Metric>();
-		
-		File queryFile = new File(conf.getString("perf.query.file"));
-		if (!queryFile.exists()) {
-			System.out.println("query file does not exist");
-		}
-		
-		File inputFile = new File(conf.getString("perf.input"));
+  static PerfTestHandler buildPerfHandler(Configuration conf, File inputFile) throws Exception {
+    File idxDir = new File(conf.getString("perf.idxDir"));
 
-		if (!inputFile.exists()) {
-			throw new ConfigurationException("input file: "
-					+ inputFile.getAbsolutePath() + " does not exist.");
-		}
+    String type = conf.getString("perf.type");
+    Configuration subConf = conf.subset("perf." + type);
 
+    if ("zoie".equals(type)) {
+      return buildZoieHandler(idxDir, conf, subConf);
+    } else if ("nrt".equals(type)) {
+      return buildNrtHandler(idxDir, conf, subConf);
+    } else if ("store".equals(type)) {
+      return buildZoieStoreHandler(conf, idxDir, inputFile);
+    } else if ("feed".equals(type)) {
+      return buildFeedOnlyHandler();
+    } else {
+      throw new ConfigurationException("test type: " + type + " is not supported");
+    }
+  }
 
-		final PerfTestHandler testHandler = buildPerfHandler(conf,inputFile);
+  public static void runPerf(Configuration conf) throws Exception {
+    Map<String, Metric> monitoredMetrics = new HashMap<String, Metric>();
 
+    File queryFile = new File(conf.getString("perf.query.file"));
+    if (!queryFile.exists()) {
+      System.out.println("query file does not exist");
+    }
 
-		boolean doSearchTest = conf.getBoolean("perf.test.search", true);
-		
-		
-		final TimerMetric searchTimer = Metrics.newTimer(ZoiePerf.class,
-				"searchTimer", TimeUnit.NANOSECONDS, TimeUnit.SECONDS);
-		final MeterMetric errorMeter = Metrics.newMeter(ZoiePerf.class,
-				"errorMeter", "error", TimeUnit.SECONDS);
-		
-		monitoredMetrics.put("searchTimer", searchTimer);
-		monitoredMetrics.put("errorMeter", errorMeter);
+    File inputFile = new File(conf.getString("perf.input"));
 
-		final long waitTime = conf.getLong("perf.query.threadWait", 200);
+    if (!inputFile.exists()) {
+      throw new ConfigurationException("input file: " + inputFile.getAbsolutePath()
+          + " does not exist.");
+    }
 
-		final class SearchThread extends Thread {
+    final PerfTestHandler testHandler = buildPerfHandler(conf, inputFile);
 
-			private volatile boolean stop = false;
+    boolean doSearchTest = conf.getBoolean("perf.test.search", true);
 
-			public void terminate() {
-				stop = true;
-				synchronized(this){
-				  this.notifyAll();
-				}
-			}
+    final TimerMetric searchTimer = Metrics.newTimer(ZoiePerf.class, "searchTimer",
+      TimeUnit.NANOSECONDS, TimeUnit.SECONDS);
+    final MeterMetric errorMeter = Metrics.newMeter(ZoiePerf.class, "errorMeter", "error",
+      TimeUnit.SECONDS);
 
-			public void run() {
-				while (!stop) {
-					try {
-						searchTimer.time(new Callable(){
-							@Override
-							public Object call() throws Exception {
-								return testHandler.queryHandler.handleQuery();
-							}
-						});
-						
-					} catch (Exception e) {
-						errorMeter.mark();
-					}
-					
-					synchronized(this){
-						try {
-							this.wait(waitTime);
-						} catch (InterruptedException e) {
-							continue;
-						}
-					}
-				}
-			}
-		}
+    monitoredMetrics.put("searchTimer", searchTimer);
+    monitoredMetrics.put("errorMeter", errorMeter);
 
-		long maxSize = conf.getLong("perf.maxSize");
-		
-		int feedBatchSize = conf.getInt("perf.feed.batchsize",100);
+    final long waitTime = conf.getLong("perf.query.threadWait", 200);
 
-		final LinedFileDataProvider dataProvider = new LinedFileDataProvider(
-				inputFile, 0L);
-		
-		dataProvider.setBatchSize(feedBatchSize);
-		
-		dataProvider.setDataConsumer(testHandler.consumer);
+    final class SearchThread extends Thread {
 
-		testHandler.consumer.start();
+      private volatile boolean stop = false;
 
-		long dataAmount;
-		final long start = System.currentTimeMillis();
+      public void terminate() {
+        stop = true;
+        synchronized (this) {
+          this.notifyAll();
+        }
+      }
 
-		Metric metric = null;
-		String name = "eventCount";
-		metric = Metrics.newGauge(ZoiePerf.class, name, new GaugeMetric<Long>() {
+      public void run() {
+        while (!stop) {
+          try {
+            searchTimer.time(new Callable() {
+              @Override
+              public Object call() throws Exception {
+                return testHandler.queryHandler.handleQuery();
+              }
+            });
 
-			@Override
-			public Long value() {
-				return dataProvider.getEventCount();
-			}
+          } catch (Exception e) {
+            errorMeter.mark();
+          }
 
-		});
-		
-		monitoredMetrics.put(name, metric);
+          synchronized (this) {
+            try {
+              this.wait(waitTime);
+            } catch (InterruptedException e) {
+              continue;
+            }
+          }
+        }
+      }
+    }
 
-		name = "amountConsumed";
-		metric = Metrics.newGauge(ZoiePerf.class, name,
-				new GaugeMetric<Long>() {
+    long maxSize = conf.getLong("perf.maxSize");
 
-					@Override
-					public Long value() {
-						ZoiePerfVersion ver = ZoiePerfVersion.fromString(testHandler.consumer.getVersion());
-						return ver.offsetVersion;
-					}
+    int feedBatchSize = conf.getInt("perf.feed.batchsize", 100);
 
-				});
+    final LinedFileDataProvider dataProvider = new LinedFileDataProvider(inputFile, 0L);
 
+    dataProvider.setBatchSize(feedBatchSize);
 
-		monitoredMetrics.put(name, metric);
-		
+    dataProvider.setDataConsumer(testHandler.consumer);
 
-		name = "consumeRateCount";
-		metric = Metrics.newGauge(ZoiePerf.class, name,
-				new GaugeMetric<Long>() {
-					@Override
-					public Long value() {
-						long newTime = System.currentTimeMillis();
-						
-						long newCount =  dataProvider.getEventCount();
-						long timeDelta = newTime - start;
-						long countDelta = newCount;
+    testHandler.consumer.start();
 
-						if (timeDelta == 0)
-							return 0L;
-						return countDelta * 1000 / timeDelta;
-					}
+    long dataAmount;
+    final long start = System.currentTimeMillis();
 
-				});
+    Metric metric = null;
+    String name = "eventCount";
+    metric = Metrics.newGauge(ZoiePerf.class, name, new GaugeMetric<Long>() {
 
+      @Override
+      public Long value() {
+        return dataProvider.getEventCount();
+      }
 
-		monitoredMetrics.put(name, metric);
-		
+    });
 
-		name = "consumeRateMB";
-		metric = Metrics.newGauge(ZoiePerf.class, name,
-				new GaugeMetric<Long>() {
-					@Override
-					public Long value() {
-						long newTime = System.currentTimeMillis();
-						ZoiePerfVersion ver = ZoiePerfVersion.fromString(testHandler.consumer.getVersion());
-						long newMB = ver.offsetVersion;
+    monitoredMetrics.put(name, metric);
 
-						long timeDelta = newTime - start;
-						long mbdelta = newMB;
+    name = "amountConsumed";
+    metric = Metrics.newGauge(ZoiePerf.class, name, new GaugeMetric<Long>() {
 
-						if (timeDelta == 0)
-							return 0L;
-						return mbdelta * 1000 / timeDelta;
-					}
+      @Override
+      public Long value() {
+        ZoiePerfVersion ver = ZoiePerfVersion.fromString(testHandler.consumer.getVersion());
+        return ver.offsetVersion;
+      }
 
-				});
+    });
 
-		monitoredMetrics.put(name, metric);
-		
-		name = "indexLatency";
-		metric = Metrics.newGauge(ZoiePerf.class, name,
-				new GaugeMetric<Long>() {
+    monitoredMetrics.put(name, metric);
 
-					@Override
-					public Long value() {
-						long newCount =  dataProvider.getEventCount();
+    name = "consumeRateCount";
+    metric = Metrics.newGauge(ZoiePerf.class, name, new GaugeMetric<Long>() {
+      @Override
+      public Long value() {
+        long newTime = System.currentTimeMillis();
 
-						String currentReaderVersion = testHandler.queryHandler.getCurrentVersion();
-						long readerMarker = ZoiePerfVersion.fromString(currentReaderVersion).countVersion;
-						
-						long countsBehind = newCount - readerMarker;
+        long newCount = dataProvider.getEventCount();
+        long timeDelta = newTime - start;
+        long countDelta = newCount;
 
-						System.out.println("reader marker: "+readerMarker);
-						System.out.println("new count: "+newCount);
-						return countsBehind;
-						
-						
-					}
+        if (timeDelta == 0) return 0L;
+        return countDelta * 1000 / timeDelta;
+      }
 
-				});
+    });
 
+    monitoredMetrics.put(name, metric);
 
-		monitoredMetrics.put(name, metric);
-		//ConsoleReporter consoleReporter = new ConsoleReporter(System.out);
-		//consoleReporter.start(5, TimeUnit.SECONDS);
+    name = "consumeRateMB";
+    metric = Metrics.newGauge(ZoiePerf.class, name, new GaugeMetric<Long>() {
+      @Override
+      public Long value() {
+        long newTime = System.currentTimeMillis();
+        ZoiePerfVersion ver = ZoiePerfVersion.fromString(testHandler.consumer.getVersion());
+        long newMB = ver.offsetVersion;
 
-		//JmxReporter jmxReporter = new JmxReporter(Metrics.defaultRegistry());
-		
-		File csvOut = new File("csvout");
-		csvOut.mkdirs();
-		CsvReporter csvReporter = new CsvReporter(csvOut,Metrics.defaultRegistry());
-		//GangliaReporter csvReporter = new GangliaReporter(Metrics.defaultRegistry(),"localhost",8649,"zoie-perf");
-		
-		int updateInterval = conf.getInt("perf.update.intervalSec", 2);
-		csvReporter.start(updateInterval, TimeUnit.SECONDS);
+        long timeDelta = newTime - start;
+        long mbdelta = newMB;
 
-		long maxEventsPerMin = conf.getLong("perf.maxEventsPerMin");
+        if (timeDelta == 0) return 0L;
+        return mbdelta * 1000 / timeDelta;
+      }
 
-		dataProvider.setMaxEventsPerMinute(maxEventsPerMin);
+    });
 
-		int numThreads = conf.getInt("perf.query.threads", 10);
-		
-		SearchThread[] searchThreads = null;
-		
-		
-		if (doSearchTest){
-		  searchThreads = new SearchThread[numThreads];
-		  for (int i=0;i<numThreads;++i){
-			searchThreads[i] = new SearchThread();
-		  }
-		}
-		else{
-		  searchThreads = new SearchThread[0];
-		}
-		
-		dataProvider.start();
-		
-		for (int i=0;i<searchThreads.length;++i){
-			searchThreads[i].start();
-		}
+    monitoredMetrics.put(name, metric);
 
-		ZoiePerfVersion perfVersion = ZoiePerfVersion.fromString(testHandler.consumer.getVersion());
-		while ((dataAmount = perfVersion.offsetVersion) < maxSize) {
-			Thread.sleep(500);
-			perfVersion = ZoiePerfVersion.fromString(testHandler.consumer.getVersion());
-		}
+    name = "indexLatency";
+    metric = Metrics.newGauge(ZoiePerf.class, name, new GaugeMetric<Long>() {
 
-		dataProvider.stop();
-		testHandler.consumer.stop();
+      @Override
+      public Long value() {
+        long newCount = dataProvider.getEventCount();
 
-		long end = System.currentTimeMillis();
-		
-		for (int i=0;i<searchThreads.length;++i){
-			searchThreads[i].terminate();
-		}
-		
-		for (int i=0;i<searchThreads.length;++i){
-			searchThreads[i].join();
-		}
+        String currentReaderVersion = testHandler.queryHandler.getCurrentVersion();
+        long readerMarker = ZoiePerfVersion.fromString(currentReaderVersion).countVersion;
 
-		//consoleReporter.shutdown();
-		//jmxReporter.shutdown();
-		
-		csvReporter.shutdown();
+        long countsBehind = newCount - readerMarker;
 
-		System.out.println("Test duration: " + (end - start) + " ms");
+        System.out.println("reader marker: " + readerMarker);
+        System.out.println("new count: " + newCount);
+        return countsBehind;
 
-		System.out.println("Amount of data consumed: " + dataAmount);
-	}
+      }
 
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) throws Exception {
-		File confFile;
-		try {
-			confFile = new File(new File(args[0]), "perf.properties");
-		} catch (Exception e) {
-			confFile = new File(new File("conf"), "perf.properties");
-		}
+    });
 
-		if (!confFile.exists()) {
-			throw new ConfigurationException("configuration file: "
-					+ confFile.getAbsolutePath() + " does not exist.");
-		}
-		
+    monitoredMetrics.put(name, metric);
+    // ConsoleReporter consoleReporter = new ConsoleReporter(System.out);
+    // consoleReporter.start(5, TimeUnit.SECONDS);
 
-		Configuration conf = new PropertiesConfiguration();
-		((PropertiesConfiguration) conf).setDelimiterParsingDisabled(true);
-		((PropertiesConfiguration) conf).load(confFile);
+    // JmxReporter jmxReporter = new JmxReporter(Metrics.defaultRegistry());
 
+    File csvOut = new File("csvout");
+    csvOut.mkdirs();
+    CsvReporter csvReporter = new CsvReporter(csvOut, Metrics.defaultRegistry());
+    // GangliaReporter csvReporter = new
+    // GangliaReporter(Metrics.defaultRegistry(),"localhost",8649,"zoie-perf");
 
-		
-		Server server = new Server();
-        SelectChannelConnector connector = new SelectChannelConnector();
-        connector.setPort(18888);
-        server.addConnector(connector);
- 
-        ResourceHandler resourceHandler = new ResourceHandler();
-        resourceHandler.setWelcomeFiles(new String[]{ "index.html" });
- 
-        resourceHandler.setResourceBase("./");
-        
-        ResourceHandler csvDataHandler = new ResourceHandler();
-        csvDataHandler.setResourceBase("./csvOut");
-        
+    int updateInterval = conf.getInt("perf.update.intervalSec", 2);
+    csvReporter.start(updateInterval, TimeUnit.SECONDS);
 
-        server.setHandler(resourceHandler);
-        
-        final Context context = new Context(server, "/servlets", Context.ALL);
-        context.addServlet(new ServletHolder(new ZoiePerfServlet(new File("csvout"))), "/zoie-perf/*");
-        
-        server.start();
-        
-        runPerf(conf);
-		
-        server.join();
-        
-	}
+    long maxEventsPerMin = conf.getLong("perf.maxEventsPerMin");
+
+    dataProvider.setMaxEventsPerMinute(maxEventsPerMin);
+
+    int numThreads = conf.getInt("perf.query.threads", 10);
+
+    SearchThread[] searchThreads = null;
+
+    if (doSearchTest) {
+      searchThreads = new SearchThread[numThreads];
+      for (int i = 0; i < numThreads; ++i) {
+        searchThreads[i] = new SearchThread();
+      }
+    } else {
+      searchThreads = new SearchThread[0];
+    }
+
+    dataProvider.start();
+
+    for (int i = 0; i < searchThreads.length; ++i) {
+      searchThreads[i].start();
+    }
+
+    ZoiePerfVersion perfVersion = ZoiePerfVersion.fromString(testHandler.consumer.getVersion());
+    while ((dataAmount = perfVersion.offsetVersion) < maxSize) {
+      Thread.sleep(500);
+      perfVersion = ZoiePerfVersion.fromString(testHandler.consumer.getVersion());
+    }
+
+    dataProvider.stop();
+    testHandler.consumer.stop();
+
+    long end = System.currentTimeMillis();
+
+    for (int i = 0; i < searchThreads.length; ++i) {
+      searchThreads[i].terminate();
+    }
+
+    for (int i = 0; i < searchThreads.length; ++i) {
+      searchThreads[i].join();
+    }
+
+    // consoleReporter.shutdown();
+    // jmxReporter.shutdown();
+
+    csvReporter.shutdown();
+
+    System.out.println("Test duration: " + (end - start) + " ms");
+
+    System.out.println("Amount of data consumed: " + dataAmount);
+  }
+
+  /**
+   * @param args
+   */
+  public static void main(String[] args) throws Exception {
+    File confFile;
+    try {
+      confFile = new File(new File(args[0]), "perf.properties");
+    } catch (Exception e) {
+      confFile = new File(new File("conf"), "perf.properties");
+    }
+
+    if (!confFile.exists()) {
+      throw new ConfigurationException("configuration file: " + confFile.getAbsolutePath()
+          + " does not exist.");
+    }
+
+    Configuration conf = new PropertiesConfiguration();
+    ((PropertiesConfiguration) conf).setDelimiterParsingDisabled(true);
+    ((PropertiesConfiguration) conf).load(confFile);
+
+    Server server = new Server();
+    SelectChannelConnector connector = new SelectChannelConnector();
+    connector.setPort(18888);
+    server.addConnector(connector);
+
+    ResourceHandler resourceHandler = new ResourceHandler();
+    resourceHandler.setWelcomeFiles(new String[] { "index.html" });
+
+    resourceHandler.setResourceBase("./");
+
+    ResourceHandler csvDataHandler = new ResourceHandler();
+    csvDataHandler.setResourceBase("./csvOut");
+
+    server.setHandler(resourceHandler);
+
+    final Context context = new Context(server, "/servlets", Context.ALL);
+    context.addServlet(new ServletHolder(new ZoiePerfServlet(new File("csvout"))), "/zoie-perf/*");
+
+    server.start();
+
+    runPerf(conf);
+
+    server.join();
+
+  }
 }

@@ -20,83 +20,72 @@ import proj.zoie.api.impl.ZoieContext;
  * @author "Xiaoyang Gu<xgu@linkedin.com>"
  *
  */
-public class ZoieThreadPoolExecutor extends ThreadPoolExecutor
-{
-  public ZoieThreadPoolExecutor(int corePoolSize, int maximumPoolSize,
-      long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue)
-  {
+public class ZoieThreadPoolExecutor extends ThreadPoolExecutor {
+  public ZoieThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime,
+      TimeUnit unit, BlockingQueue<Runnable> workQueue) {
     super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue);
   }
 
-  public ZoieThreadPoolExecutor(int corePoolSize, int maximumPoolSize,
-      long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue,
-      RejectedExecutionHandler handler)
-  {
+  public ZoieThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime,
+      TimeUnit unit, BlockingQueue<Runnable> workQueue, RejectedExecutionHandler handler) {
     super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, handler);
   }
 
-  public ZoieThreadPoolExecutor(int corePoolSize, int maximumPoolSize,
-      long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue,
-      ThreadFactory threadFactory)
-  {
-    super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue,
-        threadFactory);
+  public ZoieThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime,
+      TimeUnit unit, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory) {
+    super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory);
   }
 
-  public ZoieThreadPoolExecutor(int corePoolSize, int maximumPoolSize,
-      long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue,
-      ThreadFactory threadFactory, RejectedExecutionHandler handler)
-  {
-    super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue,
-        threadFactory, handler);
+  public ZoieThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime,
+      TimeUnit unit, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory,
+      RejectedExecutionHandler handler) {
+    super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
   }
-
 
   @Override
-  protected void afterExecute(Runnable r, Throwable t)
-  {
+  protected void afterExecute(Runnable r, Throwable t) {
     ZoieContext.getContext().clear();
-    super.afterExecute(((ZoieRunnable)r).innerRunnable, t);
+    super.afterExecute(((ZoieRunnable) r).innerRunnable, t);
   }
 
-  /* (non-Javadoc)
-   * @see java.util.concurrent.ThreadPoolExecutor#beforeExecute(java.lang.Thread, java.lang.Runnable)
+  /*
+   * (non-Javadoc)
+   * @see java.util.concurrent.ThreadPoolExecutor#beforeExecute(java.lang.Thread,
+   * java.lang.Runnable)
    */
   @Override
-  protected void beforeExecute(Thread t, Runnable r)
-  {
-    if (! (r instanceof ZoieRunnable)) throw new RuntimeException("Not a properly submitted zoie job");
-    ZoieContext.setContext(((ZoieRunnable)r).ctx);
-    super.beforeExecute(t, ((ZoieRunnable)r).innerRunnable);
+  protected void beforeExecute(Thread t, Runnable r) {
+    if (!(r instanceof ZoieRunnable)) throw new RuntimeException(
+        "Not a properly submitted zoie job");
+    ZoieContext.setContext(((ZoieRunnable) r).ctx);
+    super.beforeExecute(t, ((ZoieRunnable) r).innerRunnable);
   }
 
   @Override
-  public void execute(Runnable command)
-  {
+  public void execute(Runnable command) {
     super.execute(new ZoieRunnable(command));
   }
 
-  protected static class ZoieRunnable implements Runnable
-  {
+  protected static class ZoieRunnable implements Runnable {
     private final Runnable innerRunnable;
     private final ZoieContext ctx;
+
     /**
      * Get the current thread's ZoieContext to keep in the wrapper runnable so that
      * when the runnable is executed, the context can be set to be the same as the
      * invoking thread.
      * @param runnable
      */
-    public ZoieRunnable(Runnable runnable)
-    {
+    public ZoieRunnable(Runnable runnable) {
       innerRunnable = runnable;
       ctx = ZoieContext.getContext();
     }
-    public ZoieContext getContext()
-    {
+
+    public ZoieContext getContext() {
       return ctx;
     }
-    public void run()
-    {
+
+    public void run() {
       innerRunnable.run();
     }
   }

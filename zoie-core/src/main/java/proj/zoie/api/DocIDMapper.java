@@ -1,4 +1,3 @@
-
 package proj.zoie.api;
 
 import java.util.Arrays;
@@ -25,66 +24,64 @@ import proj.zoie.api.impl.util.MemoryManager;
 /**
  * Maps a UID to the internal docid.
  */
-public interface DocIDMapper<T>
-{
+public interface DocIDMapper<T> {
   /**
    * doc id not found indicator
    */
   public static final int NOT_FOUND = -1;
+
   /**
    * maps uid to a lucene docid
    * @param uid UID to be mapped.
    * @return {@link #NOT_FOUND} if uid is not found
    */
   int getDocID(long uid);
-  
+
   int quickGetDocID(long uid);
+
   public int getReaderIndex(long uid);
+
   public ZoieIndexReader<?>[] getSubReaders();
+
   public int[] getStarts();
 
   public T getDocIDArray(long[] uids);
-  public T getDocIDArray(int [] uids);
-  
-  public static final class DocIDArray
-  {
-    public static final MemoryManager<int[]> memMgr = new MemoryManager<int[]>(new MemoryManager.Initializer<int[]>()
-        {
 
-      public void init(int[] buf)
-      {
-        Arrays.fill(buf, DocIDMapper.NOT_FOUND);
-      }
+  public T getDocIDArray(int[] uids);
 
-      public int[] newInstance(int size)
-      {
-        int[] ret = new int[size];
-        init(ret);
-        return ret;
-      }
+  public static final class DocIDArray {
+    public static final MemoryManager<int[]> memMgr = new MemoryManager<int[]>(
+        new MemoryManager.Initializer<int[]>() {
 
-      public int size(int[] buf)
-      {
-        assert buf!=null;
-        return buf.length;
-      }
+          public void init(int[] buf) {
+            Arrays.fill(buf, DocIDMapper.NOT_FOUND);
+          }
+
+          public int[] newInstance(int size) {
+            int[] ret = new int[size];
+            init(ret);
+            return ret;
+          }
+
+          public int size(int[] buf) {
+            assert buf != null;
+            return buf.length;
+          }
         });
 
     public int[] docids;
     public int size;
 
-    public DocIDArray(int size)
-    {
+    public DocIDArray(int size) {
       this.size = size;
       docids = memMgr.get(size);
     }
-    
-    public static DocIDArray newInstance(int size)
-    {
+
+    public static DocIDArray newInstance(int size) {
       return new DocIDArray(size);
     }
-    public void close()
-    {
+
+    public void close() {
       memMgr.release(docids);
       docids = null;
     }

@@ -1,4 +1,5 @@
 package proj.zoie.api;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -27,31 +28,29 @@ import org.apache.lucene.search.Query;
  * Filter implementation based on a list of uids
  */
 public class UIDFilter extends Filter {
-	private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 1L;
 
-	private final long[] _filteredIDs;
+  private final long[] _filteredIDs;
 
-	public UIDFilter(long[] filteredIDs) {
-		_filteredIDs = filteredIDs;
-	}
+  public UIDFilter(long[] filteredIDs) {
+    _filteredIDs = filteredIDs;
+  }
 
-	@Override
-	public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-		if (reader instanceof ZoieIndexReader<?>) {
-			return new UIDDocIdSet(_filteredIDs, ((ZoieIndexReader<?>)reader).getDocIDMaper());
-		}
-		else {
-			throw new IllegalArgumentException(
-			"UIDFilter may only load from ZoieIndexReader instances");
-		}
-	}
-	
-	/**
-	 * Convenience method to build a Query from a uid list
-	 * @param uids
-	 * @return
-	 */
-	public static Query getUIDQuery(long[] uids){
-		return new ConstantScoreQuery(new UIDFilter(uids));
-	}
+  @Override
+  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+    if (reader instanceof ZoieIndexReader<?>) {
+      return new UIDDocIdSet(_filteredIDs, ((ZoieIndexReader<?>) reader).getDocIDMaper());
+    } else {
+      throw new IllegalArgumentException("UIDFilter may only load from ZoieIndexReader instances");
+    }
+  }
+
+  /**
+   * Convenience method to build a Query from a uid list
+   * @param uids
+   * @return
+   */
+  public static Query getUIDQuery(long[] uids) {
+    return new ConstantScoreQuery(new UIDFilter(uids));
+  }
 }

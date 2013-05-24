@@ -1,6 +1,5 @@
 package proj.zoie.api.indexing;
 
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,28 +17,27 @@ package proj.zoie.api.indexing;
  * limitations under the License.
  */
 
-public abstract class AbstractZoieIndexable implements ZoieIndexable
-{
-	public static final String DOCUMENT_ID_PAYLOAD_FIELD="_ID";
-  public static final String DOCUMENT_STORE_FIELD="_STORE";
-	
-	public abstract IndexingReq[] buildIndexingReqs();
+public abstract class AbstractZoieIndexable implements ZoieIndexable {
+  public static final String DOCUMENT_ID_PAYLOAD_FIELD = "_ID";
+  public static final String DOCUMENT_STORE_FIELD = "_STORE";
 
-	abstract public long getUID();
+  public abstract IndexingReq[] buildIndexingReqs();
 
-	abstract public boolean isDeleted();
+  abstract public long getUID();
 
-	public boolean isSkip(){
-		return false;
-	}
-	
-	@Override
+  abstract public boolean isDeleted();
+
+  public boolean isSkip() {
+    return false;
+  }
+
+  @Override
   public boolean isStorable() {
     return false;
   }
 
   @Override
-  public byte[] getStoreValue(){
+  public byte[] getStoreValue() {
     return null;
   }
 }

@@ -26,8 +26,7 @@ import org.apache.log4j.Logger;
 import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.api.ZoieException;
 
-public class MemoryStreamDataProvider<D> extends StreamDataProvider<D>
-{
+public class MemoryStreamDataProvider<D> extends StreamDataProvider<D> {
 
   private List<DataEvent<D>> _list;
   private int _count;
@@ -36,19 +35,15 @@ public class MemoryStreamDataProvider<D> extends StreamDataProvider<D>
   // private static final double DEFAULT_ITERS_PER_SECOND=100.0;
   private static final Logger log = Logger.getLogger(MemoryStreamDataProvider.class);
 
-  public MemoryStreamDataProvider(Comparator<String> versionComparator)
-  {
+  public MemoryStreamDataProvider(Comparator<String> versionComparator) {
     super(versionComparator);
     _list = new LinkedList<DataEvent<D>>();
     _count = 0;
   }
-  
 
   @Override
-  public void reset()
-  {
-    synchronized (this)
-    {
+  public void reset() {
+    synchronized (this) {
       _list.clear();
       this.notifyAll();
     }
@@ -60,35 +55,29 @@ public class MemoryStreamDataProvider<D> extends StreamDataProvider<D>
    * call, they may or may not be flushed at the return of this call. This
    * method is not supposed to be called too often.
    */
-  public void flush()
-  {
-    try
-    {
+  public void flush() {
+    try {
       String maxVersion = _maxVersion;
-      if (log.isDebugEnabled()){
+      if (log.isDebugEnabled()) {
         log.debug("flushing version: " + maxVersion);
       }
       super.syncWithVersion(3600000, maxVersion);
-      if (log.isDebugEnabled()){
+      if (log.isDebugEnabled()) {
         log.info("flushing version: " + maxVersion + " done");
       }
-    } catch (ZoieException e)
-    {
+    } catch (ZoieException e) {
       log.error("flush timeout", e);
     }
   }
 
-  public void addEvents(List<DataEvent<D>> list)
-  {
-    if (list != null && !list.isEmpty())
-    {
+  public void addEvents(List<DataEvent<D>> list) {
+    if (list != null && !list.isEmpty()) {
       Iterator<DataEvent<D>> iter = list.iterator();
-      synchronized (this)
-      {
-        while (iter.hasNext())
-        {
+      synchronized (this) {
+        while (iter.hasNext()) {
           DataEvent<D> obj = iter.next();
-          _maxVersion = _versionComparator.compare(_maxVersion, obj.getVersion())>=0 ? _maxVersion:obj.getVersion();
+          _maxVersion = _versionComparator.compare(_maxVersion, obj.getVersion()) >= 0 ? _maxVersion
+              : obj.getVersion();
           _count++;
           _list.add(obj);
         }
@@ -97,13 +86,11 @@ public class MemoryStreamDataProvider<D> extends StreamDataProvider<D>
     }
   }
 
-  public void addEvent(DataEvent<D> event)
-  {
-    if (event != null)
-    {
-      synchronized (this)
-      {
-        _maxVersion = _versionComparator.compare(_maxVersion, event.getVersion())>=0 ? _maxVersion:event.getVersion();
+  public void addEvent(DataEvent<D> event) {
+    if (event != null) {
+      synchronized (this) {
+        _maxVersion = _versionComparator.compare(_maxVersion, event.getVersion()) >= 0 ? _maxVersion
+            : event.getVersion();
         _count++;
         _list.add(event);
         this.notifyAll();
@@ -112,13 +99,10 @@ public class MemoryStreamDataProvider<D> extends StreamDataProvider<D>
   }
 
   @Override
-  public DataEvent<D> next()
-  {
+  public DataEvent<D> next() {
     DataEvent<D> obj = null;
-    synchronized (this)
-    {
-      if (!_list.isEmpty())
-      {
+    synchronized (this) {
+      if (!_list.isEmpty()) {
         obj = _list.remove(0);
         this.notifyAll();
       }
@@ -126,10 +110,8 @@ public class MemoryStreamDataProvider<D> extends StreamDataProvider<D>
     return obj;
   }
 
-  public int getCount()
-  {
-    synchronized (this)
-    {
+  public int getCount() {
+    synchronized (this) {
       return _count;
     }
   }

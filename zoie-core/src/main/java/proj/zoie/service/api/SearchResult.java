@@ -1,4 +1,5 @@
 package proj.zoie.service.api;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,55 +18,53 @@ package proj.zoie.service.api;
  */
 import java.io.Serializable;
 
-public class SearchResult implements Serializable
-{
+public class SearchResult implements Serializable {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-	
-	private int totalHits;
-	private int totalDocs;
-	private long time;
-	
-	public SearchResult()
-	{
-		
-	}
-	
-	private SearchHit[] hits;
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 1L;
 
-	public int getTotalHits() {
-		return totalHits;
-	}
+  private int totalHits;
+  private int totalDocs;
+  private long time;
 
-	public void setTotalHits(int totalHits) {
-		this.totalHits = totalHits;
-	}
+  public SearchResult() {
 
-	public int getTotalDocs() {
-		return totalDocs;
-	}
+  }
 
-	public void setTotalDocs(int totalDocs) {
-		this.totalDocs = totalDocs;
-	}
+  private SearchHit[] hits;
 
-	public long getTime() {
-		return time;
-	}
+  public int getTotalHits() {
+    return totalHits;
+  }
 
-	public void setTime(long time) {
-		this.time = time;
-	}
+  public void setTotalHits(int totalHits) {
+    this.totalHits = totalHits;
+  }
 
-	public SearchHit[] getHits() {
-		return hits;
-	}
+  public int getTotalDocs() {
+    return totalDocs;
+  }
 
-	public void setHits(SearchHit[] hits) {
-		this.hits = hits;
-	}
-	
+  public void setTotalDocs(int totalDocs) {
+    this.totalDocs = totalDocs;
+  }
+
+  public long getTime() {
+    return time;
+  }
+
+  public void setTime(long time) {
+    this.time = time;
+  }
+
+  public SearchHit[] getHits() {
+    return hits;
+  }
+
+  public void setHits(SearchHit[] hits) {
+    this.hits = hits;
+  }
+
 }

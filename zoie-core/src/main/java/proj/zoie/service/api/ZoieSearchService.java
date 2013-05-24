@@ -1,4 +1,5 @@
 package proj.zoie.service.api;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,5 +19,5 @@ package proj.zoie.service.api;
 import proj.zoie.api.ZoieException;
 
 public interface ZoieSearchService {
-	SearchResult search(SearchRequest req) throws ZoieException;
+  SearchResult search(SearchRequest req) throws ZoieException;
 }

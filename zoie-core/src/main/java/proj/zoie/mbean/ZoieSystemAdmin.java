@@ -1,4 +1,5 @@
 package proj.zoie.mbean;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,243 +22,221 @@ import java.util.Date;
 import proj.zoie.api.ZoieException;
 import proj.zoie.impl.indexing.ZoieSystem;
 
-public class ZoieSystemAdmin implements ZoieSystemAdminMBean
-{
-	private final ZoieSystemAdminMBean _internalMBean;
-	
-	@SuppressWarnings("unchecked")
-	public ZoieSystemAdmin(ZoieSystem zoieSystem)
-	{
-		_internalMBean=zoieSystem.getAdminMBean();
-	}
-	
-	public void refreshDiskReader()  throws IOException{
-		_internalMBean.refreshDiskReader();
-	}
+public class ZoieSystemAdmin implements ZoieSystemAdminMBean {
+  private final ZoieSystemAdminMBean _internalMBean;
 
-	public long getBatchDelay() {
-		return _internalMBean.getBatchDelay();
-	}
+  @SuppressWarnings("unchecked")
+  public ZoieSystemAdmin(ZoieSystem zoieSystem) {
+    _internalMBean = zoieSystem.getAdminMBean();
+  }
 
-	public int getBatchSize() {
-		return _internalMBean.getBatchSize();
-	}
+  public void refreshDiskReader() throws IOException {
+    _internalMBean.refreshDiskReader();
+  }
 
-	public String getCurrentDiskVersion() throws IOException{
-		return _internalMBean.getCurrentDiskVersion();
-	}
+  public long getBatchDelay() {
+    return _internalMBean.getBatchDelay();
+  }
 
-	public int getDiskIndexSize() {
-		return _internalMBean.getDiskIndexSize();
-	}
+  public int getBatchSize() {
+    return _internalMBean.getBatchSize();
+  }
 
- 	public long getDiskIndexSizeBytes()
- 	{
- 	  return _internalMBean.getDiskIndexSizeBytes();
- 	}
+  public String getCurrentDiskVersion() throws IOException {
+    return _internalMBean.getCurrentDiskVersion();
+  }
 
-	@Override
-  public long getDiskFreeSpaceBytes()
-  {
+  public int getDiskIndexSize() {
+    return _internalMBean.getDiskIndexSize();
+  }
+
+  public long getDiskIndexSizeBytes() {
+    return _internalMBean.getDiskIndexSizeBytes();
+  }
+
+  @Override
+  public long getDiskFreeSpaceBytes() {
     return _internalMBean.getDiskFreeSpaceBytes();
   }
 
-	public String getDiskIndexerStatus() {
-		return _internalMBean.getDiskIndexerStatus();
-	}
+  public String getDiskIndexerStatus() {
+    return _internalMBean.getDiskIndexerStatus();
+  }
 
-	public Date getLastDiskIndexModifiedTime() {
-		return _internalMBean.getLastDiskIndexModifiedTime();
-	}
+  public Date getLastDiskIndexModifiedTime() {
+    return _internalMBean.getLastDiskIndexModifiedTime();
+  }
 
-	public Date getLastOptimizationTime() {
-		return _internalMBean.getLastOptimizationTime();
-	}
+  public Date getLastOptimizationTime() {
+    return _internalMBean.getLastOptimizationTime();
+  }
 
-	public int getMaxBatchSize() {
-		return _internalMBean.getMaxBatchSize();
-	}
-	
-	public int getRamAIndexSize() {
-		return _internalMBean.getRamAIndexSize();
-	}
+  public int getMaxBatchSize() {
+    return _internalMBean.getMaxBatchSize();
+  }
 
-	public String getRamAVersion() {
-		return _internalMBean.getRamAVersion();
-	}
+  public int getRamAIndexSize() {
+    return _internalMBean.getRamAIndexSize();
+  }
 
-	public int getRamBIndexSize() {
-		return _internalMBean.getRamBIndexSize();
-	}
+  public String getRamAVersion() {
+    return _internalMBean.getRamAVersion();
+  }
 
-	public String getRamBVersion() {
-		return _internalMBean.getRamBVersion();
-	}
+  public int getRamBIndexSize() {
+    return _internalMBean.getRamBIndexSize();
+  }
 
-	public void optimize(int numSegs) throws IOException {
-		_internalMBean.optimize(numSegs);
-	}
+  public String getRamBVersion() {
+    return _internalMBean.getRamBVersion();
+  }
 
-	public void setBatchSize(int batchSize) {
-		_internalMBean.setBatchSize(batchSize);
-	}
+  public void optimize(int numSegs) throws IOException {
+    _internalMBean.optimize(numSegs);
+  }
 
-	public void setMaxBatchSize(int maxBatchSize) {
-		_internalMBean.setMaxBatchSize(maxBatchSize);
-	}
+  public void setBatchSize(int batchSize) {
+    _internalMBean.setBatchSize(batchSize);
+  }
 
-	public String getIndexDir() {
-		return _internalMBean.getIndexDir();
-	}
+  public void setMaxBatchSize(int maxBatchSize) {
+    _internalMBean.setMaxBatchSize(maxBatchSize);
+  }
 
-	public boolean isRealtime() {
-		return _internalMBean.isRealtime();
-	}
+  public String getIndexDir() {
+    return _internalMBean.getIndexDir();
+  }
 
-	public void setBatchDelay(long delay) {
-		_internalMBean.setBatchDelay(delay);
-	}
+  public boolean isRealtime() {
+    return _internalMBean.isRealtime();
+  }
 
-	public void flushToDiskIndex() throws ZoieException{
-		_internalMBean.flushToDiskIndex();
-	}
-	
-    public void flushToMemoryIndex() throws ZoieException
-    {
-      _internalMBean.flushToMemoryIndex();
-      
-    }
+  public void setBatchDelay(long delay) {
+    _internalMBean.setBatchDelay(delay);
+  }
 
-	public void purgeIndex() throws IOException
-	{
-		_internalMBean.purgeIndex();
-	}
+  public void flushToDiskIndex() throws ZoieException {
+    _internalMBean.flushToDiskIndex();
+  }
 
-	public void expungeDeletes() throws IOException {
-		_internalMBean.expungeDeletes();
-	}
+  public void flushToMemoryIndex() throws ZoieException {
+    _internalMBean.flushToMemoryIndex();
 
-	public int getMaxMergeDocs() {
-		return _internalMBean.getMaxBatchSize();
-	}
+  }
 
-	public int getMergeFactor() {
-		return _internalMBean.getMergeFactor();
-	}
+  public void purgeIndex() throws IOException {
+    _internalMBean.purgeIndex();
+  }
 
-	public void setMaxMergeDocs(int maxMergeDocs) {
-		_internalMBean.setMaxMergeDocs(maxMergeDocs);
-	}
+  public void expungeDeletes() throws IOException {
+    _internalMBean.expungeDeletes();
+  }
 
-	public void setMergeFactor(int mergeFactor) {
-		_internalMBean.setMergeFactor(mergeFactor);
-	}
+  public int getMaxMergeDocs() {
+    return _internalMBean.getMaxBatchSize();
+  }
 
-	public boolean isUseCompoundFile() {
-		return _internalMBean.isUseCompoundFile();
-	}
+  public int getMergeFactor() {
+    return _internalMBean.getMergeFactor();
+  }
 
-	public void setUseCompoundFile(boolean useCompoundFile) {
-		_internalMBean.setUseCompoundFile(useCompoundFile);
-	}
-    
-    public int getCurrentMemBatchSize()
-    {
-      return _internalMBean.getCurrentMemBatchSize(); 
-    }
-    
-    public int getCurrentDiskBatchSize()
-    {
-      return _internalMBean.getCurrentDiskBatchSize(); 
-    }
-    
-    public int getDiskIndexSegmentCount() throws IOException{
-		return _internalMBean.getDiskIndexSegmentCount();
-	}
-    public int getRAMASegmentCount()
-    {
-      return _internalMBean.getRAMASegmentCount();
-    }
-    public int getRAMBSegmentCount()
-    {
-      return _internalMBean.getRAMBSegmentCount();
-    }
+  public void setMaxMergeDocs(int maxMergeDocs) {
+    _internalMBean.setMaxMergeDocs(maxMergeDocs);
+  }
 
-    public int getMaxSmallSegments()
-    {
-      return _internalMBean.getMaxSmallSegments();
-    }
-    
-    public void setMaxSmallSegments(int maxSmallSegments)
-    {
-      _internalMBean.setMaxSmallSegments(maxSmallSegments);
-    }
-    
-    public int getNumLargeSegments()
-    {
-      return _internalMBean.getNumLargeSegments();
-    }
-    
-    public void setNumLargeSegments(int numLargeSegments)
-    {
-      _internalMBean.setNumLargeSegments(numLargeSegments);
-    }
-    
-    public long getMinUID() throws IOException
-    {
-      return _internalMBean.getMinUID();
-    }
-    
-    public long getMaxUID() throws IOException
-    {
-      return _internalMBean.getMaxUID();
-    }
+  public void setMergeFactor(int mergeFactor) {
+    _internalMBean.setMergeFactor(mergeFactor);
+  }
 
-    @Override
-    public long getHealth()
-    {
-      return _internalMBean.getHealth();
-    }
+  public boolean isUseCompoundFile() {
+    return _internalMBean.isUseCompoundFile();
+  }
 
-    @Override
-    public void resetHealth()
-    {
-      _internalMBean.resetHealth();
-    }
+  public void setUseCompoundFile(boolean useCompoundFile) {
+    _internalMBean.setUseCompoundFile(useCompoundFile);
+  }
 
-    @Override
-    public long getSLA()
-    {
-      return _internalMBean.getSLA();
-    }
+  public int getCurrentMemBatchSize() {
+    return _internalMBean.getCurrentMemBatchSize();
+  }
 
-    @Override
-    public void setSLA(long sla)
-    {
-      _internalMBean.setSLA(sla);
-    }
+  public int getCurrentDiskBatchSize() {
+    return _internalMBean.getCurrentDiskBatchSize();
+  }
 
-    @Override
-    public long getFreshness()
-    {
-      return _internalMBean.getFreshness();
-    }
+  public int getDiskIndexSegmentCount() throws IOException {
+    return _internalMBean.getDiskIndexSegmentCount();
+  }
 
-    @Override
-    public void setFreshness(long freshness)
-    {
-      _internalMBean.setFreshness(freshness);
-    }
+  public int getRAMASegmentCount() {
+    return _internalMBean.getRAMASegmentCount();
+  }
 
-    @Override
-    public String search(String field, String query)
-    {
-      return _internalMBean.search(field, query);
-    }
+  public int getRAMBSegmentCount() {
+    return _internalMBean.getRAMBSegmentCount();
+  }
 
-    @Override
-    public String getDocument(long UID)
-    {
-      return _internalMBean.getDocument(UID);
-    }
+  public int getMaxSmallSegments() {
+    return _internalMBean.getMaxSmallSegments();
+  }
+
+  public void setMaxSmallSegments(int maxSmallSegments) {
+    _internalMBean.setMaxSmallSegments(maxSmallSegments);
+  }
+
+  public int getNumLargeSegments() {
+    return _internalMBean.getNumLargeSegments();
+  }
+
+  public void setNumLargeSegments(int numLargeSegments) {
+    _internalMBean.setNumLargeSegments(numLargeSegments);
+  }
+
+  public long getMinUID() throws IOException {
+    return _internalMBean.getMinUID();
+  }
+
+  public long getMaxUID() throws IOException {
+    return _internalMBean.getMaxUID();
+  }
+
+  @Override
+  public long getHealth() {
+    return _internalMBean.getHealth();
+  }
+
+  @Override
+  public void resetHealth() {
+    _internalMBean.resetHealth();
+  }
+
+  @Override
+  public long getSLA() {
+    return _internalMBean.getSLA();
+  }
+
+  @Override
+  public void setSLA(long sla) {
+    _internalMBean.setSLA(sla);
+  }
+
+  @Override
+  public long getFreshness() {
+    return _internalMBean.getFreshness();
+  }
+
+  @Override
+  public void setFreshness(long freshness) {
+    _internalMBean.setFreshness(freshness);
+  }
+
+  @Override
+  public String search(String field, String query) {
+    return _internalMBean.search(field, query);
+  }
+
+  @Override
+  public String getDocument(long UID) {
+    return _internalMBean.getDocument(UID);
+  }
 }

@@ -1,5 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
@@ -21,7 +20,7 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>2.5</version>
 				<configuration>
-				 <forkMode>never</forkMode>
+					<forkMode>never</forkMode>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -50,21 +49,21 @@
 			</plugin>
 		</plugins>
 	</build>
-	
+
 	<repositories>
-	    <repository>
-	      <id>jbossReleases</id>
-	      <name>Jboss Released Java Packages</name>
-	      <url>http://repository.jboss.org/nexus/content/groups/public/</url>
-	      <layout>default</layout>
-	    </repository>
-	  </repositories>
+		<repository>
+			<id>jbossReleases</id>
+			<name>Jboss Released Java Packages</name>
+			<url>http://repository.jboss.org/nexus/content/groups/public/</url>
+			<layout>default</layout>
+		</repository>
+	</repositories>
 
 	<dependencies>
 		<dependency>
-		  <groupId>${project.groupId}</groupId>
-		  <artifactId>zoie-core</artifactId>
-		  <version>${project.version}</version>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>zoie-core</artifactId>
+			<version>${project.version}</version>
 		</dependency>
 
 		<dependency>

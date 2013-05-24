@@ -4,12 +4,12 @@
 
 <dwr>
 
-  <allow>
-    <create creator="spring" javascript="SearchService">
-      <param name="beanName" value="searchService"/>
-    </create>
-    
-    
-    <convert converter="bean" match="proj.zoie.service.api.*" />
-  </allow>
+	<allow>
+		<create creator="spring" javascript="SearchService">
+			<param name="beanName" value="searchService" />
+		</create>
+
+
+		<convert converter="bean" match="proj.zoie.service.api.*" />
+	</allow>
 </dwr>

@@ -1,4 +1,5 @@
 package proj.zoie.api.impl.util;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -33,154 +34,151 @@ import java.util.Iterator;
  * 
  */
 public class LongSetAccelerator implements LongSet {
-	private final long[] _filter;
-	private final int _mask;
-	private final LongSet _set;
-	private static final int MIXER = 2147482951; // a prime number
+  private final long[] _filter;
+  private final int _mask;
+  private final LongSet _set;
+  private static final int MIXER = 2147482951; // a prime number
 
-	public LongSetAccelerator(LongSet set) {
-		_set = set;
-		int mask = set.size() / 4;
-		mask |= (mask >> 1);
-		mask |= (mask >> 2);
-		mask |= (mask >> 4);
-		mask |= (mask >> 8);
-		mask |= (mask >> 16);
-		_mask = mask;
-		_filter = new long[mask + 1];
-		LongIterator iter = set.iterator();
-		while (iter.hasNext()) {
-			long l = iter.nextLong();
-			int h = (int) ((l >>> 32) ^ l) * MIXER;
+  public LongSetAccelerator(LongSet set) {
+    _set = set;
+    int mask = set.size() / 4;
+    mask |= (mask >> 1);
+    mask |= (mask >> 2);
+    mask |= (mask >> 4);
+    mask |= (mask >> 8);
+    mask |= (mask >> 16);
+    _mask = mask;
+    _filter = new long[mask + 1];
+    LongIterator iter = set.iterator();
+    while (iter.hasNext()) {
+      long l = iter.nextLong();
+      int h = (int) ((l >>> 32) ^ l) * MIXER;
 
-			long bits = _filter[h & _mask];
-			bits |= ((1L << (h >>> 26)));
-			bits |= ((1L << ((h >> 20) & 0x3F)));
-			_filter[h & _mask] = bits;
-		}
-	}
+      long bits = _filter[h & _mask];
+      bits |= ((1L << (h >>> 26)));
+      bits |= ((1L << ((h >> 20) & 0x3F)));
+      _filter[h & _mask] = bits;
+    }
+  }
 
-	public boolean contains(long val) {
-		final int h = (int) (val >>> 32 ^ val) * MIXER;
-		final long bits = _filter[h & _mask];
+  public boolean contains(long val) {
+    final int h = (int) (val >>> 32 ^ val) * MIXER;
+    final long bits = _filter[h & _mask];
 
-		return (bits & (1L << (h >>> 26))) != 0
-				&& (bits & (1L << ((h >> 20) & 0x3F))) != 0
-				&& _set.contains(val);
-	}
+    return (bits & (1L << (h >>> 26))) != 0 && (bits & (1L << ((h >> 20) & 0x3F))) != 0
+        && _set.contains(val);
+  }
 
-	public boolean contains(Object o) {
-		return contains(((Long) (o)).longValue());
-	}
+  public boolean contains(Object o) {
+    return contains(((Long) (o)).longValue());
+  }
 
-	public boolean containsAll(Collection<?> c) {
-		final Iterator<?> i = c.iterator();
-		int n = c.size();
-		while (n-- != 0)
-			if (!contains(i.next()))
-				return false;
+  public boolean containsAll(Collection<?> c) {
+    final Iterator<?> i = c.iterator();
+    int n = c.size();
+    while (n-- != 0)
+      if (!contains(i.next())) return false;
 
-		return true;
-	}
+    return true;
+  }
 
-	public boolean containsAll(LongCollection c) {
-		final LongIterator i = c.iterator();
-		int n = c.size();
-		while (n-- != 0)
-			if (!contains(i.nextLong()))
-				return false;
-		return true;
-	}
+  public boolean containsAll(LongCollection c) {
+    final LongIterator i = c.iterator();
+    int n = c.size();
+    while (n-- != 0)
+      if (!contains(i.nextLong())) return false;
+    return true;
+  }
 
-	public boolean add(long key) {
-		throw new UnsupportedOperationException();
-	}
+  public boolean add(long key) {
+    throw new UnsupportedOperationException();
+  }
 
-	public boolean add(Long o) {
-		throw new UnsupportedOperationException();
-	}
+  public boolean add(Long o) {
+    throw new UnsupportedOperationException();
+  }
 
-	public boolean addAll(Collection<? extends Long> c) {
-		throw new UnsupportedOperationException();
-	}
+  public boolean addAll(Collection<? extends Long> c) {
+    throw new UnsupportedOperationException();
+  }
 
-	public boolean addAll(LongCollection c) {
-		throw new UnsupportedOperationException();
-	}
+  public boolean addAll(LongCollection c) {
+    throw new UnsupportedOperationException();
+  }
 
-	public void clear() {
-		throw new UnsupportedOperationException();
-	}
+  public void clear() {
+    throw new UnsupportedOperationException();
+  }
 
-	public boolean equals(Object o) {
-		return _set.equals(o);
-	}
+  public boolean equals(Object o) {
+    return _set.equals(o);
+  }
 
-	public int hashCode() {
-		return _set.hashCode();
-	}
+  public int hashCode() {
+    return _set.hashCode();
+  }
 
-	public LongIterator longIterator() {
-		return _set.iterator();
-	}
+  public LongIterator longIterator() {
+    return _set.iterator();
+  }
 
-	public boolean isEmpty() {
-		return _set.isEmpty();
-	}
+  public boolean isEmpty() {
+    return _set.isEmpty();
+  }
 
-	public LongIterator iterator() {
-		return _set.iterator();
-	}
+  public LongIterator iterator() {
+    return _set.iterator();
+  }
 
-	public boolean rem(long key) {
-		throw new UnsupportedOperationException();
-	}
+  public boolean rem(long key) {
+    throw new UnsupportedOperationException();
+  }
 
-	public boolean remove(long key) {
-		throw new UnsupportedOperationException();
-	}
+  public boolean remove(long key) {
+    throw new UnsupportedOperationException();
+  }
 
-	public boolean remove(Object o) {
-		throw new UnsupportedOperationException();
-	}
+  public boolean remove(Object o) {
+    throw new UnsupportedOperationException();
+  }
 
-	public boolean removeAll(Collection<?> c) {
-		throw new UnsupportedOperationException();
-	}
+  public boolean removeAll(Collection<?> c) {
+    throw new UnsupportedOperationException();
+  }
 
-	public boolean removeAll(LongCollection c) {
-		throw new UnsupportedOperationException();
-	}
+  public boolean removeAll(LongCollection c) {
+    throw new UnsupportedOperationException();
+  }
 
-	public boolean retainAll(Collection<?> c) {
-		throw new UnsupportedOperationException();
-	}
+  public boolean retainAll(Collection<?> c) {
+    throw new UnsupportedOperationException();
+  }
 
-	public boolean retainAll(LongCollection c) {
-		throw new UnsupportedOperationException();
-	}
+  public boolean retainAll(LongCollection c) {
+    throw new UnsupportedOperationException();
+  }
 
-	public int size() {
-		return _set.size();
-	}
+  public int size() {
+    return _set.size();
+  }
 
-	public Object[] toArray() {
-		return _set.toArray();
-	}
+  public Object[] toArray() {
+    return _set.toArray();
+  }
 
-	public long[] toArray(long[] a) {
-		return _set.toArray(a);
-	}
+  public long[] toArray(long[] a) {
+    return _set.toArray(a);
+  }
 
-	public <T> T[] toArray(T[] a) {
-		return _set.toArray(a);
-	}
+  public <T> T[] toArray(T[] a) {
+    return _set.toArray(a);
+  }
 
-	public long[] toLongArray() {
-		return _set.toLongArray();
-	}
+  public long[] toLongArray() {
+    return _set.toLongArray();
+  }
 
-	public long[] toLongArray(long[] a) {
-		return _set.toLongArray(a);
-	}
+  public long[] toLongArray(long[] a) {
+    return _set.toLongArray(a);
+  }
 }

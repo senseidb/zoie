@@ -7,8 +7,7 @@ import org.apache.lucene.index.IndexReader;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieIndexReader;
 
-public abstract class AbstractReaderCache<R extends IndexReader>
-{
+public abstract class AbstractReaderCache<R extends IndexReader> {
   public abstract List<ZoieIndexReader<R>> getIndexReaders();
 
   public abstract void returnIndexReaders(List<ZoieIndexReader<R>> readers);
@@ -22,5 +21,5 @@ public abstract class AbstractReaderCache<R extends IndexReader>
   public abstract void setFreshness(long freshness);
 
   public abstract long getFreshness();
-  
+
 }

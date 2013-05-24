@@ -1,4 +1,5 @@
 package proj.zoie.impl.indexing;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,16 +24,17 @@ import org.apache.lucene.search.DocIdSet;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
-public abstract class AbstractIndexReaderDecorator<R extends IndexReader> implements IndexReaderDecorator<R> {
+public abstract class AbstractIndexReaderDecorator<R extends IndexReader> implements
+    IndexReaderDecorator<R> {
 
-	public abstract R decorate(ZoieIndexReader<R> indexReader) throws IOException;
+  public abstract R decorate(ZoieIndexReader<R> indexReader) throws IOException;
 
-	public R redecorate(R decorated, ZoieIndexReader<R> copy) throws IOException {
-		return decorate(copy);
-	}
-  public void setDeleteSet(IndexReader reader, DocIdSet docIds)
-  {
-    // do nothing 
+  public R redecorate(R decorated, ZoieIndexReader<R> copy) throws IOException {
+    return decorate(copy);
+  }
+
+  public void setDeleteSet(IndexReader reader, DocIdSet docIds) {
+    // do nothing
   }
 
 }

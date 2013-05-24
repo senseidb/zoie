@@ -7,13 +7,11 @@ import proj.zoie.api.indexing.AbstractZoieIndexableInterpreter;
 /**
  * Does not support store data.
  */
-public class ZoieSolrIndexableInterpreter extends AbstractZoieIndexableInterpreter<DocumentWithID>
-{
+public class ZoieSolrIndexableInterpreter extends AbstractZoieIndexableInterpreter<DocumentWithID> {
 
-	@Override
-	public DocumentWithID convertAndInterpret(DocumentWithID src)
-	{
-		return src;
-	}
+  @Override
+  public DocumentWithID convertAndInterpret(DocumentWithID src) {
+    return src;
+  }
 
 }

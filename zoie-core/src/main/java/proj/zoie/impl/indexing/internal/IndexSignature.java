@@ -1,4 +1,5 @@
 package proj.zoie.impl.indexing.internal;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -25,72 +26,57 @@ import java.io.OutputStreamWriter;
 
 import org.apache.log4j.Logger;
 
-public class IndexSignature{
+public class IndexSignature {
   private static Logger log = Logger.getLogger(IndexSignature.class);
-  
-    private String  _version;                     // current version
-    public IndexSignature(String version){
-      _version = version;
-    }   
-    
-    public void updateVersion(String version)
-    {
-      _version = version;
-    }
 
-    public String getVersion()
-    {
-      return _version;
-    }
+  private String _version; // current version
 
-    public void save(OutputStream out) throws IOException
-    {
-      BufferedWriter writer = null;
-      try
-      {
-        writer = new BufferedWriter(new OutputStreamWriter(out, "UTF-8"));
-        //writer.write(String.valueOf(_version));
-        //System.out.println("IndexSignature:save:_version" + _version);
-        if(_version == null)
-        {
-          //System.out.println("IndexSignature:save:_version: write null");
-          writer.write("null");
-        }
-        else
-        {
-          //System.out.println("IndexSignature:save:_version: write " + _version);
-          writer.write(_version);          
-        }
-        writer.flush();
-      } catch(IOException e)
-      {
-        log.error(e);
-      } finally
-      {
-        if (writer!=null) writer.close();
+  public IndexSignature(String version) {
+    _version = version;
+  }
+
+  public void updateVersion(String version) {
+    _version = version;
+  }
+
+  public String getVersion() {
+    return _version;
+  }
+
+  public void save(OutputStream out) throws IOException {
+    BufferedWriter writer = null;
+    try {
+      writer = new BufferedWriter(new OutputStreamWriter(out, "UTF-8"));
+      // writer.write(String.valueOf(_version));
+      // System.out.println("IndexSignature:save:_version" + _version);
+      if (_version == null) {
+        // System.out.println("IndexSignature:save:_version: write null");
+        writer.write("null");
+      } else {
+        // System.out.println("IndexSignature:save:_version: write " + _version);
+        writer.write(_version);
       }
+      writer.flush();
+    } catch (IOException e) {
+      log.error(e);
+    } finally {
+      if (writer != null) writer.close();
     }
-    
-  public static IndexSignature read(InputStream in) throws IOException
-  {
+  }
+
+  public static IndexSignature read(InputStream in) throws IOException {
     BufferedReader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"));
     String line = null;
-    try
-    {
+    try {
       line = reader.readLine();
-    } catch (IOException e)
-    {
+    } catch (IOException e) {
       log.error(e);
-    } finally
-    {
+    } finally {
       reader.close();
     }
-    if (line != null && !line.equals("null"))
-    {
+    if (line != null && !line.equals("null")) {
       return new IndexSignature(line);
-    }
-    else
-    {
+    } else {
       return new IndexSignature(null);
     }
   }

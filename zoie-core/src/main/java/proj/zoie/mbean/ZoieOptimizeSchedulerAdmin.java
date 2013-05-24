@@ -1,4 +1,5 @@
 package proj.zoie.mbean;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,26 +21,25 @@ import java.util.Date;
 import proj.zoie.api.indexing.DefaultOptimizeScheduler;
 
 public class ZoieOptimizeSchedulerAdmin implements ZoieOptimizeSchedulerAdminMBean {
-	private DefaultOptimizeScheduler _optimizeScheduler;
-	
-	public ZoieOptimizeSchedulerAdmin(DefaultOptimizeScheduler optimizeScheduler){
-		_optimizeScheduler = optimizeScheduler;
-	}
-	
-	public long getOptimizationDuration() {
-		return _optimizeScheduler.getOptimizeDuration();
-	}
+  private DefaultOptimizeScheduler _optimizeScheduler;
 
-	public void setOptimizationDuration(long duration) {
-		_optimizeScheduler.setOptimizeDuration(duration);
-	}
-	
+  public ZoieOptimizeSchedulerAdmin(DefaultOptimizeScheduler optimizeScheduler) {
+    _optimizeScheduler = optimizeScheduler;
+  }
 
-	public void setDateToStartOptimize(Date optimizeStartDate){
-		_optimizeScheduler.setDateToStartOptimize(optimizeStartDate);
-	}
-	
-	public Date getDateToStartOptimize(){
-		return _optimizeScheduler.getDateToStartOptimize();
-	}
+  public long getOptimizationDuration() {
+    return _optimizeScheduler.getOptimizeDuration();
+  }
+
+  public void setOptimizationDuration(long duration) {
+    _optimizeScheduler.setOptimizeDuration(duration);
+  }
+
+  public void setDateToStartOptimize(Date optimizeStartDate) {
+    _optimizeScheduler.setDateToStartOptimize(optimizeStartDate);
+  }
+
+  public Date getDateToStartOptimize() {
+    return _optimizeScheduler.getDateToStartOptimize();
+  }
 }

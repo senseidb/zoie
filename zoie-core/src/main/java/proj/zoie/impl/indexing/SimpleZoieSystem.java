@@ -1,4 +1,5 @@
 package proj.zoie.impl.indexing;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -26,16 +27,18 @@ import proj.zoie.api.indexing.ZoieIndexableInterpreter;
  * @deprecated use {@link ZoieSystem#buildDefaultInstance(File, ZoieIndexableInterpreter, int, long, boolean)}
  * @param <V>
  */
-public class SimpleZoieSystem<D> extends ZoieSystem<IndexReader,D> {
+public class SimpleZoieSystem<D> extends ZoieSystem<IndexReader, D> {
 
-	/**
-	 * @param idxDir
-	 * @param interpreter
-	 * @param batchSize
-	 * @param batchDelay
-	 */
-	public SimpleZoieSystem(File idxDir, ZoieIndexableInterpreter<D> interpreter,int batchSize, long batchDelay, Comparator<String> versionComparator) {
-		super(idxDir, interpreter, new DefaultIndexReaderDecorator(), null,null,batchSize, batchDelay, true, versionComparator,false);
-	}
+  /**
+   * @param idxDir
+   * @param interpreter
+   * @param batchSize
+   * @param batchDelay
+   */
+  public SimpleZoieSystem(File idxDir, ZoieIndexableInterpreter<D> interpreter, int batchSize,
+      long batchDelay, Comparator<String> versionComparator) {
+    super(idxDir, interpreter, new DefaultIndexReaderDecorator(), null, null, batchSize,
+        batchDelay, true, versionComparator, false);
+  }
 
 }

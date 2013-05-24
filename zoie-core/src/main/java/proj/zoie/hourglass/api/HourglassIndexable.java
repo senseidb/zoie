@@ -9,11 +9,9 @@ import proj.zoie.api.indexing.AbstractZoieIndexable;
  * @author "Xiaoyang Gu<xgu@linkedin.com>"
  *
  */
-public abstract class HourglassIndexable extends AbstractZoieIndexable
-{
+public abstract class HourglassIndexable extends AbstractZoieIndexable {
   @Override
-  public boolean isDeleted()
-  {
+  public boolean isDeleted() {
     return false;
   }
 }

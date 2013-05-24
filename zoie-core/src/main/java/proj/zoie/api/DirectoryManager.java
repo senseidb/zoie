@@ -7,33 +7,34 @@ import java.util.Date;
 
 import org.apache.lucene.store.Directory;
 
-public interface DirectoryManager
-{
+public interface DirectoryManager {
   static final String INDEX_DIRECTORY = "index.directory";
 
   Directory getDirectory() throws IOException;
-  
+
   Directory getDirectory(boolean create) throws IOException;
-  
-  String getVersion() throws IOException;  
+
+  String getVersion() throws IOException;
+
   void setVersion(String version) throws IOException;
-  
-  //ZoieVersionFactory<V> getVersionFactory();
-  //void setVersionFactory(ZoieVersionFactory<V> zoieVersionFactory);
+
+  // ZoieVersionFactory<V> getVersionFactory();
+  // void setVersionFactory(ZoieVersionFactory<V> zoieVersionFactory);
 
   Date getLastIndexModifiedTime();
 
   String getPath();
-  
+
   void purge();
-  
+
   boolean exists();
-  
-  boolean transferFromChannelToFile(ReadableByteChannel channel, String fileName) throws IOException;
+
+  boolean transferFromChannelToFile(ReadableByteChannel channel, String fileName)
+      throws IOException;
 
   long transferFromFileToChannel(String fileName, WritableByteChannel channel) throws IOException;
-  public static enum DIRECTORY_MODE
-  {
+
+  public static enum DIRECTORY_MODE {
     /**
      * Provides directories in using SimpleFSDirectory, which has the best compatibility.
      * It is the default mode used by Zoie.

@@ -15,23 +15,20 @@ import proj.zoie.api.indexing.IndexReaderDecorator;
  * 
  * @param <R>
  */
-public class DefaultRAMDiskIndexFactory<R extends IndexReader> extends RAMIndexFactory<R>
-{
+public class DefaultRAMDiskIndexFactory<R extends IndexReader> extends RAMIndexFactory<R> {
   private static final Logger log = Logger.getLogger(DefaultRAMIndexFactory.class);
   private static int fold = 10000;
 
   @Override
-  public synchronized RAMSearchIndex<R> newInstance(String version, IndexReaderDecorator<R> decorator, SearchIndexManager<R> idxMgr)
-  {
+  public synchronized RAMSearchIndex<R> newInstance(String version,
+      IndexReaderDecorator<R> decorator, SearchIndexManager<R> idxMgr) {
     Directory ramIdxDir;
-    try
-    {
+    try {
       File backingdir = new File("/tmp/ram" + fold);// /Volumes/ramdisk/
       ramIdxDir = new SimpleFSDirectory(backingdir);
       fold++;
       return new RAMSearchIndex<R>(version, decorator, idxMgr, ramIdxDir, backingdir);
-    } catch (IOException e)
-    {
+    } catch (IOException e) {
       // TODO Auto-generated catch block
       log.error(e);
       e.printStackTrace();

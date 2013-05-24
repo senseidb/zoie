@@ -4,7 +4,7 @@
 
 <web-app>
 
-    <context-param>
+	<context-param>
 		<param-name>contextConfigLocation</param-name>
 		<param-value>/WEB-INF/conf/applicationContext.spring</param-value>
 	</context-param>
@@ -15,24 +15,24 @@
   <!-- ******************************************************************* -->
   <!-- * Servlets definition * -->
   <!-- ******************************************************************* -->
-    
-  <servlet>
- 
-  	<servlet-name>dwr</servlet-name>
-  	<servlet-class>org.directwebremoting.servlet.DwrServlet</servlet-class>
-  	<init-param>
-    	<param-name>debug</param-name>
-    	<param-value>true</param-value>
-  	</init-param>
-  	<load-on-startup>2</load-on-startup>
-  </servlet>
+
+	<servlet>
+
+		<servlet-name>dwr</servlet-name>
+		<servlet-class>org.directwebremoting.servlet.DwrServlet</servlet-class>
+		<init-param>
+			<param-name>debug</param-name>
+			<param-value>true</param-value>
+		</init-param>
+		<load-on-startup>2</load-on-startup>
+	</servlet>
  
   <!-- ******************************************************************* -->
   <!-- * Servlets mapping * -->
   <!-- ******************************************************************* -->
-  
-  <servlet-mapping>
-  	<servlet-name>dwr</servlet-name>
-  	<url-pattern>/dwr/*</url-pattern>
-  </servlet-mapping>
+
+	<servlet-mapping>
+		<servlet-name>dwr</servlet-name>
+		<url-pattern>/dwr/*</url-pattern>
+	</servlet-mapping>
 </web-app>

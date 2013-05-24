@@ -19,37 +19,27 @@ package proj.zoie.mbean;
 import java.io.IOException;
 import java.util.Date;
 
-public interface ZoieSystemAdminMBean extends ZoieAdminMBean{
+public interface ZoieSystemAdminMBean extends ZoieAdminMBean {
   Date getLastOptimizationTime();
 
   void optimize(int numSegs) throws IOException;
 
-
   void purgeIndex() throws IOException;
-
-
-
-
 
   void expungeDeletes() throws IOException;
 
   void setUseCompoundFile(boolean useCompoundFile);
 
-
-
   int getDiskIndexSize();
-
 
   long getMinUID() throws IOException;
 
   long getMaxUID() throws IOException;
-  
 
-  
   public long getFreshness();
-  
+
   public void setFreshness(long freshness);
-  
+
   /**
    * @return a String representation of the search result given the string representations of query arguments.
    */

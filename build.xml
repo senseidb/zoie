@@ -2,56 +2,56 @@
 
 	<target name="clean" description="--> clean build, dist, and logs">
 		<exec executable="mvn">
-			<arg line="clean"/>
+			<arg line="clean" />
 		</exec>
 	</target>
 
 	<target name="dist" depends="clean" description="--> build .jar and sources into dist">
 		<exec executable="mvn">
-			<arg line="-Dmaven.test.skip=true package"/>
+			<arg line="-Dmaven.test.skip=true package" />
 		</exec>
 	</target>
-	
+
 	<target name="deploy" depends="test">
 		<exec executable="mvn">
-		  <arg line="deploy" />
+			<arg line="deploy" />
 		</exec>
 	</target>
-	
+
 	<target name="release" depends="test">
 		<exec executable="mvn">
-		  <arg line="-DperformRelease=true deploy" />
+			<arg line="-DperformRelease=true deploy" />
 		</exec>
 	</target>
-	
+
 	<target name="test" depends="dist" description="Runs JUnit Tests -- use -Dtests.to.run=testA,testB,... to run tests selectively">
 		<echo>=== Running JUnit Tests ===</echo>
 		<exec executable="mvn">
-			<arg line="test"/>
+			<arg line="test" />
 		</exec>
 	</target>
 
-    <target name="example" depends="dist">
-	   <exec executable="mvn" dir="zoie-example">
-		  <arg line="jetty:run" />
-	   </exec>
-	</target>
-	
-    <target name="perf-client" depends="dist">
-	   <exec executable="mvn" dir="zoie-perf">
-		   <arg line="-e exec:java proj.zoie.perf.client.ZoieClient" />
-	   </exec>
-	</target>
-	
-    <target name="perf-server" depends="dist">
-	   <exec executable="mvn" dir="zoie-perf">
-		  <arg line="jetty:run" />
-	   </exec>
+	<target name="example" depends="dist">
+		<exec executable="mvn" dir="zoie-example">
+			<arg line="jetty:run" />
+		</exec>
 	</target>
 
-    <target name="run-cmdline" depends="dist" description="--> run the cmdline console">
-	  <exec executable="mvn">
-	    <arg line="-e exec:java -Dexec.mainClass=proj.zoie.cmdline.JMXClient"/>
-	  </exec>
-    </target>
+	<target name="perf-client" depends="dist">
+		<exec executable="mvn" dir="zoie-perf">
+			<arg line="-e exec:java proj.zoie.perf.client.ZoieClient" />
+		</exec>
+	</target>
+
+	<target name="perf-server" depends="dist">
+		<exec executable="mvn" dir="zoie-perf">
+			<arg line="jetty:run" />
+		</exec>
+	</target>
+
+	<target name="run-cmdline" depends="dist" description="--> run the cmdline console">
+		<exec executable="mvn">
+			<arg line="-e exec:java -Dexec.mainClass=proj.zoie.cmdline.JMXClient" />
+		</exec>
+	</target>
 </project>

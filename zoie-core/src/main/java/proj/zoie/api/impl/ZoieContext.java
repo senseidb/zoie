@@ -13,18 +13,14 @@ import proj.zoie.api.ZoieIndexReader;
  * @author "Xiaoyang Gu<xgu@linkedin.com>"
  *
  */
-public class ZoieContext
-{
-  private static InheritableThreadLocal<ZoieContext> _context = new InheritableThreadLocal<ZoieContext>()
-  {
-    protected ZoieContext childValue(ZoieContext parentValue)
-    {
+public class ZoieContext {
+  private static InheritableThreadLocal<ZoieContext> _context = new InheritableThreadLocal<ZoieContext>() {
+    protected ZoieContext childValue(ZoieContext parentValue) {
       return parentValue.clone();
     }
 
     @Override
-    protected ZoieContext initialValue()
-    {
+    protected ZoieContext initialValue() {
       return new ZoieContext();
     }
   };
@@ -33,8 +29,7 @@ public class ZoieContext
   // away.
   protected WeakHashMap<ZoieIndexReader<?>, ZoieReaderContext> _zoieContextMap = new WeakHashMap<ZoieIndexReader<?>, ZoieReaderContext>();
 
-  public static ZoieContext getContext()
-  {
+  public static ZoieContext getContext() {
     return _context.get();
   }
 
@@ -44,8 +39,7 @@ public class ZoieContext
    * 
    * @param context
    */
-  public static void setContext(ZoieContext context)
-  {
+  public static void setContext(ZoieContext context) {
     _context.set(context.clone());
   }
 
@@ -55,12 +49,9 @@ public class ZoieContext
    * @param reader
    * @return
    */
-  public synchronized ZoieReaderContext getReaderContext(
-      ZoieIndexReader<?> reader)
-  {
+  public synchronized ZoieReaderContext getReaderContext(ZoieIndexReader<?> reader) {
     ZoieReaderContext ctx = _zoieContextMap.get(reader);
-    if (ctx == null)
-    {
+    if (ctx == null) {
       ctx = new ZoieReaderContext();
       _zoieContextMap.put(reader, ctx);
     }
@@ -75,19 +66,15 @@ public class ZoieContext
    * @see java.lang.Object#clone()
    */
   @Override
-  protected ZoieContext clone()
-  {
+  protected ZoieContext clone() {
     ZoieContext ctx = new ZoieContext();
-    for (Entry<ZoieIndexReader<?>, ZoieReaderContext> pair : _zoieContextMap
-        .entrySet())
-    {
+    for (Entry<ZoieIndexReader<?>, ZoieReaderContext> pair : _zoieContextMap.entrySet()) {
       ctx._zoieContextMap.put(pair.getKey(), pair.getValue().clone());
     }
     return ctx;
   }
 
-  public synchronized void clear()
-  {
+  public synchronized void clear() {
     _zoieContextMap.clear();
   }
 }

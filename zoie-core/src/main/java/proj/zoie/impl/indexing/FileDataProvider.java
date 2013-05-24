@@ -1,4 +1,5 @@
 package proj.zoie.impl.indexing;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,103 +24,82 @@ import java.util.Stack;
 
 import proj.zoie.api.DataConsumer.DataEvent;
 
-public class FileDataProvider extends StreamDataProvider<File>
-{
-	private final File _dir;
-	private long _currentVersion = 0L;
-	private Stack<Iterator<File>> _stack;
-	private Iterator<File> _currentIterator;
-	private boolean _looping;
-		
-	public FileDataProvider(File dir, Comparator<String> versionComparator)
-	{
-		super(versionComparator);
-		if (!dir.exists())
-			throw new IllegalArgumentException("dir: "+dir+" does not exist.");
-		_dir=dir;
-		_stack=new Stack<Iterator<File>>();
-		_looping = false;
-		reset();
-	}
-	
-	public File getDir()
-	{
-		return _dir;
-	}
+public class FileDataProvider extends StreamDataProvider<File> {
+  private final File _dir;
+  private long _currentVersion = 0L;
+  private Stack<Iterator<File>> _stack;
+  private Iterator<File> _currentIterator;
+  private boolean _looping;
 
-	public String getZoieVersion()
-	{
-	  return Long.toString(_currentVersion);
-	}
-	
-	public String getMinZoieVersion()
-	{
-	  return Long.toString(0L);
-	}
-	
-	public String nextZoieVersion()
-	{
+  public FileDataProvider(File dir, Comparator<String> versionComparator) {
+    super(versionComparator);
+    if (!dir.exists()) throw new IllegalArgumentException("dir: " + dir + " does not exist.");
+    _dir = dir;
+    _stack = new Stack<Iterator<File>>();
+    _looping = false;
+    reset();
+  }
+
+  public File getDir() {
+    return _dir;
+  }
+
+  public String getZoieVersion() {
+    return Long.toString(_currentVersion);
+  }
+
+  public String getMinZoieVersion() {
+    return Long.toString(0L);
+  }
+
+  public String nextZoieVersion() {
     return Long.toString(_currentVersion + 1L);
-	}
-	
-	@Override
-	public void reset()
-	{
-		_stack.clear();
-		if (_dir.isFile())
-		{
-			_currentIterator=Arrays.asList(new File[]{_dir}).iterator();
-		}
-		else
-		{
-			_currentIterator=Arrays.asList(_dir.listFiles()).iterator();
-		}
-	}
-	
-	public void setLooping(boolean looping){
-		_looping = looping;
-	}
-	
-	@Override
-	public DataEvent<File> next() {
-		if(_currentIterator.hasNext())
-		{
-			File next=_currentIterator.next();
-			if (next.isFile())
-			{
-			  // ?? hao: how to implement version++
-				// new DataEvent<File>(next, _currentVersion++);
-				return new DataEvent<File>(next,nextZoieVersion());
-			}
-			else
-			{
-				_stack.push(_currentIterator);
-				_currentIterator=Arrays.asList(next.listFiles()).iterator();
-				return next();
-			}
-		}
-		else
-		{
-			if (_stack.isEmpty())
-			{
-				if (_looping){
-					reset();
-					return next();
-				}
-				else{
-				  return null;
-				}
-			}
-			else
-			{
-				_currentIterator=_stack.pop();
-				return next();
-			}
-		}
-	}
+  }
 
-	@Override
-	public void setStartingOffset(String version) {
-		throw new UnsupportedOperationException("");
-	}
+  @Override
+  public void reset() {
+    _stack.clear();
+    if (_dir.isFile()) {
+      _currentIterator = Arrays.asList(new File[] { _dir }).iterator();
+    } else {
+      _currentIterator = Arrays.asList(_dir.listFiles()).iterator();
+    }
+  }
+
+  public void setLooping(boolean looping) {
+    _looping = looping;
+  }
+
+  @Override
+  public DataEvent<File> next() {
+    if (_currentIterator.hasNext()) {
+      File next = _currentIterator.next();
+      if (next.isFile()) {
+        // ?? hao: how to implement version++
+        // new DataEvent<File>(next, _currentVersion++);
+        return new DataEvent<File>(next, nextZoieVersion());
+      } else {
+        _stack.push(_currentIterator);
+        _currentIterator = Arrays.asList(next.listFiles()).iterator();
+        return next();
+      }
+    } else {
+      if (_stack.isEmpty()) {
+        if (_looping) {
+          reset();
+          return next();
+        } else {
+          return null;
+        }
+      } else {
+        _currentIterator = _stack.pop();
+        return next();
+      }
+    }
+  }
+
+  @Override
+  public void setStartingOffset(String version) {
+    throw new UnsupportedOperationException("");
+  }
 }

@@ -1,4 +1,5 @@
 package proj.zoie.api.indexing;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,27 +21,27 @@ import java.io.Serializable;
 /**
  * <b> experimental api </b>. Call-back for indexing events.
  */
-public interface IndexingEventListener{
-	
-	/**
-	 * Indexing event abstraction.
-	 */
-	public static class IndexingEvent implements Serializable{
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 1L;
-	}
-	
-	/**
-	 * Handler for indexing events
-	 * @param evt event to be handled.
-	 */
-	void handleIndexingEvent(IndexingEvent evt);
-	
-	/**
-	 * Handler for updated disk version
-	 * @param version new disk version
-	 */
-	void handleUpdatedDiskVersion(String version);
+public interface IndexingEventListener {
+
+  /**
+   * Indexing event abstraction.
+   */
+  public static class IndexingEvent implements Serializable {
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+  }
+
+  /**
+   * Handler for indexing events
+   * @param evt event to be handled.
+   */
+  void handleIndexingEvent(IndexingEvent evt);
+
+  /**
+   * Handler for updated disk version
+   * @param version new disk version
+   */
+  void handleUpdatedDiskVersion(String version);
 }

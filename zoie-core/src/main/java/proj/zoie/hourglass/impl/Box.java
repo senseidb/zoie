@@ -12,8 +12,7 @@ import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.impl.indexing.ZoieSystem;
 
-public class Box<R extends IndexReader, D>
-{
+public class Box<R extends IndexReader, D> {
   public static final Logger log = Logger.getLogger(Box.class.getName());
   List<ZoieIndexReader<R>> _archives;
   List<ZoieSystem<R, D>> _archiveZoies;
@@ -29,61 +28,51 @@ public class Box<R extends IndexReader, D>
    * @param actives
    * @param decorator
    */
-  public Box(List<ZoieIndexReader<R>> archives, List<ZoieSystem<R, D>> archiveZoies, List<ZoieSystem<R, D>> retiree, List<ZoieSystem<R, D>> actives, IndexReaderDecorator<R> decorator)
-  {
+  public Box(List<ZoieIndexReader<R>> archives, List<ZoieSystem<R, D>> archiveZoies,
+      List<ZoieSystem<R, D>> retiree, List<ZoieSystem<R, D>> actives,
+      IndexReaderDecorator<R> decorator) {
     _archives = new LinkedList<ZoieIndexReader<R>>(archives);
     _archiveZoies = new LinkedList<ZoieSystem<R, D>>(archiveZoies);
     _retiree = new LinkedList<ZoieSystem<R, D>>(retiree);
     _actives = new LinkedList<ZoieSystem<R, D>>(actives);
     _decorator = decorator;
-    if (log.isDebugEnabled())
-    {
-      for (ZoieIndexReader<R> r : _archives)
-      {
+    if (log.isDebugEnabled()) {
+      for (ZoieIndexReader<R> r : _archives) {
         log.debug("archive " + r.directory() + " refCount: " + r.getRefCount());
       }
     }
   }
 
-  public void shutdown()
-  {
-    for (ZoieIndexReader<R> r : _archives)
-    {
+  public void shutdown() {
+    for (ZoieIndexReader<R> r : _archives) {
       r.decZoieRef();
       log.info("refCount at shutdown: " + r.getRefCount() + " " + r.directory());
     }
-    for (ZoieSystem<R, D> zoie : _archiveZoies)
-    {
+    for (ZoieSystem<R, D> zoie : _archiveZoies) {
       zoie.shutdown();
     }
-    for (ZoieSystem<R, D> zoie : _retiree)
-    {
+    for (ZoieSystem<R, D> zoie : _retiree) {
       zoie.shutdown();
     }
     // add the active index readers
-    for (ZoieSystem<R, D> zoie : _actives)
-    {
-      while (true)
-      {
+    for (ZoieSystem<R, D> zoie : _actives) {
+      while (true) {
         long flushwait = 200000L;
-        try
-        {
+        try {
           zoie.flushEvents(flushwait);
           zoie.getAdminMBean().setUseCompoundFile(true);
           zoie.getAdminMBean().optimize(1);
           break;
-        } catch (IOException e)
-        {
-          log.error("pre-shutdown optimization " + zoie.getAdminMBean().getIndexDir() + " Should investigate. But move on now.", e);
+        } catch (IOException e) {
+          log.error("pre-shutdown optimization " + zoie.getAdminMBean().getIndexDir()
+              + " Should investigate. But move on now.", e);
           break;
-        } catch (ZoieException e)
-        {
-          if (e.getMessage().indexOf("timed out") < 0)
-          {
+        } catch (ZoieException e) {
+          if (e.getMessage().indexOf("timed out") < 0) {
             break;
-          } else
-          {
-            log.info("pre-shutdown optimization " + zoie.getAdminMBean().getIndexDir() + " flushing processing " + flushwait + "ms elapsed");
+          } else {
+            log.info("pre-shutdown optimization " + zoie.getAdminMBean().getIndexDir()
+                + " flushing processing " + flushwait + "ms elapsed");
           }
         }
       }

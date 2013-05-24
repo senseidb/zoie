@@ -48,8 +48,7 @@ import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
 
-public class LuceneNRTDataConsumer<D> implements DataConsumer<D>, IndexReaderFactory<IndexReader>
-{
+public class LuceneNRTDataConsumer<D> implements DataConsumer<D>, IndexReaderFactory<IndexReader> {
   private static final Logger logger = Logger.getLogger(LuceneNRTDataConsumer.class);
 
   /**
@@ -62,169 +61,140 @@ public class LuceneNRTDataConsumer<D> implements DataConsumer<D>, IndexReaderFac
   private ZoieIndexableInterpreter<D> _interpreter;
   private Directory _dir;
 
-  public LuceneNRTDataConsumer(File dir, ZoieIndexableInterpreter<D> interpreter) throws IOException
-  {
+  public LuceneNRTDataConsumer(File dir, ZoieIndexableInterpreter<D> interpreter)
+      throws IOException {
     this(FSDirectory.open(dir), new StandardAnalyzer(Version.LUCENE_34), interpreter);
   }
 
-  public LuceneNRTDataConsumer(File dir, Analyzer analyzer, ZoieIndexableInterpreter<D> interpreter) throws IOException
-  {
+  public LuceneNRTDataConsumer(File dir, Analyzer analyzer, ZoieIndexableInterpreter<D> interpreter)
+      throws IOException {
     this(FSDirectory.open(dir), analyzer, interpreter);
   }
 
-  public LuceneNRTDataConsumer(Directory dir, Analyzer analyzer, ZoieIndexableInterpreter<D> interpreter)
-  {
+  public LuceneNRTDataConsumer(Directory dir, Analyzer analyzer,
+      ZoieIndexableInterpreter<D> interpreter) {
     _writer = null;
     _analyzer = analyzer;
     _interpreter = interpreter;
     _dir = dir;
   }
 
-  public void start()
-  {
-    try
-    {
-	  IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_34,_analyzer);
+  public void start() {
+    try {
+      IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_34, _analyzer);
       _writer = new IndexWriter(_dir, config);
-    } catch (IOException e)
-    {
+    } catch (IOException e) {
       logger.error("uanble to start consumer: " + e.getMessage(), e);
     }
   }
 
-  public void shutdown()
-  {
-    if (_writer != null)
-    {
-      try
-      {
+  public void shutdown() {
+    if (_writer != null) {
+      try {
         _writer.close();
-      } catch (IOException e)
-      {
+      } catch (IOException e) {
         logger.error(e.getMessage(), e);
       }
     }
   }
 
-  public void consume(Collection<proj.zoie.api.DataConsumer.DataEvent<D>> events) throws ZoieException
-  {
-    if (_writer == null)
-    {
+  public void consume(Collection<proj.zoie.api.DataConsumer.DataEvent<D>> events)
+      throws ZoieException {
+    if (_writer == null) {
       throw new ZoieException("Internal IndexWriter null, perhaps not started?");
     }
 
-    if (events.size() > 0)
-    {
+    if (events.size() > 0) {
       String version = null;
-      for (DataEvent<D> event : events)
-      {
+      for (DataEvent<D> event : events) {
         ZoieIndexable indexable = _interpreter.convertAndInterpret(event.getData());
         version = event.getVersion();
-        if (indexable.isSkip())
-          continue;
+        if (indexable.isSkip()) continue;
 
-        try
-        {
+        try {
           _writer.deleteDocuments(new Term(DOCUMENT_ID_FIELD, String.valueOf(indexable.getUID())));
-        } catch (IOException e)
-        {
+        } catch (IOException e) {
           throw new ZoieException(e.getMessage(), e);
         }
 
         IndexingReq[] reqs = indexable.buildIndexingReqs();
-        for (IndexingReq req : reqs)
-        {
+        for (IndexingReq req : reqs) {
           Analyzer localAnalyzer = req.getAnalyzer();
           Document doc = req.getDocument();
-          Field uidField = new Field(DOCUMENT_ID_FIELD, String.valueOf(indexable.getUID()), Store.NO, Index.NOT_ANALYZED_NO_NORMS);
+          Field uidField = new Field(DOCUMENT_ID_FIELD, String.valueOf(indexable.getUID()),
+              Store.NO, Index.NOT_ANALYZED_NO_NORMS);
           uidField.setOmitNorms(true);
           doc.add(uidField);
-          if (localAnalyzer == null)
-            localAnalyzer = _analyzer;
-          try
-          {
+          if (localAnalyzer == null) localAnalyzer = _analyzer;
+          try {
             _writer.addDocument(doc, localAnalyzer);
-          } catch (IOException e)
-          {
+          } catch (IOException e) {
             throw new ZoieException(e.getMessage(), e);
           }
         }
       }
-      if (version!=null){
-    	  HashMap<String,String> versionData = new HashMap<String,String>();
-    	  versionData.put("version",version);
-    	  try {
-			_writer.commit(versionData);
-		  } catch (IOException e) {
-			  throw new ZoieException(e.getMessage(), e);
-		  }
+      if (version != null) {
+        HashMap<String, String> versionData = new HashMap<String, String>();
+        versionData.put("version", version);
+        try {
+          _writer.commit(versionData);
+        } catch (IOException e) {
+          throw new ZoieException(e.getMessage(), e);
+        }
       }
     }
   }
 
-  public Analyzer getAnalyzer()
-  {
+  public Analyzer getAnalyzer() {
     return _analyzer;
   }
-  
+
   private volatile String _currentReaderVersion = null;
 
   @Override
   public String getCurrentReaderVersion() {
-	return _currentReaderVersion;
+    return _currentReaderVersion;
   }
 
-  public IndexReader getDiskIndexReader() throws IOException
-  {
-    if (_writer != null)
-    {
+  public IndexReader getDiskIndexReader() throws IOException {
+    if (_writer != null) {
       IndexReader reader = IndexReader.open(LuceneNRTDataConsumer.this._writer, true);
-      Map<String,String> userData = reader.getCommitUserData();
-      if (userData!=null){
-    	  _currentReaderVersion = userData.get("version");
+      Map<String, String> userData = reader.getCommitUserData();
+      if (userData != null) {
+        _currentReaderVersion = userData.get("version");
       }
       return reader;
-    } else
-    {
+    } else {
       return null;
     }
   }
 
-  public List<IndexReader> getIndexReaders() throws IOException
-  {
+  public List<IndexReader> getIndexReaders() throws IOException {
     IndexReader subReader = getDiskIndexReader();
     ArrayList<IndexReader> list = new ArrayList<IndexReader>();
-    if (subReader != null)
-    {
+    if (subReader != null) {
       list.add(subReader);
     }
     return list;
   }
 
-  public void returnIndexReaders(List<IndexReader> readers)
-  {
-    if (readers != null)
-    {
-      for (IndexReader r : readers)
-      {
-        try
-        {
+  public void returnIndexReaders(List<IndexReader> readers) {
+    if (readers != null) {
+      for (IndexReader r : readers) {
+        try {
           r.close();
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
           logger.error(e.getMessage(), e);
         }
       }
     }
   }
 
-  public String getVersion()
-  {
+  public String getVersion() {
     throw new UnsupportedOperationException();
   }
 
-	public Comparator<String> getVersionComparator()
-  {
+  public Comparator<String> getVersionComparator() {
     throw new UnsupportedOperationException();
   }
 }

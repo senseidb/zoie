@@ -26,7 +26,6 @@ import proj.zoie.api.indexing.ZoieIndexableInterpreter;
  *          Interface to translate from a data object to an indexable object.
  */
 
-public interface HourglassIndexableInterpreter<V> extends ZoieIndexableInterpreter<V>
-{
+public interface HourglassIndexableInterpreter<V> extends ZoieIndexableInterpreter<V> {
   HourglassIndexable convertAndInterpret(V src);
 }

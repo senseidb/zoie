@@ -1,4 +1,5 @@
 package proj.zoie.mbean;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,11 +19,17 @@ package proj.zoie.mbean;
 import java.util.Date;
 
 public interface ZoieIndexingStatusAdminMBean {
-	long getLastIndexingBatchDuration();
-	long getAverageIndexingBatchDuration();
-	void resetAverage();
-	Date getLastIndexingEndTime();
-	int getLastIndexingBatchSize();
-	int getLastIndexingBatchLeftOver();
-	String getCurrentDiskVersion();
+  long getLastIndexingBatchDuration();
+
+  long getAverageIndexingBatchDuration();
+
+  void resetAverage();
+
+  Date getLastIndexingEndTime();
+
+  int getLastIndexingBatchSize();
+
+  int getLastIndexingBatchLeftOver();
+
+  String getCurrentDiskVersion();
 }

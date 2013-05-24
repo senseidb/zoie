@@ -1,4 +1,5 @@
 package proj.zoie.impl.indexing.internal;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -47,251 +48,242 @@ import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 
-public abstract class LuceneIndexDataLoader<R extends IndexReader> implements DataConsumer<ZoieIndexable>
-{
-	private static final Logger log = Logger.getLogger(LuceneIndexDataLoader.class);
-	protected final Analyzer _analyzer;
-	protected final Similarity _similarity;
-	protected final SearchIndexManager<R> _idxMgr;
-	protected final Comparator<String> _versionComparator;
-	private Filter _purgeFilter;
+public abstract class LuceneIndexDataLoader<R extends IndexReader> implements
+    DataConsumer<ZoieIndexable> {
+  private static final Logger log = Logger.getLogger(LuceneIndexDataLoader.class);
+  protected final Analyzer _analyzer;
+  protected final Similarity _similarity;
+  protected final SearchIndexManager<R> _idxMgr;
+  protected final Comparator<String> _versionComparator;
+  private Filter _purgeFilter;
 
   private final Queue<IndexingEventListener> _lsnrList;
 
-	protected LuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R> idxMgr,Comparator<String> versionComparator,Queue<IndexingEventListener> lsnrList) {
-		_analyzer = analyzer;
-		_similarity = similarity;
-		_idxMgr=idxMgr;
-		_versionComparator = versionComparator;
-		_purgeFilter = null;
-		_lsnrList = lsnrList;
-	}
-	
-	public void setPurgeFilter(Filter purgeFilter){
-		_purgeFilter = purgeFilter;
-	}
+  protected LuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,
+      SearchIndexManager<R> idxMgr, Comparator<String> versionComparator,
+      Queue<IndexingEventListener> lsnrList) {
+    _analyzer = analyzer;
+    _similarity = similarity;
+    _idxMgr = idxMgr;
+    _versionComparator = versionComparator;
+    _purgeFilter = null;
+    _lsnrList = lsnrList;
+  }
 
-	protected abstract BaseSearchIndex<R> getSearchIndex();
-	
-    protected abstract void propagateDeletes(LongSet delDocs) throws IOException;
-    protected abstract void commitPropagatedDeletes() throws IOException;
-    
-    private final void purgeDocuments(){
-    	if (_purgeFilter!=null){
-    		BaseSearchIndex<R> idx = getSearchIndex();
-    		IndexReader writeReader = null;
-    		log.info("purging docs started...");
-    		int count = 0;
-    		long start = System.currentTimeMillis();
+  public void setPurgeFilter(Filter purgeFilter) {
+    _purgeFilter = purgeFilter;
+  }
 
-        ZoieIndexReader<R> reader = null;
-    		try{
-          synchronized(idx)
-          {
-            reader = idx.openIndexReader();
-            if (reader != null)
-              reader.incZoieRef();
-          }
+  protected abstract BaseSearchIndex<R> getSearchIndex();
 
-    		  writeReader = idx.openIndexReaderForDelete();
+  protected abstract void propagateDeletes(LongSet delDocs) throws IOException;
 
-    			DocIdSetIterator iter = _purgeFilter.getDocIdSet(reader).iterator();
-    			
-    			int doc;
-    			while((doc = iter.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS){
-    				count++;
-    				writeReader.deleteDocument(doc);
-    			}
-    		}
-    		catch(Throwable th){
-    			log.error("problem creating purge filter: "+th.getMessage(),th);
-    		}
-    		finally{
-          if (reader != null)
-            reader.decZoieRef();
-    			if (writeReader!=null){
-    				try{
-    				  writeReader.close();
-    				}
-    				catch(IOException ioe){
-    					ZoieHealth.setFatal();
-    					log.error(ioe.getMessage(),ioe);
-    				}
-    			}
-    		}
-    		
-    		long end = System.currentTimeMillis();
-    		log.info("purging docs completed in "+(end-start)+"ms");
-    		log.info("total docs purged: " +count);
-    	}
-    }
+  protected abstract void commitPropagatedDeletes() throws IOException;
 
-	/**
-	 * @Precondition incoming events sorted by version number
-	 * <br>every event in the events collection must be non-null
-	 * 
-	 * @see proj.zoie.api.DataConsumer#consume(java.util.Collection)
-	 * 
-	 */
-	public void consume(Collection<DataEvent<ZoieIndexable>> events) throws ZoieException {
-		
-        if (events == null)
-			return;
+  private final void purgeDocuments() {
+    if (_purgeFilter != null) {
+      BaseSearchIndex<R> idx = getSearchIndex();
+      IndexReader writeReader = null;
+      log.info("purging docs started...");
+      int count = 0;
+      long start = System.currentTimeMillis();
 
-        int eventCount = events.size();
-        if (eventCount==0){
-        	return;
+      ZoieIndexReader<R> reader = null;
+      try {
+        synchronized (idx) {
+          reader = idx.openIndexReader();
+          if (reader != null) reader.incZoieRef();
         }
-		BaseSearchIndex<R> idx = getSearchIndex();
 
-		if (idx==null){
-			throw new ZoieException("trying to consume to null index");
-		}
-		Long2ObjectMap<List<IndexingReq>> addList = new Long2ObjectOpenHashMap<List<IndexingReq>>();
-		String version = idx.getVersion();		// current version
+        writeReader = idx.openIndexReaderForDelete();
 
-		LongSet delSet =new LongOpenHashSet();
-		
-		try {
-		  for(DataEvent<ZoieIndexable> evt : events)
-		  {
-		    if (evt == null) continue;
-    		    //version = Math.max(version, evt.getVersion());
-		        version = version == null ? evt.getVersion() : (_versionComparator.compare(version,evt.getVersion()) < 0 ? evt.getVersion() : version);
-		        
-		        if (evt instanceof MarkerDataEvent) continue;
-    		    // interpret and get get the indexable instance
-    		    ZoieIndexable indexable = evt.getData();
-    		    if (indexable == null || indexable.isSkip())
-    		      continue;
-    
-    		    long uid = indexable.getUID();
-    		    delSet.add(uid);
-    		    addList.remove(uid);
-				if (!(indexable.isDeleted() || evt.isDelete())) // update event
-				{
-					try {
-  				  IndexingReq[] reqs = indexable.buildIndexingReqs();
-  					for (IndexingReq req : reqs) {
-  						if (req != null) // if doc is provided, interpret as
-  											// a delete, e.g. update with
-  											// nothing
-  						{
-  							Document doc = req.getDocument();
-  							if (doc!=null){							 
-  							  ZoieSegmentReader.fillDocumentID(doc, uid);
-  							  if (indexable.isStorable()){
-  							    byte[] bytes = indexable.getStoreValue();
-  							    if (bytes!=null){
-  							      doc.add(new Field(AbstractZoieIndexable.DOCUMENT_STORE_FIELD,bytes));
-  							    }
-  							  }
-  							}
-  							// add to the insert list
-  							List<IndexingReq> docList = addList.get(uid);
-  							if (docList == null) {
-  								docList = new LinkedList<IndexingReq>();
-  								addList.put(uid, docList);
-  							}
-  							docList.add(req);
-  						}
-  					}
-  				} catch (Exception ex) {
-  				  log.error("Couldn't index the event with uid - " + uid, ex);
-  				}
-				}
-				// hao: we do not need the following few lines
-				//else {
-					//addList.remove(uid);
-				//}
-			}
+        DocIdSetIterator iter = _purgeFilter.getDocIdSet(reader).iterator();
 
-			List<IndexingReq> docList = new ArrayList<IndexingReq>(addList.size());
-			for (List<IndexingReq> tmpList : addList.values()) {
-				docList.addAll(tmpList);
-			}
+        int doc;
+        while ((doc = iter.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          count++;
+          writeReader.deleteDocument(doc);
+        }
+      } catch (Throwable th) {
+        log.error("problem creating purge filter: " + th.getMessage(), th);
+      } finally {
+        if (reader != null) reader.decZoieRef();
+        if (writeReader != null) {
+          try {
+            writeReader.close();
+          } catch (IOException ioe) {
+            ZoieHealth.setFatal();
+            log.error(ioe.getMessage(), ioe);
+          }
+        }
+      }
+
+      long end = System.currentTimeMillis();
+      log.info("purging docs completed in " + (end - start) + "ms");
+      log.info("total docs purged: " + count);
+    }
+  }
+
+  /**
+   * @Precondition incoming events sorted by version number
+   * <br>every event in the events collection must be non-null
+   * 
+   * @see proj.zoie.api.DataConsumer#consume(java.util.Collection)
+   * 
+   */
+  public void consume(Collection<DataEvent<ZoieIndexable>> events) throws ZoieException {
+
+    if (events == null) return;
+
+    int eventCount = events.size();
+    if (eventCount == 0) {
+      return;
+    }
+    BaseSearchIndex<R> idx = getSearchIndex();
+
+    if (idx == null) {
+      throw new ZoieException("trying to consume to null index");
+    }
+    Long2ObjectMap<List<IndexingReq>> addList = new Long2ObjectOpenHashMap<List<IndexingReq>>();
+    String version = idx.getVersion(); // current version
+
+    LongSet delSet = new LongOpenHashSet();
+
+    try {
+      for (DataEvent<ZoieIndexable> evt : events) {
+        if (evt == null) continue;
+        // version = Math.max(version, evt.getVersion());
+        version = version == null ? evt.getVersion() : (_versionComparator.compare(version,
+          evt.getVersion()) < 0 ? evt.getVersion() : version);
+
+        if (evt instanceof MarkerDataEvent) continue;
+        // interpret and get get the indexable instance
+        ZoieIndexable indexable = evt.getData();
+        if (indexable == null || indexable.isSkip()) continue;
+
+        long uid = indexable.getUID();
+        delSet.add(uid);
+        addList.remove(uid);
+        if (!(indexable.isDeleted() || evt.isDelete())) // update event
+        {
+          try {
+            IndexingReq[] reqs = indexable.buildIndexingReqs();
+            for (IndexingReq req : reqs) {
+              if (req != null) // if doc is provided, interpret as
+              // a delete, e.g. update with
+              // nothing
+              {
+                Document doc = req.getDocument();
+                if (doc != null) {
+                  ZoieSegmentReader.fillDocumentID(doc, uid);
+                  if (indexable.isStorable()) {
+                    byte[] bytes = indexable.getStoreValue();
+                    if (bytes != null) {
+                      doc.add(new Field(AbstractZoieIndexable.DOCUMENT_STORE_FIELD, bytes));
+                    }
+                  }
+                }
+                // add to the insert list
+                List<IndexingReq> docList = addList.get(uid);
+                if (docList == null) {
+                  docList = new LinkedList<IndexingReq>();
+                  addList.put(uid, docList);
+                }
+                docList.add(req);
+              }
+            }
+          } catch (Exception ex) {
+            log.error("Couldn't index the event with uid - " + uid, ex);
+          }
+        }
+        // hao: we do not need the following few lines
+        // else {
+        // addList.remove(uid);
+        // }
+      }
+
+      List<IndexingReq> docList = new ArrayList<IndexingReq>(addList.size());
+      for (List<IndexingReq> tmpList : addList.values()) {
+        docList.addAll(tmpList);
+      }
 
       purgeDocuments();
-      idx.updateIndex(delSet, docList, _analyzer,_similarity);
+      idx.updateIndex(delSet, docList, _analyzer, _similarity);
       propagateDeletes(delSet);
-			synchronized(_idxMgr)
-			{
-         idx.refresh();
-         commitPropagatedDeletes();
-			}
-		} catch (IOException ioe) {
-      ZoieHealth.setFatal();
-			log.error("Problem indexing batch: " + ioe.getMessage(), ioe);
-		} finally {
-			try {
-				if (idx != null) {
-          idx.setVersion(version); // update the version of the
-					idx.incrementEventCount(eventCount);
-												// index
-				}
-			} catch (Exception e) // catch all exceptions, or it would screw
-									// up jobs framework
-			{
-				log.warn(e.getMessage());
-			} finally {
-				if (idx instanceof DiskSearchIndex<?>) {
-					log.info("disk indexing requests flushed.");
-				}
-			}
-		}
-	}
-	
-    public void loadFromIndex(RAMSearchIndex<R> ramIndex) throws ZoieException
-    {
-      try
-      {
-        // hao: get disk search idx, 
-        BaseSearchIndex<R> idx = getSearchIndex();
-        //hao: merge the realyOnly ram idx with the disk idx
-        idx.loadFromIndex(ramIndex);
-//      duplicate clearDeletes, delDoc may change for realtime delete after loadFromIndex()
-//        idx.clearDeletes(); // clear old deletes as deletes are written to the lucene index
-        // hao: update the disk idx reader
-        idx.refresh(); // load the index reader
-        purgeDocuments();
-        idx.markDeletes(ramIndex.getDelDocs()); // inherit deletes
-        idx.commitDeletes();
-        idx.incrementEventCount(ramIndex.getEventsHandled());
-        
-        //Map<String, String> commitData = idx.getCommitData();
-        //System.out.println("disk vesion from the commit data" + commitData);  
-        
-        //V newVersion = idx.getVersion().compareTo(ramIndex.getVersion()) < 0 ? ramIndex.getVersion(): idx.getVersion();
-        String newVersion = idx.getVersion() == null ? ramIndex.getVersion() : (_versionComparator.compare(idx.getVersion(), ramIndex.getVersion()) < 0 ? ramIndex.getVersion(): idx.getVersion());
-        idx.setVersion(newVersion);      
-        //System.out.println("disk verson from the signature" + newVersion.toString());        
-               
-        //idx.setVersion(Math.max(idx.getVersion(), ramIndex.getVersion()));
+      synchronized (_idxMgr) {
+        idx.refresh();
+        commitPropagatedDeletes();
       }
-      catch(IOException ioe)
+    } catch (IOException ioe) {
+      ZoieHealth.setFatal();
+      log.error("Problem indexing batch: " + ioe.getMessage(), ioe);
+    } finally {
+      try {
+        if (idx != null) {
+          idx.setVersion(version); // update the version of the
+          idx.incrementEventCount(eventCount);
+          // index
+        }
+      } catch (Exception e) // catch all exceptions, or it would screw
+      // up jobs framework
       {
-        ZoieHealth.setFatal();
-        log.error("Problem copying segments: " + ioe.getMessage(), ioe);
-        throw new ZoieException(ioe);
+        log.warn(e.getMessage());
+      } finally {
+        if (idx instanceof DiskSearchIndex<?>) {
+          log.info("disk indexing requests flushed.");
+        }
       }
     }
- 
+  }
+
+  public void loadFromIndex(RAMSearchIndex<R> ramIndex) throws ZoieException {
+    try {
+      // hao: get disk search idx,
+      BaseSearchIndex<R> idx = getSearchIndex();
+      // hao: merge the realyOnly ram idx with the disk idx
+      idx.loadFromIndex(ramIndex);
+      // duplicate clearDeletes, delDoc may change for realtime delete after loadFromIndex()
+      // idx.clearDeletes(); // clear old deletes as deletes are written to the lucene index
+      // hao: update the disk idx reader
+      idx.refresh(); // load the index reader
+      purgeDocuments();
+      idx.markDeletes(ramIndex.getDelDocs()); // inherit deletes
+      idx.commitDeletes();
+      idx.incrementEventCount(ramIndex.getEventsHandled());
+
+      // Map<String, String> commitData = idx.getCommitData();
+      // System.out.println("disk vesion from the commit data" + commitData);
+
+      // V newVersion = idx.getVersion().compareTo(ramIndex.getVersion()) < 0 ?
+      // ramIndex.getVersion(): idx.getVersion();
+      String newVersion = idx.getVersion() == null ? ramIndex.getVersion() : (_versionComparator
+          .compare(idx.getVersion(), ramIndex.getVersion()) < 0 ? ramIndex.getVersion() : idx
+          .getVersion());
+      idx.setVersion(newVersion);
+      // System.out.println("disk verson from the signature" + newVersion.toString());
+
+      // idx.setVersion(Math.max(idx.getVersion(), ramIndex.getVersion()));
+    } catch (IOException ioe) {
+      ZoieHealth.setFatal();
+      log.error("Problem copying segments: " + ioe.getMessage(), ioe);
+      throw new ZoieException(ioe);
+    }
+  }
 
   /**
    * @return the version number of the search index.
    */
-  public String getVersion()
-  {
+  public String getVersion() {
     BaseSearchIndex<R> idx = getSearchIndex();
     String version = null;
     if (idx != null) version = idx.getVersion();
     return version;
   }
 
-	/**
+  /**
    * @return the version comparator.
    */
-	public Comparator<String> getVersionComparator() {
+  public Comparator<String> getVersionComparator() {
     return _versionComparator;
   }
 }

@@ -1,4 +1,5 @@
 package proj.zoie.api.indexing;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -26,27 +27,27 @@ import proj.zoie.api.ZoieIndexReader;
  * Decorates a {@link proj.zoie.api.ZoieIndexReader} to a customized {@link org.apache.lucene.index.IndexReader}.
  * @see org.apache.lucene.index.FilterIndexReader
  */
-public interface IndexReaderDecorator<R extends IndexReader>
-{
-	/**
-	 * Do the decoration
-	 * @param indexReader source reader
-	 * @return a decorated reader
-	 * @throws IOException
-	 */
-	R decorate(ZoieIndexReader<R> indexReader) throws IOException;
-	
-	/**
-	 * This is called when the actual underlying reader was not changed, but a new reference was created.
-	 * Generally, the decorated reader should be at least shallow copied due to reuse of the decorated reader.
-	 * If we dont copy the decorated reader and change the inner reader, it would create a race condition and
-	 * cause data inconsistency.
-	 * @param decorated Previously decoreated reader
-	 * @param copy a new copy of the source reader
-	 * @param withDeletes indicator for whether this segment contained new deletes
-	 * @return Re-decorated reader
-	 * @throws IOException
-	 */
-	R redecorate(R decorated,ZoieIndexReader<R> copy,boolean withDeletes) throws IOException;
-	void setDeleteSet(R reader, DocIdSet docIds);
+public interface IndexReaderDecorator<R extends IndexReader> {
+  /**
+   * Do the decoration
+   * @param indexReader source reader
+   * @return a decorated reader
+   * @throws IOException
+   */
+  R decorate(ZoieIndexReader<R> indexReader) throws IOException;
+
+  /**
+   * This is called when the actual underlying reader was not changed, but a new reference was created.
+   * Generally, the decorated reader should be at least shallow copied due to reuse of the decorated reader.
+   * If we dont copy the decorated reader and change the inner reader, it would create a race condition and
+   * cause data inconsistency.
+   * @param decorated Previously decoreated reader
+   * @param copy a new copy of the source reader
+   * @param withDeletes indicator for whether this segment contained new deletes
+   * @return Re-decorated reader
+   * @throws IOException
+   */
+  R redecorate(R decorated, ZoieIndexReader<R> copy, boolean withDeletes) throws IOException;
+
+  void setDeleteSet(R reader, DocIdSet docIds);
 }

@@ -43,11 +43,10 @@ public interface IndexReaderDecorator<R extends IndexReader> {
    * cause data inconsistency.
    * @param decorated Previously decoreated reader
    * @param copy a new copy of the source reader
-   * @param withDeletes indicator for whether this segment contained new deletes
    * @return Re-decorated reader
    * @throws IOException
    */
-  R redecorate(R decorated, ZoieIndexReader<R> copy, boolean withDeletes) throws IOException;
+  R redecorate(R decorated, ZoieIndexReader<R> copy) throws IOException;
 
   void setDeleteSet(R reader, DocIdSet docIds);
 }

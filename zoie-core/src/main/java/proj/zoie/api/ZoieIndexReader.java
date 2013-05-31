@@ -21,29 +21,55 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 
 import proj.zoie.api.impl.DefaultIndexReaderMerger;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
-public abstract class ZoieIndexReader<R extends IndexReader> extends IndexReader {
+public abstract class ZoieIndexReader<R extends IndexReader> {
   public static final long DELETED_UID = Long.MIN_VALUE;
 
-  @Override
-  protected void doClose() throws IOException {
-    super.close();
+  private final AtomicLong zoieRefCounter = new AtomicLong(1);
+
+  protected void incRef() {
+    zoieRefCounter.incrementAndGet();
+  }
+
+  protected void decRef() {
+    long refCount = zoieRefCounter.decrementAndGet();
+    if (refCount < 0) {
+      throw new IllegalStateException("The ref count shouldn't be less than zero");
+    }
+    if (refCount == 0) {
+      try {
+        in.decRef();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
+  public int numDocs() {
+    return in.numDocs();
+  }
+
+  public int maxDoc() {
+    return in.maxDoc();
   }
 
   protected int[] _delDocIds;
   protected long _minUID;
   protected long _maxUID;
   protected final IndexReaderDecorator<R> _decorator;
-  protected DocIDMapper<?> _docIDMapper;
+  protected DocIDMapper _docIDMapper;
+  protected IndexReader in;
 
   public static <R extends IndexReader> List<R> extractDecoratedReaders(
       List<ZoieIndexReader<R>> readerList) throws IOException {
@@ -130,7 +156,7 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends IndexReader
   }
 
   protected ZoieIndexReader(IndexReader in, IndexReaderDecorator<R> decorator) throws IOException {
-    this = in;
+    this.in = in;
     _decorator = decorator;
     _delDocIds = null;
     _minUID = Long.MAX_VALUE;
@@ -146,21 +172,20 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends IndexReader
   abstract public void commitDeletes();
 
   public IndexReader getInnerReader() {
-    return this;
+    return this.in;
   }
 
-  @Override
   public boolean hasDeletions() {
     int[] delSet = _delDocIds;
     if (delSet != null && delSet.length > 0) {
       return true;
     }
-    return hasDeletions();
+    return in.hasDeletions();
   }
 
   abstract public boolean isDeleted(int docid);
 
-  abstract public byte[] getStoredValue(long uid) throws IOException;
+  abstract public BytesRef getStoredValue(long uid) throws IOException;
 
   public int[] getDelDocIds() {
     return _delDocIds;
@@ -176,11 +201,11 @@ public abstract class ZoieIndexReader<R extends IndexReader> extends IndexReader
 
   abstract public long getUID(int docid);
 
-  public DocIDMapper<?> getDocIDMaper() {
+  public DocIDMapper getDocIDMaper() {
     return _docIDMapper;
   }
 
-  public void setDocIDMapper(DocIDMapper<?> docIDMapper) {
+  public void setDocIDMapper(DocIDMapper docIDMapper) {
     _docIDMapper = docIDMapper;
   }
 

@@ -1,108 +1,48 @@
 package proj.zoie.api.impl;
 
+import java.io.IOException;
+import java.util.List;
+
+import org.apache.lucene.index.AtomicReaderContext;
+
 import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.DocIDMapperFactory;
-import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieMultiReader;
 import proj.zoie.api.ZoieSegmentReader;
-import proj.zoie.api.DocIDMapper.DocIDArray;
 
 public class DefaultDocIDMapperFactory implements DocIDMapperFactory {
-  public DocIDMapper<?> getDocIDMapper(ZoieMultiReader<?> multireader) {
-    final ZoieSegmentReader<?>[] subreaders = (ZoieSegmentReader<?>[]) (multireader
-        .getSequentialSubReaders());
-    final int[] starts = multireader.getStarts();
-    for (int i = 0; i < subreaders.length; ++i) {
-      ZoieSegmentReader<?> subReader = subreaders[i];
-      DocIDMapper<?> mapper = subReader.getDocIDMaper();
-      if (mapper == null) {
-        mapper = new DocIDMapperImpl(subReader.getUIDArray());
-      }
-      subReader.setDocIDMapper(mapper);
-    }
-    final DocIDMapper[] mappers = new DocIDMapper[subreaders.length];
-    for (int i = 0; i < subreaders.length; i++) {
-      mappers[i] = subreaders[i].getDocIDMaper();
-    }
 
-    final int bound = subreaders.length - 1;
-    return new DefaultDocIDMapper(bound, mappers, starts);
-
+  @Override
+  public DocIDMapper getDocIDMapper(final ZoieSegmentReader<?> reader) throws IOException {
+    return new DocIDMapperImpl(ZoieReaderUtil.getUidValues(reader), reader.maxDoc());
   }
 
-  public static final class DefaultDocIDMapper implements DocIDMapper<DocIDArray> {
-    private final int bound;
-    private final DocIDMapper[] mappers;
-    private final int[] starts;
-
-    public DefaultDocIDMapper(int bound, DocIDMapper[] mappers, int[] starts) {
-      this.bound = bound;
-      this.mappers = mappers;
-      this.starts = starts;
+  @Override
+  public DocIDMapper getDocIDMapper(final ZoieMultiReader<?> reader) throws IOException{
+    final List<AtomicReaderContext> subReaderContextList = reader.getInnerReader().leaves();
+    final DocIDMapper[] mappers = new DocIDMapper[subReaderContextList.size()];
+    for (int i = 0; i < subReaderContextList.size(); ++i) {
+      mappers[i] = getDocIDMapper(subReaderContextList.get(i).reader());
     }
 
-    // do the samething as DefaultDocIDMapperFactory since range does not really matter here
-    public int getDocID(long uid) {
-      for (int i = bound; i >= 0; --i) {
-        int docid = mappers[i].getDocID(uid);
-        if (docid != DocIDMapper.NOT_FOUND) {
-          return docid + starts[i];
-        }
-      }
-      return DocIDMapper.NOT_FOUND;
-    }
+    return new DocIDMapper() {
 
-    public DocIDArray getDocIDArray(long[] uids) {
-      DocIDArray ret = DocIDArray.newInstance(uids.length);
-      int[] docids = ret.docids;
-      for (int j = 0; j < uids.length; j++) {
-        for (int i = bound; i >= 0; --i) {
-          int docid = mappers[i].quickGetDocID(uids[j]);
+      @Override
+      public int quickGetDocID(long uid) {
+        int docid;
+        for (int i = mappers.length-1; i >= 0; --i) {
+          docid = mappers[i].getDocID(uid);
           if (docid != DocIDMapper.NOT_FOUND) {
-            docids[j] = docid + starts[i];
-            break;
+            return docid;
           }
         }
+        return DocIDMapper.NOT_FOUND;
       }
-      return ret;
-    }
 
-    public DocIDArray getDocIDArray(int[] uids) {
-      DocIDArray ret = DocIDArray.newInstance(uids.length);
-      int[] docids = ret.docids;
-      for (int j = 0; j < uids.length; j++) {
-        for (int i = bound; i >= 0; --i) {
-          int docid = mappers[i].quickGetDocID(uids[j]);
-          if (docid != DocIDMapper.NOT_FOUND) {
-            docids[j] = docid + starts[i];
-            break;
-          }
-        }
+      @Override
+      public int getDocID(long uid) {
+        return quickGetDocID(uid);
       }
-      return ret;
-    }
-
-    public int quickGetDocID(long uid) {
-      for (int i = bound; i >= 0; --i) {
-        int docid = mappers[i].quickGetDocID(uid);
-        if (docid != DocIDMapper.NOT_FOUND) {
-          return docid + starts[i];
-        }
-      }
-      return DocIDMapper.NOT_FOUND;
-    }
-
-    public int getReaderIndex(long uid) {
-      throw new UnsupportedOperationException();
-    }
-
-    public int[] getStarts() {
-      throw new UnsupportedOperationException();
-    }
-
-    public ZoieIndexReader<?>[] getSubReaders() {
-      throw new UnsupportedOperationException();
-    }
+    };
   }
-
 }

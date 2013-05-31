@@ -30,6 +30,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SegmentReader;
+import org.apache.lucene.util.BytesRef;
 
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
@@ -55,7 +56,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
     init(subReaders);
   }
 
-  public ZoieMultiReader(IndexReader in, IndexReader[] subReaders, IndexReaderDecorator<R> decorator)
+  private ZoieMultiReader(IndexReader in, Object[] subReaders, IndexReaderDecorator<R> decorator)
       throws IOException {
     super(in, decorator);
     _readerMap = new HashMap<String, ZoieSegmentReader<R>>();
@@ -68,21 +69,22 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
   }
 
   @Override
-  public byte[] getStoredValue(long uid) throws IOException {
-    int docid = this.getDocIDMaper().getDocID(uid);
+  public BytesRef getStoredValue(long uid) throws IOException {
+    int docid = _docIDMapper.getDocID(uid);
     if (docid < 0) return null;
     int idx = readerIndex(docid);
     if (idx < 0) return null;
-    ZoieIndexReader<R> subReader = _subZoieReaders.get(idx);
+    ZoieSegmentReader<R> subReader = _subZoieReaders.get(idx);
     return subReader.getStoredValue(uid);
   }
 
-  private void init(IndexReader[] subReaders) throws IOException {
+  @SuppressWarnings("unchecked")
+  private void init(Object[] subReaders) throws IOException {
     _subZoieReaders = new ArrayList<ZoieSegmentReader<R>>(subReaders.length);
     _starts = new int[subReaders.length + 1];
     int i = 0;
     int startCount = 0;
-    for (IndexReader subReader : subReaders) {
+    for (Object subReader : subReaders) {
       ZoieSegmentReader<R> zr = null;
       if (subReader instanceof ZoieSegmentReader<?>) {
         zr = (ZoieSegmentReader<R>) subReader;
@@ -92,7 +94,6 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
       }
       if (zr != null) {
         String segmentName = zr.getSegmentName();
-        // zr.getVersion();
         _readerMap.put(segmentName, zr);
         _subZoieReaders.add(zr);
         _starts[i] = startCount;
@@ -109,7 +110,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
     for (ZoieSegmentReader<R> subReader : _subZoieReaders) {
       R decoratedReader = subReader.getDecoratedReader();
       decoratedList.add(decoratedReader);
-      subReader.incSegmentRef();
+      subReader.incRef();
     }
     _decoratedReaders = decoratedList;
   }
@@ -196,7 +197,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
     int hi = numSubReaders - 1; // for first element less
 
     while (hi >= lo) {
-      int mid = (lo + hi) >>> 1;
+      int mid = (lo + hi) >> 1;
       int midValue = starts[mid];
       if (n < midValue) {
         hi = mid - 1;
@@ -234,16 +235,15 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
   @Override
   protected void doClose() throws IOException {
     try {
-      super.doClose();
+      decRef();
     } finally {
       for (ZoieSegmentReader<R> r : _subZoieReaders) {
-        // r.decRef();
-        r.decSegmentRef();
+        r.decRef();
       }
     }
   }
 
-  public ZoieIndexReader<R> reopen() {
+  public ZoieIndexReader<R> reopen() throws IOException {
     long t0 = System.currentTimeMillis();
     if (!(in instanceof DirectoryReader)) {
       throw new IllegalStateException("in not instance of " + DirectoryReader.class);
@@ -262,10 +262,9 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
       return this;
     }
 
-    IndexReader[] subReaders = inner.getSequentialSubReaders();
-
     List<AtomicReaderContext> subReaderContextList = inner.leaves();
-    List<IndexReader> subReaderList = new ArrayList<IndexReader>(subReaderContextList.size());
+    List<ZoieSegmentReader<R>> subReaderList = new ArrayList<ZoieSegmentReader<R>>(
+        subReaderContextList.size());
     for (AtomicReaderContext subReaderContext : subReaderContextList) {
       if (subReaderContext.reader() instanceof SegmentReader) {
         SegmentReader sr = (SegmentReader) subReaderContext.reader();
@@ -294,7 +293,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
     return ret;
   }
 
-  protected ZoieMultiReader<R> newInstance(IndexReader inner, IndexReader[] subReaders)
+  protected ZoieMultiReader<R> newInstance(IndexReader inner, Object[] subReaders)
       throws IOException {
     return new ZoieMultiReader<R>(inner, subReaders, _decorator);
   }
@@ -316,7 +315,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
     }
     this.in.incRef();
     ZoieMultiReader<R> ret = this.newInstance(this.in,
-      zoieSubReaders.toArray(new IndexReader[zoieSubReaders.size()]));
+      zoieSubReaders.toArray(new Object[zoieSubReaders.size()]));
     ret._docIDMapper = this._docIDMapper;
     ret._minUID = this._minUID;
     ret._maxUID = this._maxUID;

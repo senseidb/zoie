@@ -182,7 +182,7 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D> extends BatchedIn
           _luceneDataLoader.loadFromIndex(readOnlyMemIndex);
         }
       }
-      catch (ZoieException e)
+      catch (Exception e)
       {
         ZoieHealth.setFatal();
         log.error(e.getMessage(),e);

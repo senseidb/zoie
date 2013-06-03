@@ -21,7 +21,6 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -36,24 +35,11 @@ import proj.zoie.api.indexing.IndexReaderDecorator;
 public abstract class ZoieIndexReader<R extends IndexReader> {
   public static final long DELETED_UID = Long.MIN_VALUE;
 
-  private final AtomicLong zoieRefCounter = new AtomicLong(1);
-
   protected void incRef() {
-    zoieRefCounter.incrementAndGet();
+    throw new UnsupportedOperationException("This reader does not implement incRef");
   }
-
-  protected void decRef() {
-    long refCount = zoieRefCounter.decrementAndGet();
-    if (refCount < 0) {
-      throw new IllegalStateException("The ref count shouldn't be less than zero");
-    }
-    if (refCount == 0) {
-      try {
-        in.decRef();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
+  protected void decRef() throws IOException {
+    throw new UnsupportedOperationException("This reader does not implement decRef");
   }
 
   public int numDocs() {
@@ -65,8 +51,6 @@ public abstract class ZoieIndexReader<R extends IndexReader> {
   }
 
   protected int[] _delDocIds;
-  protected long _minUID;
-  protected long _maxUID;
   protected final IndexReaderDecorator<R> _decorator;
   protected DocIDMapper _docIDMapper;
   protected IndexReader in;
@@ -159,8 +143,6 @@ public abstract class ZoieIndexReader<R extends IndexReader> {
     this.in = in;
     _decorator = decorator;
     _delDocIds = null;
-    _minUID = Long.MAX_VALUE;
-    _maxUID = Long.MIN_VALUE;
   }
 
   abstract public List<R> getDecoratedReaders() throws IOException;
@@ -189,14 +171,6 @@ public abstract class ZoieIndexReader<R extends IndexReader> {
 
   public int[] getDelDocIds() {
     return _delDocIds;
-  }
-
-  public long getMinUID() {
-    return _minUID;
-  }
-
-  public long getMaxUID() {
-    return _maxUID;
   }
 
   abstract public long getUID(int docid);

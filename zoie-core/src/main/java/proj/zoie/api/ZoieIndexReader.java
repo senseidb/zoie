@@ -35,10 +35,10 @@ import proj.zoie.api.indexing.IndexReaderDecorator;
 public abstract class ZoieIndexReader<R extends IndexReader> {
   public static final long DELETED_UID = Long.MIN_VALUE;
 
-  protected void incRef() {
+  public void incRef() {
     throw new UnsupportedOperationException("This reader does not implement incRef");
   }
-  protected void decRef() throws IOException {
+  public void decRef() throws IOException {
     throw new UnsupportedOperationException("This reader does not implement decRef");
   }
 

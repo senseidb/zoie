@@ -65,7 +65,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy {
     long byteSize = info.sizeInBytes(false);
     float delRatio = (info.docCount <= 0 ? 0.0f
         : ((float) info.getDelCount() / (float) info.docCount));
-    return (info.docCount <= 0 ? byteSize : (long) ((float) byteSize * (1.0f - delRatio)));
+    return (info.docCount <= 0 ? byteSize : (long) (byteSize * (1.0f - delRatio)));
   }
 
   public void setPartialExpunge(boolean doPartialExpunge) {
@@ -330,7 +330,8 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy {
    *  when the total size reaches the average size of large segments.
    */
   @Override
-  public MergeSpecification findMerges(SegmentInfos infos) throws IOException {
+  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos infos)
+      throws IOException {
     final int numSegs = infos.size();
     final int numLargeSegs = _numLargeSegments;
 
@@ -382,8 +383,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy {
       List<SegmentInfo> smallSegmentList = infos.asList().subList(numLargeSegs, numSegs);
       SegmentInfos smallSegments = new SegmentInfos();
       smallSegments.addAll(smallSegmentList);
-      MergeSpecification spec = super.findMerges(smallSegments);
-
+      MergeSpecification spec = super.findMerges(mergeTrigger, smallSegments);
       if (_partialExpunge) {
         OneMerge expunge = findOneSegmentToExpunge(infos, numLargeSegs);
         if (expunge != null) {
@@ -433,6 +433,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy {
       _maxMergeDocs = LogMergePolicy.DEFAULT_MAX_MERGE_DOCS;
     }
 
+    @Override
     public String toString() {
       StringBuffer sb = new StringBuffer();
       sb.append("useCompoundFile: ").append(_useCompoundFile);

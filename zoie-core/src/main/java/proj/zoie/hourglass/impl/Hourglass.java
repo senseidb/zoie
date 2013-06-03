@@ -1,7 +1,7 @@
 package proj.zoie.hourglass.impl;
 
-import java.io.IOException;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -18,6 +18,7 @@ import javax.management.StandardMBean;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 
@@ -123,13 +124,13 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
     long t0 = System.currentTimeMillis();
     List<Directory> dirs = _dirMgrFactory.getAllArchivedDirectories();
     for (Directory dir : dirs) {
-      IndexReader reader;
+      DirectoryReader reader;
       try {
-        reader = IndexReader.open(dir, true);
+        reader = DirectoryReader.open(dir);
         ZoieMultiReader<R> zoiereader = new ZoieMultiReader<R>(reader, _decorator);
 
         // Initialize docIdMapper
-        DocIDMapper<?> mapper = _zConfig.getDocidMapperFactory().getDocIDMapper(zoiereader);
+        DocIDMapper mapper = _zConfig.getDocidMapperFactory().getDocIDMapper(zoiereader);
         zoiereader.setDocIDMapper(mapper);
 
         archives.add(zoiereader);
@@ -164,6 +165,7 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
    * (non-Javadoc)
    * @see proj.zoie.api.IndexReaderFactory#getAnalyzer()
    */
+  @Override
   public Analyzer getAnalyzer() {
     return _zConfig.getAnalyzer();
   }
@@ -177,6 +179,7 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
    * @see proj.zoie.hourglass.impl.Hourglass#returnIndexReaders(List)
    * @see proj.zoie.api.IndexReaderFactory#getIndexReaders()
    */
+  @Override
   public List<ZoieIndexReader<R>> getIndexReaders() throws IOException {
     long t0 = System.currentTimeMillis();
     try {
@@ -193,7 +196,7 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
         }
         List<ZoieIndexReader<R>> rlist = list;
         for (ZoieIndexReader<R> r : rlist) {
-          r.incZoieRef();
+          r.incRef();
         }
         t0 = System.currentTimeMillis() - t0;
         if (t0 > SLA) {
@@ -250,6 +253,7 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
    * (non-Javadoc)
    * @see proj.zoie.api.IndexReaderFactory#returnIndexReaders(java.util.List)
    */
+  @Override
   public void returnIndexReaders(List<ZoieIndexReader<R>> readers) {
     long t0 = System.currentTimeMillis();
     _currentZoie.returnIndexReaders(readers);
@@ -278,6 +282,7 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
    * (non-Javadoc)
    * @see proj.zoie.api.DataConsumer#consume(java.util.Collection)
    */
+  @Override
   public void consume(Collection<DataEvent<D>> data) throws ZoieException {
     try {
       _consumeLock.lock(); // one at a time so we don't mess up during forward rolling.
@@ -309,6 +314,7 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
     }
   }
 
+  @Override
   public void shutdown() {
     try {
       _shutdownLock.writeLock().lock();
@@ -330,6 +336,7 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
    * (non-Javadoc)
    * @see proj.zoie.api.DataConsumer#getVersion()
    */
+  @Override
   public String getVersion() {
     // _currentVersion = Math.max(_currentVersion, _currentZoie.getCurrentVersion());
     if (_currentZoie.getCurrentVersion() != null) {
@@ -348,6 +355,7 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
    * (non-Javadoc)
    * @see proj.zoie.api.DataConsumer#getVersionComparator()
    */
+  @Override
   public Comparator<String> getVersionComparator() {
     return _zConfig.getVersionComparator();
   }

@@ -55,7 +55,7 @@ public class IndexReaderDispenser<R extends IndexReader> {
   private volatile IndexSignature _currentSignature;
   private final IndexReaderDecorator<R> _decorator;
   private final DirectoryManager _dirMgr;
-  private DiskSearchIndex<R> _idx;
+  private final DiskSearchIndex<R> _idx;
 
   public IndexReaderDispenser(DirectoryManager dirMgr, IndexReaderDecorator<R> decorator,
       DiskSearchIndex<R> idx) {
@@ -79,7 +79,7 @@ public class IndexReaderDispenser<R extends IndexReader> {
 
   /**
      * constructs a new IndexReader instance
-     * 
+     *
      * @param indexPath
      *            Where the index is.
      * @return Constructed IndexReader instance.
@@ -179,7 +179,7 @@ public class IndexReaderDispenser<R extends IndexReader> {
     // swap the internal readers
     if (_currentReader != reader) {
       if (reader != null) {
-        DocIDMapper<?> mapper = _idx._idxMgr._docIDMapperFactory.getDocIDMapper(reader);
+        DocIDMapper mapper = _idx._idxMgr._docIDMapperFactory.getDocIDMapper(reader);
         reader.setDocIDMapper(mapper);
       }
       // assume that this is the only place that _currentReader gets refreshed
@@ -204,7 +204,7 @@ public class IndexReaderDispenser<R extends IndexReader> {
 
   /**
    * Closes the factory.
-   * 
+   *
    */
   public void close() {
     closeReader();

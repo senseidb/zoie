@@ -22,7 +22,7 @@ public class Box<R extends IndexReader, D> {
 
   /**
    * Copy the given lists to have immutable behavior.
-   * 
+   *
    * @param archives
    * @param retiree
    * @param actives
@@ -45,7 +45,7 @@ public class Box<R extends IndexReader, D> {
 
   public void shutdown() {
     for (ZoieIndexReader<R> r : _archives) {
-      r.decZoieRef();
+      r.decRef();
       log.info("refCount at shutdown: " + r.getRefCount() + " " + r.directory());
     }
     for (ZoieSystem<R, D> zoie : _archiveZoies) {

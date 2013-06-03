@@ -18,31 +18,36 @@ package proj.zoie.api;
  */
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.Bits;
+
+import proj.zoie.api.impl.DefaultDocIDMapperFactory;
 
 /**
  * Filter implementation based on a list of uids
  */
 public class UIDFilter extends Filter {
-  private static final long serialVersionUID = 1L;
-
   private final long[] _filteredIDs;
+  private final DocIDMapperFactory _docIdMapperFactory;
+
+  public UIDFilter(long[] filteredIDs, DocIDMapperFactory docIdMapperFactory) {
+    _filteredIDs = filteredIDs;
+    _docIdMapperFactory = docIdMapperFactory;
+  }
 
   public UIDFilter(long[] filteredIDs) {
-    _filteredIDs = filteredIDs;
+    this(filteredIDs, new DefaultDocIDMapperFactory());
   }
 
   @Override
-  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-    if (reader instanceof ZoieIndexReader<?>) {
-      return new UIDDocIdSet(_filteredIDs, ((ZoieIndexReader<?>) reader).getDocIDMaper());
-    } else {
-      throw new IllegalArgumentException("UIDFilter may only load from ZoieIndexReader instances");
-    }
+  public DocIdSet getDocIdSet(AtomicReaderContext ctx, Bits bits) throws IOException {
+    AtomicReader reader = ctx.reader();
+    return new UIDDocIdSet(_filteredIDs, _docIdMapperFactory.getDocIDMapper(reader));
   }
 
   /**

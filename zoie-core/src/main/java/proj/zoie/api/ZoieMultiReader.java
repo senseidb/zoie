@@ -67,12 +67,12 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
   }
 
   @Override
-  protected void incRef() {
+  public void incRef() {
     in.incRef();
   }
 
   @Override
-  protected void decRef() throws IOException {
+  public void decRef() throws IOException {
     in.decRef();
   }
 

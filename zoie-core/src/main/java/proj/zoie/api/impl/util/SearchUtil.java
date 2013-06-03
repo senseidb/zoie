@@ -8,9 +8,6 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader.FieldOption;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -39,7 +36,7 @@ public class SearchUtil {
     List<ZoieIndexReader<?>> readers = null;
     IndexSearcher searcher = null;
     QueryParser parser = null;
-    parser = new QueryParser(Version.LUCENE_34, field, zoie.getAnalyzer());
+    parser = new QueryParser(Version.LUCENE_43, field, zoie.getAnalyzer());
     parser.setAllowLeadingWildcard(true);
     Query q = null;
     try {

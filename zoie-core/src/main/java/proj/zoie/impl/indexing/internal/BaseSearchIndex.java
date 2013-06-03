@@ -32,7 +32,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergeScheduler;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 
 import proj.zoie.api.DocIDMapper;
@@ -67,7 +67,7 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
    * gets number of docs in the index, .e.g maxdoc - number of deleted docs
    * @return
    */
-  abstract public int getNumdocs();
+  abstract public int getNumdocs() throws IOException;
 
   /**
    * Sets the index version
@@ -137,10 +137,10 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
       synchronized (this) {
         reader = openIndexReader();
         if (reader == null) return;
-        reader.incZoieRef();
+        reader.incRef();
         reader.markDeletes(delDocs, _delDocs);
+        reader.decRef();
       }
-      reader.decZoieRef();
     }
   }
 
@@ -149,10 +149,10 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
     synchronized (this) {
       reader = openIndexReader();
       if (reader == null) return;
-      reader.incZoieRef();
+      reader.incRef();
+      reader.commitDeletes();
+      reader.decRef();
     }
-    reader.commitDeletes();
-    reader.decZoieRef();
   }
 
   private void deleteDocs(LongSet delDocs) throws IOException {
@@ -162,10 +162,10 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
       synchronized (this) {
         reader = openIndexReader();
         if (reader == null) return;
-        reader.incZoieRef();
+        reader.incRef();
       }
       IntList delList = new IntArrayList(delDocs.size());
-      DocIDMapper<?> idMapper = reader.getDocIDMaper();
+      DocIDMapper idMapper = reader.getDocIDMaper();
       LongIterator iter = delDocs.iterator();
 
       while (iter.hasNext()) {
@@ -178,8 +178,7 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
         }
       }
       delArray = delList.toIntArray();
-
-      reader.decZoieRef();
+      reader.decRef();
     }
 
     if (delArray != null && delArray.length > 0) {

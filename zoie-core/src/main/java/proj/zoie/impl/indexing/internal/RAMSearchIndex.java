@@ -25,12 +25,13 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.SerialMergeScheduler;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
 
@@ -70,6 +71,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
     _mergePolicyParams.setMaxSmallSegments(4);
   }
 
+  @Override
   public void close() {
     super.close();
     if (_currentReader != null) {
@@ -85,10 +87,12 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
     }
   }
 
+  @Override
   public String getVersion() {
     return _version;
   }
 
+  @Override
   public void setVersion(String version) throws IOException {
     _version = version;
     synchronized (readerOpenLock) {
@@ -96,20 +100,21 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
     }
   }
 
-  public int getNumdocs() {
+  @Override
+  public int getNumdocs() throws IOException {
     ZoieIndexReader<R> reader = null;
     try {
       synchronized (this) {
         reader = openIndexReader();
         if (reader == null) return 0;
-        reader.incZoieRef();
+        reader.incRef();
       }
 
       return reader.numDocs();
     } catch (IOException e) {
       log.error(e.getMessage(), e);
     } finally {
-      if (reader != null) reader.decZoieRef();
+      if (reader != null) reader.decRef();
     }
     return 0;
   }
@@ -121,22 +126,22 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
 
   @Override
   protected IndexReader openIndexReaderForDelete() throws IOException {
-    if (IndexReader.indexExists(_directory)) {
-      return IndexReader.open(_directory, false);
+    if (DirectoryReader.indexExists(_directory)) {
+      return DirectoryReader.open(_directory);
     } else {
       return null;
     }
   }
 
   private ZoieIndexReader<R> openIndexReaderInternal() throws IOException {
-    if (IndexReader.indexExists(_directory)) {
+    if (DirectoryReader.indexExists(_directory)) {
       IndexReader srcReader = null;
       ZoieIndexReader<R> finalReader = null;
       try {
         // for RAM indexes, just get a new index reader
-        srcReader = IndexReader.open(_directory, true);
+        srcReader = DirectoryReader.open(_directory);
         finalReader = ZoieIndexReader.open(srcReader, _decorator);
-        DocIDMapper<?> mapper = _idxMgr._docIDMapperFactory
+        DocIDMapper mapper = _idxMgr._docIDMapperFactory
             .getDocIDMapper((ZoieMultiReader<R>) finalReader);
         finalReader.setDocIDMapper(mapper);
         return finalReader;
@@ -152,6 +157,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
     }
   }
 
+  @Override
   public IndexWriter openIndexWriter(Analyzer analyzer, Similarity similarity) throws IOException {
     if (_indexWriter != null) return _indexWriter;
 
@@ -161,7 +167,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
 
     IndexWriterConfig config = indexWriterConfigStorage.get();
     if (config == null) {
-      config = new IndexWriterConfig(Version.LUCENE_34, analyzer);
+      config = new IndexWriterConfig(Version.LUCENE_43, analyzer);
       indexWriterConfigStorage.set(config);
     }
     config.setOpenMode(OpenMode.CREATE_OR_APPEND);
@@ -215,9 +221,9 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
       if (_currentReader == null) {
         reader = openIndexReaderInternal();
       } else {
-        reader = (ZoieIndexReader<R>) _currentReader.reopen(true);
+        reader = (ZoieIndexReader<R>) _currentReader.reopen();
         if (reader != _currentReader) {
-          DocIDMapper<?> mapper = _idxMgr._docIDMapperFactory
+          DocIDMapper mapper = _idxMgr._docIDMapperFactory
               .getDocIDMapper((ZoieMultiReader<R>) reader);
           reader.setDocIDMapper(mapper);
         }
@@ -226,7 +232,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
       if (_currentReader != reader) {
         ZoieIndexReader<R> oldReader = _currentReader;
         _currentReader = reader;
-        if (oldReader != null) ((ZoieIndexReader<?>) oldReader).decZoieRef();// .decRef();
+        if (oldReader != null) oldReader.decRef();
       }
       LongSet delDocs = _delDocs;
       clearDeletes();

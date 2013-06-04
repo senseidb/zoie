@@ -80,6 +80,10 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
     in.close();
   }
 
+  public int getRefCount() {
+    return in.getRefCount();
+  }
+
   public int[] getStarts() {
     return _starts;
   }
@@ -215,7 +219,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
     }
   */
 
-  public ZoieIndexReader<R> reopen() throws IOException {
+  public ZoieMultiReader<R> reopen() throws IOException {
     long t0 = System.currentTimeMillis();
     if (!(in instanceof DirectoryReader)) {
       throw new IllegalStateException("in not instance of " + DirectoryReader.class);
@@ -254,7 +258,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
         throw new IllegalStateException("reader not insance of " + SegmentReader.class);
       }
     }
-    ZoieIndexReader<R> ret = new ZoieMultiReader<R>(inner, subReaderList, _decorator);
+    ZoieMultiReader<R> ret = new ZoieMultiReader<R>(inner, subReaderList, _decorator);
     t0 = System.currentTimeMillis() - t0;
     if (t0 > 1000) {
       log.info("reopen returns in " + t0 + "ms with change");

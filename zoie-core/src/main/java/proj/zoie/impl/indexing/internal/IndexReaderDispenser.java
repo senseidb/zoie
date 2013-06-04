@@ -19,6 +19,7 @@ package proj.zoie.impl.indexing.internal;
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 
@@ -33,25 +34,7 @@ public class IndexReaderDispenser<R extends IndexReader> {
   private static final Logger log = Logger.getLogger(IndexReaderDispenser.class);
 
   private static final int INDEX_OPEN_NUM_RETRIES = 5;
-
-  static final class InternalIndexReader<R extends IndexReader> extends ZoieMultiReader<R> {
-    InternalIndexReader(IndexReader in, IndexReaderDecorator<R> decorator) throws IOException {
-      super(in, decorator);
-    }
-
-    public InternalIndexReader(IndexReader in, IndexReader[] subReaders,
-        IndexReaderDecorator<R> decorator) throws IOException {
-      super(in, subReaders, decorator);
-    }
-
-    @Override
-    protected ZoieMultiReader<R> newInstance(IndexReader inner, IndexReader[] subReaders)
-        throws IOException {
-      return new InternalIndexReader<R>(inner, subReaders, _decorator);
-    }
-  }
-
-  private volatile InternalIndexReader<R> _currentReader;
+  private volatile ZoieMultiReader<R> _currentReader;
   private volatile IndexSignature _currentSignature;
   private final IndexReaderDecorator<R> _decorator;
   private final DirectoryManager _dirMgr;
@@ -85,20 +68,20 @@ public class IndexReaderDispenser<R extends IndexReader> {
      * @return Constructed IndexReader instance.
      * @throws IOException
      */
-  private InternalIndexReader<R> newReader(DirectoryManager dirMgr,
-      IndexReaderDecorator<R> decorator, IndexSignature signature) throws IOException {
+  private ZoieMultiReader<R> newReader(DirectoryManager dirMgr, IndexReaderDecorator<R> decorator,
+      IndexSignature signature) throws IOException {
     if (!dirMgr.exists()) {
       return null;
     }
 
     Directory dir = dirMgr.getDirectory();
 
-    if (!IndexReader.indexExists(dir)) {
+    if (!DirectoryReader.indexExists(dir)) {
       return null;
     }
 
     int numTries = INDEX_OPEN_NUM_RETRIES;
-    InternalIndexReader<R> reader = null;
+    ZoieMultiReader<R> reader = null;
 
     // try max of 5 times, there might be a case where the segment file is being updated
     while (reader == null) {
@@ -112,13 +95,13 @@ public class IndexReaderDispenser<R extends IndexReader> {
         if (log.isDebugEnabled()) {
           log.debug("opening index reader at: " + dirMgr.getPath());
         }
-        IndexReader srcReader = IndexReader.open(dir, true);
+        IndexReader srcReader = DirectoryReader.open(dir);
 
         try {
-          reader = new InternalIndexReader<R>(srcReader, decorator);
+          reader = new ZoieMultiReader<R>(srcReader, decorator);
           _currentSignature = signature;
         } catch (IOException ioe) {
-          // close the source reader if InternalIndexReader construction fails
+          // close the source reader if ZoieMultiReader construction fails
           if (srcReader != null) {
             srcReader.close();
           }
@@ -143,7 +126,7 @@ public class IndexReaderDispenser<R extends IndexReader> {
    */
   public ZoieIndexReader<R> getNewReader() throws IOException {
     int numTries = INDEX_OPEN_NUM_RETRIES;
-    InternalIndexReader<R> reader = null;
+    ZoieMultiReader<R> reader = null;
 
     // try it for a few times, there is a case where lucene is swapping the segment file,
     // or a case where the index directory file is updated, both are legitimate,
@@ -163,7 +146,7 @@ public class IndexReaderDispenser<R extends IndexReader> {
           reader = newReader(_dirMgr, _decorator, sig);
           break;
         } else {
-          reader = (InternalIndexReader<R>) _currentReader.reopen(true);
+          reader = _currentReader.reopen();
           _currentSignature = sig;
         }
       } catch (IOException ioe) {
@@ -183,13 +166,13 @@ public class IndexReaderDispenser<R extends IndexReader> {
         reader.setDocIDMapper(mapper);
       }
       // assume that this is the only place that _currentReader gets refreshed
-      IndexReader oldReader = _currentReader;
+      ZoieMultiReader<R> oldReader = _currentReader;
       _currentReader = reader;
       // we release our hold on the old reader so that it will be closed when
       // all the clients release their hold on it, the reader will be closed
       // automatically.
       log.info("swap disk reader and release old one from system");
-      if (oldReader != null) ((ZoieIndexReader<?>) oldReader).decZoieRef();// .decRef();
+      if (oldReader != null) oldReader.decRef();
     }
     return reader;
   }
@@ -216,11 +199,9 @@ public class IndexReaderDispenser<R extends IndexReader> {
   public void closeReader() {
     if (_currentReader != null) {
       try {
-        Directory directory = _currentReader.directory();
         _currentReader.decRef();
         int count = _currentReader.getRefCount();
-        log.info("final closeReader in dispenser and current refCount: " + count + " at "
-            + directory);
+        log.info("final closeReader in dispenser and current refCount: " + count);
         if (count > 0) {
           log.warn("final closeReader call with reference count == " + count
               + " greater than 0. Potentially, "

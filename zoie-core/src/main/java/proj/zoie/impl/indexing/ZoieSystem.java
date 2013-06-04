@@ -409,7 +409,7 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
     } else {
       _interpreter = interpreter;
     }
-    _analyzer = analyzer == null ? new StandardAnalyzer(Version.LUCENE_34) : analyzer;
+    _analyzer = analyzer == null ? new StandardAnalyzer(Version.LUCENE_43) : analyzer;
     _similarity = similarity == null ? new DefaultSimilarity() : similarity;
     log.info("creating Zoie instance --> " + _dirMgr.toString() + "\t" + _interpreter.toString()
         + "\t" + (indexReaderDecorator != null ? indexReaderDecorator.toString() : "null") + "\t"
@@ -457,7 +457,7 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
   public static <D> ZoieSystem<IndexReader, D> buildDefaultInstance(File idxDir,
       ZoieIndexableInterpreter<D> interpreter, int batchSize, long batchDelay, boolean realtime,
       Comparator<String> versionComparator) {
-    return buildDefaultInstance(idxDir, interpreter, new StandardAnalyzer(Version.LUCENE_34),
+    return buildDefaultInstance(idxDir, interpreter, new StandardAnalyzer(Version.LUCENE_43),
       new DefaultSimilarity(), batchSize, batchDelay, realtime, versionComparator);
   }
 

@@ -29,8 +29,8 @@ public class SearchQueryHandler implements QueryHandler<TopDocs> {
     _rand = new Random(System.currentTimeMillis());
     List<String> queryTermList = TermFileBuilder.loadFile(queryFile);
     String[] queryTerms = queryTermList.toArray(new String[0]);
-    // QueryParser parser = new QueryParser(Version.LUCENE_34,"contents",new
-    // StandardAnalyzer(Version.LUCENE_34));
+    // QueryParser parser = new QueryParser(Version.LUCENE_43,"contents",new
+    // StandardAnalyzer(Version.LUCENE_43));
     _queries = new Query[queryTerms.length];
     for (int i = 0; i < queryTerms.length; ++i) {
       _queries[i] = new TermQuery(new Term("contents", queryTerms[i]));

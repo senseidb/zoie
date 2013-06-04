@@ -63,7 +63,7 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
       queryRunnables[i] = new QueryRunnable() {
         @Override
         public void run() {
-          QueryParser parser = new QueryParser(Version.LUCENE_34, "contents",
+          QueryParser parser = new QueryParser(Version.LUCENE_43, "contents",
               idxSystem.getAnalyzer());
           Query q;
           try {
@@ -276,7 +276,7 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
       queryThreads[i] = new QueryThread() {
         @Override
         public void run() {
-          QueryParser parser = new QueryParser(Version.LUCENE_34, "contents",
+          QueryParser parser = new QueryParser(Version.LUCENE_43, "contents",
               idxSystem.getAnalyzer());
           Query q;
           try {

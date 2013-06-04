@@ -413,8 +413,8 @@ public class ZoieTest extends ZoieTestCaseBase {
           false);
       // do search
       IndexSearcher searcher = new IndexSearcher(reader);
-      QueryParser parser = new QueryParser(Version.LUCENE_35, "num", new StandardAnalyzer(
-          Version.LUCENE_35));
+      QueryParser parser = new QueryParser(Version.LUCENE_43, "num", new StandardAnalyzer(
+          Version.LUCENE_43));
       Query q = parser.parse("num:abc*");
       TopDocs ret = searcher.search(q, 100);
       TestCase.assertEquals(3, ret.totalHits);
@@ -581,7 +581,7 @@ public class ZoieTest extends ZoieTestCaseBase {
       ZoieConfig.DEFAULT_VERSION_COMPARATOR);
     idxSystem.start();
     String query = "zoie";
-    QueryParser parser = new QueryParser(Version.LUCENE_34, "contents", idxSystem.getAnalyzer());
+    QueryParser parser = new QueryParser(Version.LUCENE_43, "contents", idxSystem.getAnalyzer());
     Query q = null;
     try {
       q = parser.parse(query);
@@ -807,7 +807,7 @@ public class ZoieTest extends ZoieTestCaseBase {
       queryThreads[i] = new QueryThread() {
         @Override
         public void run() {
-          QueryParser parser = new QueryParser(Version.LUCENE_34, "contents",
+          QueryParser parser = new QueryParser(Version.LUCENE_43, "contents",
               idxSystem.getAnalyzer());
           Query q;
           try {
@@ -1002,7 +1002,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 
       idxSystem.syncWithVersion(10000, "" + (count - 1));
 
-      QueryParser parser = new QueryParser(Version.LUCENE_34, "contents", idxSystem.getAnalyzer());
+      QueryParser parser = new QueryParser(Version.LUCENE_43, "contents", idxSystem.getAnalyzer());
       Query q;
       Searcher searcher = null;
       List<ZoieIndexReader<IndexReader>> readers = null;
@@ -1325,7 +1325,7 @@ public class ZoieTest extends ZoieTestCaseBase {
     DirectoryManager dirMgr = new DefaultDirectoryManager(idxDir);
 
     String query = "zoie";
-    QueryParser parser = new QueryParser(Version.LUCENE_34, "contents", idxSystem.getAnalyzer());
+    QueryParser parser = new QueryParser(Version.LUCENE_43, "contents", idxSystem.getAnalyzer());
     Query q = null;
     try {
       q = parser.parse(query);

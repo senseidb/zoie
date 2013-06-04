@@ -83,7 +83,7 @@ public class ZoiePerf {
       throws Exception {
 
     ZoieConfig zoieConfig = new ZoieConfig();
-    zoieConfig.setAnalyzer(new StandardAnalyzer(Version.LUCENE_34));
+    zoieConfig.setAnalyzer(new StandardAnalyzer(Version.LUCENE_43));
     zoieConfig.setBatchSize(100000);
     zoieConfig.setBatchDelay(10000);
     zoieConfig.setMaxBatchSize(100000);
@@ -136,7 +136,7 @@ public class ZoiePerf {
       mergePolicy = new ZoieMergePolicy();
     }
     ThrottledLuceneNRTDataConsumer<String> nrtSystem = new ThrottledLuceneNRTDataConsumer<String>(
-        dir, new StandardAnalyzer(Version.LUCENE_34), interpreter, throttle, mergePolicy);
+        dir, new StandardAnalyzer(Version.LUCENE_43), interpreter, throttle, mergePolicy);
 
     boolean appendOnly = conf.getBoolean("appendOnly", false);
     nrtSystem.setAppendOnly(appendOnly);

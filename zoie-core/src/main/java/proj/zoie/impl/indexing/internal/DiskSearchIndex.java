@@ -168,7 +168,7 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
     mergePolicy.setMergePolicyParams(_mergePolicyParams);
 
     // hao: autocommit is set to false with this constructor
-    IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_34, analyzer);
+    IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_43, analyzer);
     config.setOpenMode(OpenMode.CREATE_OR_APPEND);
     config.setIndexDeletionPolicy(_deletionPolicy);
     config.setMergeScheduler(_mergeScheduler);

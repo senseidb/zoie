@@ -63,7 +63,7 @@ public class LuceneNRTDataConsumer<D> implements DataConsumer<D>, IndexReaderFac
 
   public LuceneNRTDataConsumer(File dir, ZoieIndexableInterpreter<D> interpreter)
       throws IOException {
-    this(FSDirectory.open(dir), new StandardAnalyzer(Version.LUCENE_34), interpreter);
+    this(FSDirectory.open(dir), new StandardAnalyzer(Version.LUCENE_43), interpreter);
   }
 
   public LuceneNRTDataConsumer(File dir, Analyzer analyzer, ZoieIndexableInterpreter<D> interpreter)
@@ -81,7 +81,7 @@ public class LuceneNRTDataConsumer<D> implements DataConsumer<D>, IndexReaderFac
 
   public void start() {
     try {
-      IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_34, _analyzer);
+      IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_43, _analyzer);
       _writer = new IndexWriter(_dir, config);
     } catch (IOException e) {
       logger.error("uanble to start consumer: " + e.getMessage(), e);

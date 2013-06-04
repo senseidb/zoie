@@ -45,8 +45,8 @@ public class IndexReplicator {
 
     IndexWriter writer = null;
     try {
-      IndexWriterConfig idxWriterConf = new IndexWriterConfig(Version.LUCENE_34,
-          new StandardAnalyzer(Version.LUCENE_34));
+      IndexWriterConfig idxWriterConf = new IndexWriterConfig(Version.LUCENE_43,
+          new StandardAnalyzer(Version.LUCENE_43));
       writer = new IndexWriter(targetDir, idxWriterConf);
       for (int i = 0; i < numReplicas; ++i) {
         System.out.println("replicating " + (i + 1) + " time(s)");

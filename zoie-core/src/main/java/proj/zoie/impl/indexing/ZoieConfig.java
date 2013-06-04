@@ -103,7 +103,7 @@ public class ZoieConfig {
   }
 
   public Analyzer getAnalyzer() {
-    return analyzer == null ? new StandardAnalyzer(Version.LUCENE_34) : analyzer;
+    return analyzer == null ? new StandardAnalyzer(Version.LUCENE_43) : analyzer;
   }
 
   public void setAnalyzer(Analyzer analyzer) {

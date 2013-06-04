@@ -76,7 +76,7 @@ public class ThrottledLuceneNRTDataConsumer<D> implements LifeCycleCotrolledData
   @Override
   public void start() {
     try {
-      IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_34, _analyzer);
+      IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_43, _analyzer);
       if (_mergePolicy != null) {
         config.setMergePolicy(_mergePolicy);
       }

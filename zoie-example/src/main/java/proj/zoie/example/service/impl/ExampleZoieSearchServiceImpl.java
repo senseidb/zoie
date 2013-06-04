@@ -66,7 +66,7 @@ public class ExampleZoieSearchServiceImpl<R extends IndexReader> implements Zoie
 	public SearchResult search(SearchRequest req) throws ZoieException{
 		String queryString=req.getQuery();
 		Analyzer analyzer=_idxReaderFactory.getAnalyzer();
-		QueryParser qparser=new QueryParser(Version.LUCENE_34,"content",analyzer);
+		QueryParser qparser=new QueryParser(Version.LUCENE_43,"content",analyzer);
 		
 		SearchResult result=new SearchResult();
 		

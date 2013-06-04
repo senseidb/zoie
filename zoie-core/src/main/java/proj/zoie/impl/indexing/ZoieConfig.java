@@ -6,8 +6,8 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.search.DefaultSimilarity;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Version;
 
 import proj.zoie.api.DocIDMapperFactory;
@@ -187,6 +187,7 @@ public class ZoieConfig {
 
     private static final Pattern _numPattern = Pattern.compile("[0-9]+");
 
+    @Override
     public int compare(String s1, String s2) {
       if (s1 == s2) return 0;
       if (s1 == null) return -1;

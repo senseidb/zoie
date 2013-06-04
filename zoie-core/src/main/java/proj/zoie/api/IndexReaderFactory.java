@@ -20,16 +20,15 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.index.IndexReader;
 
 /**
  * This interface is IndexReader instances are to be managed.
  */
-public interface IndexReaderFactory<R extends IndexReader> {
+public interface IndexReaderFactory<R extends ZoieIndexReader<?>> {
 
   /**
    * Returns a list of index readers.
-   * @return List of IndexReader instances 
+   * @return List of IndexReader instances
    * @throws IOException
    */
   List<R> getIndexReaders() throws IOException;

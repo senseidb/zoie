@@ -17,11 +17,8 @@ package proj.zoie.mbean;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.util.Date;
 
 public interface ZoieSystemAdminMBean extends ZoieAdminMBean {
-  Date getLastOptimizationTime();
-
   void optimize(int numSegs) throws IOException;
 
   void purgeIndex() throws IOException;
@@ -32,21 +29,7 @@ public interface ZoieSystemAdminMBean extends ZoieAdminMBean {
 
   int getDiskIndexSize();
 
-  long getMinUID() throws IOException;
-
-  long getMaxUID() throws IOException;
-
   public long getFreshness();
 
   public void setFreshness(long freshness);
-
-  /**
-   * @return a String representation of the search result given the string representations of query arguments.
-   */
-  public String search(String field, String query);
-
-  /**
-   * @return the a String representation of the Document(s) referred to by the given UID
-   */
-  public String getDocument(long UID);
 }

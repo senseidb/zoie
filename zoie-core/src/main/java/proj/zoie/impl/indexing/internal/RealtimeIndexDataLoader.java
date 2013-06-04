@@ -26,7 +26,7 @@ import java.util.Queue;
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.similarities.Similarity;
 
 import proj.zoie.api.DataConsumer;
 import proj.zoie.api.ZoieException;
@@ -38,7 +38,7 @@ import proj.zoie.impl.indexing.IndexUpdatedEvent;
 
 /**
  * Keeps track of the number of incoming data events.
- * 
+ *
  * @author ymatsuda, xgu
  *
  */
@@ -55,7 +55,7 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D> extends BatchedIn
       int maxBatchSize, long delay, Analyzer analyzer, Similarity similarity,
       SearchIndexManager<R> idxMgr, ZoieIndexableInterpreter<D> interpreter,
       Queue<IndexingEventListener> lsnrList, Comparator<String> comparator) {
-    super((DataConsumer<ZoieIndexable>) dataLoader, batchSize, maxBatchSize, delay, idxMgr,
+    super(dataLoader, batchSize, maxBatchSize, delay, idxMgr,
         interpreter, lsnrList);
     _analyzer = analyzer;
     _similarity = similarity;
@@ -78,7 +78,7 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D> extends BatchedIn
       while (iter.hasNext()) {
         try {
           DataEvent<D> event = iter.next();
-          ZoieIndexable indexable = ((ZoieIndexableInterpreter<D>) _interpreter)
+          ZoieIndexable indexable = _interpreter
               .convertAndInterpret(event.getData());
 
           DataEvent<ZoieIndexable> newEvent = new DataEvent<ZoieIndexable>(indexable,
@@ -119,6 +119,7 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D> extends BatchedIn
     }
   }
 
+  @Override
   public synchronized int getCurrentBatchSize() {
     return _currentBatchSize;
   }

@@ -38,7 +38,7 @@ public class DefaultReaderCache<R extends IndexReader> extends AbstractReaderCac
     cachedreadersLock.readLock().lock();
     List<ZoieIndexReader<R>> readers = cachedreaders;
     for (ZoieIndexReader<R> r : readers) {
-      r.incZoieRef();
+      r.incRef();
     }
     cachedreadersLock.readLock().unlock();
     return readers;
@@ -55,6 +55,7 @@ public class DefaultReaderCache<R extends IndexReader> extends AbstractReaderCac
     }
   }
 
+  @Override
   public void refreshCache(long timeout) throws ZoieException {
     long begintime = System.currentTimeMillis();
     while (cachedreaderTimestamp <= begintime) {

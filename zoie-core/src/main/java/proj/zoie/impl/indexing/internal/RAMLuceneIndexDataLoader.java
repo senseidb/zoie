@@ -24,7 +24,7 @@ import java.util.Queue;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.similarities.Similarity;
 
 import proj.zoie.api.indexing.IndexingEventListener;
 

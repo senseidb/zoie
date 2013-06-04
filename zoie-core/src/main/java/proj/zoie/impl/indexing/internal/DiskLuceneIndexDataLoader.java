@@ -30,7 +30,7 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.similarities.Similarity;
 
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieHealth;
@@ -42,16 +42,14 @@ import proj.zoie.impl.indexing.internal.SearchIndexManager.Status;
 
 public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneIndexDataLoader<R> {
 
-  private long _lastTimeOptimized;
   private static final Logger log = Logger.getLogger(DiskLuceneIndexDataLoader.class);
-  private Object _optimizeMonitor;
+  private final Object _optimizeMonitor;
   private volatile OptimizeScheduler _optScheduler;
 
   public DiskLuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,
       SearchIndexManager<R> idxMgr, Comparator<String> comparator,
       Queue<IndexingEventListener> lsnrList) {
     super(analyzer, similarity, idxMgr, comparator, lsnrList);
-    _lastTimeOptimized = System.currentTimeMillis();
     _optimizeMonitor = new Object();
   }
 
@@ -179,10 +177,6 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
       _idxMgr.refreshDiskReader();
     }
     log.info("index optimized in " + (System.currentTimeMillis() - t0) + "ms");
-  }
-
-  public long getLastTimeOptimized() {
-    return _lastTimeOptimized;
   }
 
   public long exportSnapshot(WritableByteChannel channel) throws IOException {

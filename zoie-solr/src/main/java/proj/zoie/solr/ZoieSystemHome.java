@@ -13,7 +13,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.DefaultSimilarity;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Version;
 import org.apache.solr.core.IndexReaderFactory;
 import org.apache.solr.core.SolrConfig;

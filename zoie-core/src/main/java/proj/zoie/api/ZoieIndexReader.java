@@ -24,12 +24,10 @@ import java.util.List;
 
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 
-import proj.zoie.api.impl.DefaultIndexReaderMerger;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
 public abstract class ZoieIndexReader<R extends IndexReader> {
@@ -38,6 +36,7 @@ public abstract class ZoieIndexReader<R extends IndexReader> {
   public void incRef() {
     throw new UnsupportedOperationException("This reader does not implement incRef");
   }
+
   public void decRef() throws IOException {
     throw new UnsupportedOperationException("This reader does not implement decRef");
   }
@@ -127,16 +126,6 @@ public abstract class ZoieIndexReader<R extends IndexReader> {
       }
       throw ioe;
     }
-  }
-
-  public static <R extends IndexReader, T extends IndexReader> R mergeIndexReaders(
-      List<ZoieIndexReader<T>> readerList, IndexReaderMerger<R, T> merger) {
-    return merger.mergeIndexReaders(readerList);
-  }
-
-  public static <T extends IndexReader> MultiReader mergeIndexReaders(
-      List<ZoieIndexReader<T>> readerList) {
-    return mergeIndexReaders(readerList, new DefaultIndexReaderMerger<T>());
   }
 
   protected ZoieIndexReader(IndexReader in, IndexReaderDecorator<R> decorator) throws IOException {

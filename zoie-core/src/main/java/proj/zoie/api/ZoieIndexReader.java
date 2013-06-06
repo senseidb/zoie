@@ -37,7 +37,11 @@ public abstract class ZoieIndexReader<R extends IndexReader> {
     throw new UnsupportedOperationException("This reader does not implement incRef");
   }
 
-  public void decRef() throws IOException {
+  public void decRef() {
+    throw new UnsupportedOperationException("This reader does not implement decRef");
+  }
+
+  public ZoieMultiReader<R> reopen() throws IOException {
     throw new UnsupportedOperationException("This reader does not implement decRef");
   }
 

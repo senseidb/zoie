@@ -19,13 +19,11 @@ import org.junit.Before;
 
 import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.ZoieIndexReader;
-import proj.zoie.api.impl.InRangeDocIDMapperFactory;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.impl.indexing.SimpleReaderCache;
 import proj.zoie.impl.indexing.ZoieConfig;
 import proj.zoie.impl.indexing.ZoieSystem;
 import proj.zoie.test.data.DataInterpreterForTests;
-import proj.zoie.test.data.InRangeDataInterpreterForTests;
 
 public class ZoieTestCaseBase {
   static {
@@ -154,12 +152,11 @@ public class ZoieTestCaseBase {
   protected static class TestIndexReaderDecorator implements IndexReaderDecorator<IndexReader> {
     @Override
     public IndexReader decorate(ZoieIndexReader<IndexReader> indexReader) throws IOException {
-      return indexReader;
+      return indexReader.getInnerReader();
     }
 
     @Override
-    public IndexReader redecorate(IndexReader decorated, ZoieIndexReader<IndexReader> copy,
-        boolean withDeletes) throws IOException {
+    public IndexReader redecorate(IndexReader decorated, ZoieIndexReader<IndexReader> copy) throws IOException {
       return decorated;
     }
 
@@ -167,22 +164,6 @@ public class ZoieTestCaseBase {
     public void setDeleteSet(IndexReader reader, DocIdSet docIds) {
       // do nothing
     }
-  }
-
-  protected static ZoieSystem<IndexReader, String> createInRangeZoie(File idxDir, boolean realtime,
-      InRangeDocIDMapperFactory docidMapperFactory, Comparator<String> versionComparator) {
-    ZoieConfig config = new ZoieConfig();
-    config.setDocidMapperFactory(docidMapperFactory);
-    config.setBatchSize(50);
-    config.setBatchDelay(2000);
-    config.setRtIndexing(realtime);
-    config.setVersionComparator(versionComparator);
-    config.setSimilarity(null);
-    config.setAnalyzer(null);
-    // config.setReadercachefactory(SimpleReaderCache.FACTORY);
-    ZoieSystem<IndexReader, String> idxSystem = new ZoieSystem<IndexReader, String>(idxDir,
-        new InRangeDataInterpreterForTests(20, null), new TestIndexReaderDecorator(), config);
-    return idxSystem;
   }
 
   protected static boolean deleteDirectory(File path) {

@@ -26,15 +26,17 @@ import proj.zoie.api.indexing.IndexReaderDecorator;
 
 public class DefaultIndexReaderDecorator implements IndexReaderDecorator<IndexReader> {
 
+  @Override
   public IndexReader decorate(ZoieIndexReader<IndexReader> indexReader) throws IOException {
-    return indexReader;
+    return indexReader.getInnerReader();
   }
 
-  public IndexReader redecorate(IndexReader decorated, ZoieIndexReader<IndexReader> copy,
-      boolean withDeletes) throws IOException {
-    return copy;
+  @Override
+  public IndexReader redecorate(IndexReader decorated, ZoieIndexReader<IndexReader> copy) throws IOException {
+    return copy.getInnerReader();
   }
 
+  @Override
   public void setDeleteSet(IndexReader reader, DocIdSet docIds) {
     // do nothing
   }

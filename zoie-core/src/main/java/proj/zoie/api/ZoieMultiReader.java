@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -66,14 +67,26 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
     init();
   }
 
+  private final AtomicLong zoieRefCounter = new AtomicLong(1);
+
   @Override
   public void incRef() {
-    in.incRef();
+    zoieRefCounter.incrementAndGet();
   }
 
   @Override
-  public void decRef() throws IOException {
-    in.decRef();
+  public void decRef() {
+    long refCount = zoieRefCounter.decrementAndGet();
+    if (refCount < 0) {
+      log.warn("refCount should never be lower than 0");
+    }
+    if (refCount == 0) {
+      try {
+        in.decRef();
+      } catch (IOException e) {
+        log.error("decZoieRef", e);
+      }
+    }
   }
 
   protected void doClose() throws IOException {
@@ -219,6 +232,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
     }
   */
 
+  @Override
   public ZoieMultiReader<R> reopen() throws IOException {
     long t0 = System.currentTimeMillis();
     if (!(in instanceof DirectoryReader)) {
@@ -280,7 +294,7 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
   @Override
   public ZoieMultiReader<R> copy() throws IOException {
     // increase DirectoryReader refcounter
-    this.in.incRef();
+    this.incRef();
     List<ZoieSegmentReader<R>> sourceZoieSubReaders = this._subZoieReaders;
     List<ZoieSegmentReader<R>> zoieSubReaders = new ArrayList<ZoieSegmentReader<R>>(
         this._subZoieReaders.size());

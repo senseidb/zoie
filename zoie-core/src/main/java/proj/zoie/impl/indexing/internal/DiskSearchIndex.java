@@ -29,7 +29,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.SerialMergeScheduler;
-import org.apache.lucene.search.similarites.Similarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
 
@@ -47,7 +47,7 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
 
   final MergePolicyParams _mergePolicyParams;
 
-  private ZoieIndexDeletionPolicy _deletionPolicy;
+  private final ZoieIndexDeletionPolicy _deletionPolicy;
 
   public static final Logger log = Logger.getLogger(DiskSearchIndex.class);
 
@@ -61,6 +61,7 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
     _deletionPolicy = new ZoieIndexDeletionPolicy();
   }
 
+  @Override
   public String getVersion() {
     return _dispenser.getCurrentVersion();
   }
@@ -73,8 +74,9 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
    * Gets the number of docs in the current loaded index
    * @return number of docs
    */
+  @Override
   public int getNumdocs() {
-    IndexReader reader = _dispenser.getIndexReader();
+    ZoieIndexReader<R> reader = _dispenser.getIndexReader();
     if (reader != null) {
       return reader.numDocs();
     } else {
@@ -115,6 +117,7 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
   /**
    * Close and releases dispenser and clean up
    */
+  @Override
   public void close() {
     super.close();
 
@@ -157,6 +160,7 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
    * @param analyzer Analyzer
    * @return IndexModifer instance
    */
+  @Override
   public IndexWriter openIndexWriter(Analyzer analyzer, Similarity similarity) throws IOException {
     if (_indexWriter != null) return _indexWriter;
 
@@ -187,6 +191,7 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
   /**
    * Gets the current reader
    */
+  @Override
   public ZoieIndexReader<R> openIndexReader() throws IOException {
     // use dispenser to get the reader
     return _dispenser.getIndexReader();
@@ -218,16 +223,6 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
 
   }
 
-  @Override
-  protected IndexReader openIndexReaderForDelete() throws IOException {
-    Directory directory = _dirMgr.getDirectory(true);
-    if (IndexReader.indexExists(directory)) {
-      return IndexReader.open(directory, _deletionPolicy, false);
-    } else {
-      return null;
-    }
-  }
-
   /**
    * Gets a new reader, force a reader refresh
    * @return
@@ -245,6 +240,7 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
   /**
    * Writes the current version/SCN to the disk
    */
+  @Override
   public void setVersion(String version) throws IOException {
     _dirMgr.setVersion(version);
   }

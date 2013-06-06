@@ -16,9 +16,6 @@ package proj.zoie.impl.indexing.internal;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntList;
-import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 
@@ -32,10 +29,10 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.store.Directory;
 
-import proj.zoie.api.DocIDMapper;
+import proj.zoie.api.UIDFilter;
 import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
@@ -67,7 +64,7 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
    * gets number of docs in the index, .e.g maxdoc - number of deleted docs
    * @return
    */
-  abstract public int getNumdocs() throws IOException;
+  abstract public int getNumdocs();
 
   /**
    * Sets the index version
@@ -84,8 +81,6 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
   }
 
   abstract public ZoieIndexReader<R> openIndexReader() throws IOException;
-
-  abstract protected IndexReader openIndexReaderForDelete() throws IOException;
 
   abstract public void refresh() throws IOException;
 
@@ -153,54 +148,18 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
       reader.commitDeletes();
       reader.decRef();
     }
+
   }
 
   private void deleteDocs(LongSet delDocs) throws IOException {
-    int[] delArray = null;
-    if (delDocs != null && delDocs.size() > 0) {
-      ZoieIndexReader<R> reader = null;
-      synchronized (this) {
-        reader = openIndexReader();
-        if (reader == null) return;
-        reader.incRef();
-      }
-      IntList delList = new IntArrayList(delDocs.size());
-      DocIDMapper idMapper = reader.getDocIDMaper();
-      LongIterator iter = delDocs.iterator();
-
-      while (iter.hasNext()) {
-        long uid = iter.nextLong();
-        if (ZoieIndexReader.DELETED_UID != uid) {
-          int docid = idMapper.getDocID(uid);
-          if (docid != DocIDMapper.NOT_FOUND) {
-            delList.add(docid);
-          }
-        }
-      }
-      delArray = delList.toIntArray();
-      reader.decRef();
-    }
-
-    if (delArray != null && delArray.length > 0) {
+    UIDFilter uidFilter = new UIDFilter(delDocs.toLongArray());
+    IndexWriter writer = null;
+    try {
+      writer = openIndexWriter(null, null);
+      writer.deleteDocuments(new ConstantScoreQuery(uidFilter));
+      writer.commit();
+    } finally {
       closeIndexWriter();
-      IndexReader readerForDelete = null;
-      try {
-        readerForDelete = openIndexReaderForDelete();
-        if (readerForDelete != null) {
-          for (int docid : delArray) {
-            readerForDelete.deleteDocument(docid);
-          }
-        }
-      } finally {
-        if (readerForDelete != null) {
-          try {
-            readerForDelete.close();
-          } catch (IOException ioe) {
-            ZoieHealth.setFatal();
-            log.error(ioe.getMessage(), ioe);
-          }
-        }
-      }
     }
   }
 
@@ -216,13 +175,16 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
     ZoieIndexReader<R> reader = index.openIndexReader();
     if (reader == null) return;
 
-    Directory dir = reader.directory();
+    // hao: delete docs in disk index
+    LongSet delDocs = _delDocs;
+    clearDeletes();
+    deleteDocs(delDocs);
 
     // hao: merge the readOnly ram index with the disk index
     IndexWriter writer = null;
     try {
       writer = openIndexWriter(null, null);
-      writer.addIndexes(new Directory[] { dir });
+      writer.addIndexes(reader.getInnerReader());
       writer.maybeMerge();
     } finally {
       closeIndexWriter();

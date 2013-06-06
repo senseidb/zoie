@@ -75,7 +75,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
   public void close() {
     super.close();
     if (_currentReader != null) {
-      _currentReader.decZoieRef();
+      _currentReader.decRef();
     }
     if (_directory != null) {
       try {
@@ -101,7 +101,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
   }
 
   @Override
-  public int getNumdocs() throws IOException {
+  public int getNumdocs() {
     ZoieIndexReader<R> reader = null;
     try {
       synchronized (this) {
@@ -122,15 +122,6 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
   @Override
   public ZoieIndexReader<R> openIndexReader() throws IOException {
     return _currentReader;
-  }
-
-  @Override
-  protected IndexReader openIndexReaderForDelete() throws IOException {
-    if (DirectoryReader.indexExists(_directory)) {
-      return DirectoryReader.open(_directory);
-    } else {
-      return null;
-    }
   }
 
   private ZoieIndexReader<R> openIndexReaderInternal() throws IOException {
@@ -221,7 +212,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
       if (_currentReader == null) {
         reader = openIndexReaderInternal();
       } else {
-        reader = (ZoieIndexReader<R>) _currentReader.reopen();
+        reader = _currentReader.reopen();
         if (reader != _currentReader) {
           DocIDMapper mapper = _idxMgr._docIDMapperFactory
               .getDocIDMapper((ZoieMultiReader<R>) reader);

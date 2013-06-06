@@ -64,7 +64,7 @@ public class SearchIndexManager<R extends IndexReader> implements
   private final Comparator<String> _versionComparator;
 
   /**
-   * @param location 
+   * @param location
    * @param indexReaderDecorator
    */
   public SearchIndexManager(DirectoryManager dirMgr, Comparator<String> versionComparator,
@@ -94,7 +94,7 @@ public class SearchIndexManager<R extends IndexReader> implements
         .newInstance(version, _indexReaderDecorator, this);
     Mem<R> mem = new Mem<R>(memIndexA, null, memIndexA, null, diskIndexReader);
     if (diskIndexReader != null) {
-      diskIndexReader.incZoieRef();
+      diskIndexReader.incRef();
     }
     _mem = mem;
   }
@@ -191,6 +191,7 @@ public class SearchIndexManager<R extends IndexReader> implements
     return _diskIndexerStatus;
   }
 
+  @Override
   public List<ZoieIndexReader<R>> getIndexReaders() throws IOException {
     ArrayList<ZoieIndexReader<R>> readers = new ArrayList<ZoieIndexReader<R>>();
     ZoieIndexReader<R> reader = null;
@@ -203,8 +204,6 @@ public class SearchIndexManager<R extends IndexReader> implements
 
         // the following order, e.g. B,A,Disk matters, see ZoieIndexReader.getSubZoieReaderAccessor:
         // when doing UID->docid mapping, the freshest index needs to be first
-
-        String currentVersion = null;
         if (memIndexB != null) // load memory index B
         {
           synchronized (memIndexB) {
@@ -264,15 +263,10 @@ public class SearchIndexManager<R extends IndexReader> implements
     return _versionComparator;
   }
 
+  @Override
   public void returnIndexReaders(List<ZoieIndexReader<R>> readers) {
     for (ZoieIndexReader<R> r : readers) {
-      // try
-      // {
-      r.decZoieRef();// .decRef();
-      // } catch (IOException e)
-      // {
-      // log.error("error when decRef on reader ", e);
-      // }
+      r.decRef();
     }
   }
 
@@ -306,7 +300,7 @@ public class SearchIndexManager<R extends IndexReader> implements
           synchronized (_diskIndex) {
             // a new reader is already loaded in loadFromIndex
             diskIndexReader = _diskIndex.openIndexReader();
-            if (diskIndexReader != null) diskIndexReader.incZoieRef();
+            if (diskIndexReader != null) diskIndexReader.incRef();
           }
 
           Mem<R> oldMem = _mem;
@@ -321,7 +315,7 @@ public class SearchIndexManager<R extends IndexReader> implements
           log.error(e.getMessage(), e);
           return;
         } finally {
-          if (diskIndexReader != null) diskIndexReader.decZoieRef();
+          if (diskIndexReader != null) diskIndexReader.decRef();
         }
       }
       _diskIndexerStatus = status;
@@ -342,6 +336,7 @@ public class SearchIndexManager<R extends IndexReader> implements
 
   /**
    * Clean up
+   * @throws IOException
    */
   public void close() {
     Mem<R> mem = _mem;
@@ -352,15 +347,8 @@ public class SearchIndexManager<R extends IndexReader> implements
       mem.get_memIndexB().close();
     }
     if (mem.get_diskIndexReader() != null) {
-      // try
-      // {
-      mem.get_diskIndexReader().decZoieRef();// .decRef();
+      mem.get_diskIndexReader().decRef();
       _diskIndex.close();
-      // }
-      // catch (IOException e)
-      // {
-      // log.error("error closing remaining diskReader pooled in mem: " + e);
-      // }
     }
   }
 
@@ -460,9 +448,9 @@ public class SearchIndexManager<R extends IndexReader> implements
         Mem<R> mem = new Mem<R>(oldMem.get_memIndexA(), oldMem.get_memIndexB(),
             oldMem.get_currentWritable(), oldMem.get_currentReadOnly(), diskIndexReader);
         if (oldDiskIndexReader != null) {
-          oldDiskIndexReader.decZoieRef();
+          oldDiskIndexReader.decRef();
         }
-        diskIndexReader.incZoieRef();
+        diskIndexReader.incRef();
         _mem = mem;
       }
     }
@@ -483,9 +471,9 @@ public class SearchIndexManager<R extends IndexReader> implements
     synchronized (_memLock) {
       if (oldDiskReader != diskIndexReader) {
         if (oldDiskReader != null) {
-          oldDiskReader.decZoieRef();
+          oldDiskReader.decRef();
         }
-        diskIndexReader.incZoieRef();
+        diskIndexReader.incRef();
       }
       _mem = mem;
     }

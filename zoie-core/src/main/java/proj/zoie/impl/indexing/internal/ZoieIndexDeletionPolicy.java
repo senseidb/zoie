@@ -28,9 +28,9 @@ import org.apache.lucene.index.IndexDeletionPolicy;
  * @author ymatsuda
  *
  */
-public class ZoieIndexDeletionPolicy implements IndexDeletionPolicy {
+public class ZoieIndexDeletionPolicy extends IndexDeletionPolicy {
   private IndexCommit _lastCommit;
-  private HashMap<String, Snapshot> _currentSnapshots = new HashMap<String, Snapshot>();
+  private final HashMap<String, Snapshot> _currentSnapshots = new HashMap<String, Snapshot>();
 
   public ZoieIndexDeletionPolicy() {
     _lastCommit = null;
@@ -41,6 +41,7 @@ public class ZoieIndexDeletionPolicy implements IndexDeletionPolicy {
     processCommits(commits);
   }
 
+  @Override
   public void onCommit(List<? extends IndexCommit> commits) throws IOException {
     processCommits(commits);
   }
@@ -86,7 +87,7 @@ public class ZoieIndexDeletionPolicy implements IndexDeletionPolicy {
     }
 
     public Collection<String> getFileNames() throws IOException {
-      return (Collection<String>) _commit.getFileNames();
+      return _commit.getFileNames();
     }
 
     public void close() {
@@ -105,6 +106,7 @@ public class ZoieIndexDeletionPolicy implements IndexDeletionPolicy {
       }
     }
 
+    @Override
     public void finalize() {
       _refcount = 0;
       close();

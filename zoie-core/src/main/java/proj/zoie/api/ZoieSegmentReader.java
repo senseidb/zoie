@@ -87,9 +87,6 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
 
   /**
    * makes exact shallow copy of a given ZoieSegmentReader
-   * @param <R>
-   * @param source
-   * @return
    * @throws IOException
    */
   @Override
@@ -175,26 +172,6 @@ public class ZoieSegmentReader<R extends IndexReader> extends ZoieIndexReader<R>
     Bits liveDocs = MultiFields.getLiveDocs(in);
     return !liveDocs.get(docid);
   }
-
-  // TODO
-  /**
-   @Override public TermDocs termDocs(Term term) throws IOException { ensureOpen(); TermDocs td =
-    in.termDocs(term); if (_noDedup) return td; int[] delDocIds = _delDocIds;// .get(); if (td ==
-    null || delDocIds == null || delDocIds.length == 0) return td; return new
-    ZoieSegmentTermDocs(td, new ArrayDocIdSet(delDocIds)); }
-    @Override public TermDocs termDocs() throws IOException { ensureOpen(); TermDocs td =
-    in.termDocs(); if (_noDedup) return td; int[] delDocIds = _delDocIds;// .get(); if (td == null
-   * || delDocIds == null || delDocIds.length == 0) return td; return new ZoieSegmentTermDocs(td,
-   * new ArrayDocIdSet(delDocIds)); }
-   * @Override public TermPositions termPositions(Term term) throws IOException { ensureOpen();
-   * TermPositions tp = in.termPositions(term); if (_noDedup) return tp; int[] delDocIds =
-   * _delDocIds;// .get(); if (tp == null || delDocIds == null || delDocIds.length == 0) return tp;
-   * return new ZoieSegmentTermPositions(tp, new ArrayDocIdSet(delDocIds)); }
-   * @Override public TermPositions termPositions() throws IOException { ensureOpen(); TermPositions
-   * tp = in.termPositions(); if (_noDedup) return tp; int[] delDocIds = _delDocIds;// .get(); if
-   * (tp == null || delDocIds == null || delDocIds.length == 0) return tp; return new
-   * ZoieSegmentTermPositions(tp, new ArrayDocIdSet(delDocIds)); }
-   */
 
   @Override
   public ZoieIndexReader<R>[] getSequentialSubReaders() {

@@ -13,6 +13,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import org.apache.log4j.Logger;
+import org.apache.lucene.util.BytesRef;
 
 import proj.zoie.impl.indexing.ZoieConfig;
 
@@ -49,14 +50,14 @@ public abstract class AbstractZoieStore implements ZoieStore {
 
   protected abstract void persistDelete(long uid) throws IOException;
 
-  protected abstract byte[] getFromStore(long uid) throws IOException;
+  protected abstract BytesRef getFromStore(long uid) throws IOException;
 
   protected abstract void commitVersion(String version) throws IOException;
 
-  public abstract String getPersistedVersion() throws IOException;
-
+  @Override
   public abstract void close() throws IOException;
 
+  @Override
   public abstract void open() throws IOException;
 
   public static byte[] compress(byte[] src) throws IOException {
@@ -89,6 +90,7 @@ public abstract class AbstractZoieStore implements ZoieStore {
     return bout.toByteArray();
   }
 
+  @Override
   public void commit() throws IOException {
     _writeLock.lock();
     try {
@@ -136,7 +138,7 @@ public abstract class AbstractZoieStore implements ZoieStore {
       _readLock.unlock();
     }
     if (data == null) {
-      data = getFromStore(uid);
+      data = getFromStore(uid).bytes;
     }
     if (data != null && _dataCompressed) {
       data = uncompress(data);

@@ -40,7 +40,6 @@ import proj.zoie.impl.indexing.DefaultIndexReaderDecorator;
 import proj.zoie.impl.indexing.SimpleReaderCache;
 import proj.zoie.impl.indexing.ZoieConfig;
 import proj.zoie.impl.indexing.ZoieSystem;
-import proj.zoie.impl.indexing.luceneNRT.ThrottledLuceneNRTDataConsumer;
 import proj.zoie.perf.indexing.LinedFileDataProvider;
 import proj.zoie.perf.indexing.TweetInterpreter;
 import proj.zoie.perf.servlet.ZoiePerfServlet;
@@ -107,9 +106,9 @@ public class ZoiePerf {
         interpreter, indexReaderDecorator, zoieConfig);
 
     SearchQueryHandler queryHandler = new SearchQueryHandler(queryFile,
-        (IndexReaderFactory) zoieSystem);
+        zoieSystem);
 
-    return new PerfTestHandler((LifeCycleCotrolledDataConsumer<String>) zoieSystem, queryHandler);
+    return new PerfTestHandler(zoieSystem, queryHandler);
   }
 
   static PerfTestHandler buildNrtHandler(File idxDir, Configuration topConf, Configuration conf)
@@ -314,6 +313,7 @@ public class ZoiePerf {
         }
       }
 
+      @Override
       public void run() {
         while (!stop) {
           try {

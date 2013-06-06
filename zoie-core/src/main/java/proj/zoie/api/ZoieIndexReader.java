@@ -41,8 +41,16 @@ public abstract class ZoieIndexReader<R extends IndexReader> {
     throw new UnsupportedOperationException("This reader does not implement decRef");
   }
 
+  public int getRefCount() {
+    return in.getRefCount();
+  }
+
   public ZoieMultiReader<R> reopen() throws IOException {
-    throw new UnsupportedOperationException("This reader does not implement decRef");
+    throw new UnsupportedOperationException("This reader does not implement reopen");
+  }
+
+  public Directory directory() {
+    throw new UnsupportedOperationException("This reader does not implement directory");
   }
 
   public int numDocs() {

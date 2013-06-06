@@ -24,7 +24,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.Queue;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
@@ -34,7 +33,6 @@ import org.apache.lucene.search.similarities.Similarity;
 
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieHealth;
-import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.api.indexing.OptimizeScheduler;
 import proj.zoie.api.indexing.OptimizeScheduler.OptimizeType;
 import proj.zoie.api.indexing.ZoieIndexable;
@@ -47,9 +45,8 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
   private volatile OptimizeScheduler _optScheduler;
 
   public DiskLuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,
-      SearchIndexManager<R> idxMgr, Comparator<String> comparator,
-      Queue<IndexingEventListener> lsnrList) {
-    super(analyzer, similarity, idxMgr, comparator, lsnrList);
+      SearchIndexManager<R> idxMgr, Comparator<String> comparator) {
+    super(analyzer, similarity, idxMgr, comparator);
     _optimizeMonitor = new Object();
   }
 

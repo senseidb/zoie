@@ -103,10 +103,10 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
    *          used.
    * @param analyzer
    *          Default analyzer, optional. If not specified,
-   *          {@link org.apache.lucene.analysis.StandardAnalyzer} is used.
+   *          {@link org.apache.lucene.analysis.standard.StandardAnalyzer} is used.
    * @param similarity
    *          Default similarity, optional. If not specified,
-   *          {@link org.apache.lucene.search.DefaultSimilarity} is used.
+   *          {@link org.apache.lucene.search.similarities.DefaultSimilarity} is used.
    * @param batchSize
    *          Number of indexing events to hold before flushing to disk.
    * @param batchDelay
@@ -187,10 +187,10 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
    *          used.
    * @param analyzer
    *          Default analyzer, optional. If not specified,
-   *          {@link org.apache.lucene.analysis.StandardAnalyzer} is used.
+   *          {@link org.apache.lucene.analysis.standard.StandardAnalyzer} is used.
    * @param similarity
    *          Default similarity, optional. If not specified,
-   *          {@link org.apache.lucene.search.DefaultSimilarity} is used.
+   *          {@link org.apache.lucene.search.similarities.DefaultSimilarity} is used.
    * @param batchSize
    *          Number of indexing events to hold before flushing to disk.
    * @param batchDelay
@@ -223,10 +223,10 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
    *          custom docid mapper factory
    * @param analyzer
    *          Default analyzer, optional. If not specified,
-   *          {@link org.apache.lucene.analysis.StandardAnalyzer} is used.
+   *          {@link org.apache.lucene.analysis.standard.StandardAnalyzer} is used.
    * @param similarity
    *          Default similarity, optional. If not specified,
-   *          {@link org.apache.lucene.search.DefaultSimilarity} is used.
+   *          {@link org.apache.lucene.search.similarities.DefaultSimilarity} is used.
    * @param batchSize
    *          desired number of indexing events to hold in buffer before
    *          indexing. If we already have this many, we hold back the data
@@ -238,10 +238,10 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
    */
   @Deprecated
   public ZoieSystem(DirectoryManager dirMgr, ZoieIndexableInterpreter<D> interpreter,
-      IndexReaderDecorator<R> indexReaderDecorator, DocIDMapperFactory docidMapperFactory,
+      IndexReaderDecorator<R> indexReaderDecorator, DocIDMapperFactory docIdMapperFactory,
       Analyzer analyzer, Similarity similarity, int batchSize, long batchDelay, boolean rtIndexing,
       Comparator<String> versionComparator, boolean skipBadRecord) {
-    this(dirMgr, interpreter, indexReaderDecorator, docidMapperFactory, analyzer, similarity,
+    this(dirMgr, interpreter, indexReaderDecorator, docIdMapperFactory, analyzer, similarity,
         batchSize, batchDelay, rtIndexing, ZoieConfig.DEFAULT_MAX_BATCH_SIZE, versionComparator,
         skipBadRecord);
   }
@@ -262,10 +262,10 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
    *          custom docid mapper factory
    * @param analyzer
    *          Default analyzer, optional. If not specified,
-   *          {@link org.apache.lucene.analysis.StandardAnalyzer} is used.
+   *          {@link org.apache.lucene.analysis.standard.StandardAnalyzer} is used.
    * @param similarity
    *          Default similarity, optional. If not specified,
-   *          {@link org.apache.lucene.search.DefaultSimilarity} is used.
+   *          {@link org.apache.lucene.search.similarities.DefaultSimilarity} is used.
    * @param batchSize
    *          Number of indexing events to hold before flushing to disk.
    * @param batchDelay
@@ -299,10 +299,10 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
    *          custom docid mapper factory
    * @param analyzer
    *          Default analyzer, optional. If not specified,
-   *          {@link org.apache.lucene.analysis.StandardAnalyzer} is used.
+   *          {@link org.apache.lucene.analysis.standard.StandardAnalyzer} is used.
    * @param similarity
    *          Default similarity, optional. If not specified,
-   *          {@link org.apache.lucene.search.DefaultSimilarity} is used.
+   *          {@link org.apache.lucene.search.similarities.DefaultSimilarity} is used.
    * @param batchSize
    *          desired number of indexing events to hold in buffer before
    *          indexing. If we already have this many, we hold back the data
@@ -316,10 +316,10 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
    */
   @Deprecated
   public ZoieSystem(DirectoryManager dirMgr, ZoieIndexableInterpreter<D> interpreter,
-      IndexReaderDecorator<R> indexReaderDecorator, DocIDMapperFactory docidMapperFactory,
+      IndexReaderDecorator<R> indexReaderDecorator, DocIDMapperFactory docIdMapperFactory,
       Analyzer analyzer, Similarity similarity, int batchSize, long batchDelay, boolean rtIndexing,
       int maxBatchSize, Comparator<String> versionComparator, boolean skipBadRecord) {
-    this(dirMgr, interpreter, indexReaderDecorator, docidMapperFactory, analyzer, similarity,
+    this(dirMgr, interpreter, indexReaderDecorator, docIdMapperFactory, analyzer, similarity,
         batchSize, batchDelay, rtIndexing, maxBatchSize, DefaultReaderCache.FACTORY,
         new DefaultRAMIndexFactory<R>(), versionComparator, skipBadRecord);
   }
@@ -340,10 +340,10 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
    *          custom docid mapper factory
    * @param analyzer
    *          Default analyzer, optional. If not specified,
-   *          {@link org.apache.lucene.analysis.StandardAnalyzer} is used.
+   *          {@link org.apache.lucene.analysis.standard.StandardAnalyzer} is used.
    * @param similarity
    *          Default similarity, optional. If not specified,
-   *          {@link org.apache.lucene.search.DefaultSimilarity} is used.
+   *          {@link org.apache.lucene.search.similarities.DefaultSimilarity} is used.
    * @param batchSize
    *          desired number of indexing events to hold in buffer before
    *          indexing. If we already have this many, we hold back the data
@@ -354,13 +354,13 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
    *          Ensure real-time.
    * @param maxBatchSize
    *          maximum batch size
-   * @param ReaderCacheFactory
+   * @param readerCacheFactory
    */
   @Deprecated
   public ZoieSystem(DirectoryManager dirMgr, final ZoieIndexableInterpreter<D> interpreter,
-      IndexReaderDecorator<R> indexReaderDecorator, DocIDMapperFactory docidMapperFactory,
+      IndexReaderDecorator<R> indexReaderDecorator, DocIDMapperFactory docIdMapperFactory,
       Analyzer analyzer, Similarity similarity, int batchSize, long batchDelay, boolean rtIndexing,
-      int maxBatchSize, ReaderCacheFactory readercachefactory, RAMIndexFactory<R> ramIndexFactory,
+      int maxBatchSize, ReaderCacheFactory readerCacheFactory, RAMIndexFactory<R> ramIndexFactory,
       Comparator<String> versionComparator, boolean skipBadRecords) {
     super(versionComparator);
     if (dirMgr == null) throw new IllegalArgumentException("null directory manager.");
@@ -370,10 +370,10 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
 
     if (versionComparator == null) throw new IllegalArgumentException("null versionComparator.");
 
-    docidMapperFactory = docidMapperFactory == null ? new DefaultDocIDMapperFactory()
-        : docidMapperFactory;
+    docIdMapperFactory = docIdMapperFactory == null ? new DefaultDocIDMapperFactory()
+        : docIdMapperFactory;
     _searchIdxMgr = new SearchIndexManager<R>(_dirMgr, versionComparator, indexReaderDecorator,
-        docidMapperFactory, ramIndexFactory);
+        docIdMapperFactory, ramIndexFactory);
     _realtimeIndexing = rtIndexing;
 
     if (skipBadRecords) {
@@ -419,23 +419,16 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
     _similarity = similarity == null ? new DefaultSimilarity() : similarity;
     log.info("creating Zoie instance --> " + _dirMgr.toString() + "\t" + _interpreter.toString()
         + "\t" + (indexReaderDecorator != null ? indexReaderDecorator.toString() : "null") + "\t"
-        + docidMapperFactory.toString() + "\t" + "Analyzer: " + _analyzer.toString()
+        + docIdMapperFactory.toString() + "\t" + "Analyzer: " + _analyzer.toString()
         + "\tSimilarity: " + _similarity.toString()
         + "\tbatchSize (desired max batch size for indexing to RAM): " + batchSize
         + "\tbatchDelay (max time to wait before flushing to disk): " + batchDelay
         + "\trealtime mode: " + rtIndexing);
 
-    _lsnrList = new ConcurrentLinkedQueue<IndexingEventListener>();
-
     super.setBatchSize(Math.max(1, batchSize)); // realtime memory batch size
-    _diskLoader = new DiskLuceneIndexDataLoader<R>(_analyzer, _similarity, _searchIdxMgr,
-        versionComparator, _lsnrList);
-    _diskLoader.setOptimizeScheduler(new DefaultOptimizeScheduler(getAdminMBean())); // note that
-                                                                                     // the
-                                                                                     // ZoieSystemAdminMBean
-                                                                                     // zoieAdmin
-    // parameter for DefaultOptimizeScheduler is not
-    // used.
+    _diskLoader = new DiskLuceneIndexDataLoader<R>(_analyzer, _similarity, _searchIdxMgr, versionComparator);
+    _diskLoader.setOptimizeScheduler(new DefaultOptimizeScheduler());
+    _lsnrList = new ConcurrentLinkedQueue<IndexingEventListener>();
     batchSize = Math.max(1, batchSize);
     if (_realtimeIndexing) {
       _rtdc = new RealtimeIndexDataLoader<R, D>(_diskLoader, batchSize, Math.max(batchSize,
@@ -446,7 +439,7 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
         maxBatchSize), batchDelay, _searchIdxMgr, _interpreter, _lsnrList);
     }
     super.setDataConsumer(_rtdc);
-    readercache = readercachefactory.newInstance(_searchIdxMgr);
+    readercache = readerCacheFactory.newInstance(_searchIdxMgr);
     log.info("using readerCache: " + readercache);
   }
 
@@ -458,7 +451,6 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
    * @param batchDelay
    * @param realtime
    * @param versionComparator
-   * @return
    */
   @Deprecated
   public static <D> ZoieSystem<IndexReader, D> buildDefaultInstance(File idxDir,
@@ -478,7 +470,6 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
    * @param batchDelay
    * @param realtime
    * @param versionComparator
-   * @return
    */
   @Deprecated
   public static <D> ZoieSystem<IndexReader, D> buildDefaultInstance(File idxDir,

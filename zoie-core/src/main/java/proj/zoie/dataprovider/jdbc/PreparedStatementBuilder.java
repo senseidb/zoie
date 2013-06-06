@@ -13,7 +13,7 @@ public interface PreparedStatementBuilder<T> {
   /**
    * <b>The builder should not ever change the cursor of the result set. It should only work on the current row.</b>
    * @param rs
-   * @return
+   * @return DataEvent<T>
    * @throws SQLException
    */
   DataEvent<T> buildDataEvent(ResultSet rs) throws SQLException;

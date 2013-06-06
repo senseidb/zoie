@@ -39,8 +39,6 @@ import proj.zoie.api.ZoieHealth;
  * it already accumulate this many, then we block the incoming events until the number of
  * buffered events drop below this limit after some of them being sent to background
  * DataConsumer.
- * 
- * @param <V>
  */
 public class AsyncDataConsumer<D> implements LifeCycleCotrolledDataConsumer<D> {
   private static final Logger log = Logger.getLogger(AsyncDataConsumer.class);
@@ -146,7 +144,7 @@ public class AsyncDataConsumer<D> implements LifeCycleCotrolledDataConsumer<D> {
 
   /**
    * Waits until all the buffered data events are processed.
-   * @param timeout the max amount of time to wait in milliseconds. 
+   * @param timeout the max amount of time to wait in milliseconds.
    * @throws ZoieException
    */
   public void flushEvents(long timeout) throws ZoieException {
@@ -198,12 +196,13 @@ public class AsyncDataConsumer<D> implements LifeCycleCotrolledDataConsumer<D> {
    * If too many (>=_batchSize) amount of data events are already buffered,
    * it waits until the background DataConsumer consumes some of the events before
    * it add new events to the buffer. This throttles the amount of events in each batch.
-   * 
+   *
    * @param data
    * @throws ZoieException
    * @see proj.zoie.api.DataConsumer#consume(java.util.Collection)
-   * 
+   *
    */
+  @Override
   public void consume(Collection<DataEvent<D>> data) throws ZoieException {
     if (data == null || data.size() == 0) return;
 
@@ -287,6 +286,7 @@ public class AsyncDataConsumer<D> implements LifeCycleCotrolledDataConsumer<D> {
       }
     }
 
+    @Override
     public void run() {
       while (!_stop) {
         flushBuffer();
@@ -298,6 +298,7 @@ public class AsyncDataConsumer<D> implements LifeCycleCotrolledDataConsumer<D> {
    * @return the version number of events that it has received but not necessarily processed.
    * @see proj.zoie.api.DataConsumer#getVersion()
    */
+  @Override
   public String getVersion() {
     return _bufferedVersion;
   }
@@ -305,6 +306,7 @@ public class AsyncDataConsumer<D> implements LifeCycleCotrolledDataConsumer<D> {
   /**
    * @return the version comparator.
    */
+  @Override
   public Comparator<String> getVersionComparator() {
     return _versionComparator;
   }

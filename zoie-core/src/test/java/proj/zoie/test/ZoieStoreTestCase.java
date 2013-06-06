@@ -32,23 +32,19 @@ public class ZoieStoreTestCase {
     ZoieStore store = LuceneStore.openStore(ramDir, "test", compressionOff);
     store.put(1, s1.getBytes(UTF8), "1");
     Assert.assertEquals("1", store.getVersion());
-    Assert.assertNull(store.getPersistedVersion());
     byte[] data = store.get(1);
     Assert.assertNotNull(data);
     Assert.assertEquals(s1, new String(data, UTF8));
     store.commit();
-    Assert.assertEquals("1", store.getPersistedVersion());
     data = store.get(1);
     Assert.assertNotNull(data);
     Assert.assertEquals(s1, new String(data, UTF8));
 
     store.delete(1, "2");
     Assert.assertEquals("2", store.getVersion());
-    Assert.assertEquals("1", store.getPersistedVersion());
     data = store.get(1);
     Assert.assertNull(data);
     store.commit();
-    Assert.assertEquals("2", store.getPersistedVersion());
     data = store.get(1);
     Assert.assertNull(data);
     store.close();

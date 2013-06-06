@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
@@ -49,7 +50,7 @@ public class HourglassReaderManager<R extends IndexReader, D> {
     _appendOnly = _dirMgrFactory.getScheduler().isAppendOnly();
     _decorator = decorator;
     this.listener = new CompositeHourglassListener(
-        (List<HourglassListener>) (List) hourglassListeners);
+        hourglassListeners);
 
     List<ZoieSystem<R, D>> emptyList = Collections.emptyList();
 
@@ -190,8 +191,8 @@ public class HourglassReaderManager<R extends IndexReader, D> {
     Collections.sort(readerList, new Comparator<ZoieIndexReader<R>>() {
       @Override
       public int compare(ZoieIndexReader<R> r1, ZoieIndexReader<R> r2) {
-        String name1 = ((SimpleFSDirectory) r1.directory()).getDirectory().getName();
-        String name2 = ((SimpleFSDirectory) r2.directory()).getDirectory().getName();
+        String name1 = ((SimpleFSDirectory)(r1.directory())).getDirectory().getName();
+        String name2 = ((SimpleFSDirectory)(r1.directory())).getDirectory().getName();
         return name2.compareTo(name1);
       }
     });
@@ -269,7 +270,7 @@ public class HourglassReaderManager<R extends IndexReader, D> {
     archives.addAll(box._archives);
     archives.removeAll(remove);
     for (ZoieIndexReader<R> r : remove) {
-      r.decZoieRef();
+      r.decRef();
       if (log.isDebugEnabled()) {
         log.debug("remove time " + r.directory() + " refCount: " + r.getRefCount());
       }
@@ -367,7 +368,7 @@ public class HourglassReaderManager<R extends IndexReader, D> {
         if (log.isDebugEnabled()) {
           log.debug("add reader from box archives");
         }
-        r.incZoieRef();
+        r.incRef();
         list.add(r);
       }
     } else {
@@ -440,9 +441,8 @@ public class HourglassReaderManager<R extends IndexReader, D> {
       }
       try {
         zoiereader = new ZoieMultiReader<R>(reader, _decorator);
-
         // Initialize docIdMapper
-        DocIDMapper<?> mapper = hg.getzConfig().getDocidMapperFactory().getDocIDMapper(zoiereader);
+        DocIDMapper mapper = hg.getzConfig().getDocidMapperFactory().getDocIDMapper(zoiereader);
         zoiereader.setDocIDMapper(mapper);
       } catch (IOException e) {
         log.error(e);
@@ -463,8 +463,8 @@ public class HourglassReaderManager<R extends IndexReader, D> {
     String dirName = zoie.getAdminMBean().getIndexDir();
     Directory dir = new SimpleFSDirectory(new File(dirName));
     IndexReader reader = null;
-    if (IndexReader.indexExists(dir)) {
-      reader = IndexReader.open(dir, true);
+    if (DirectoryReader.indexExists(dir)) {
+      reader = DirectoryReader.open(dir);
     } else {
       log.info("empty index " + dirName);
       reader = null;

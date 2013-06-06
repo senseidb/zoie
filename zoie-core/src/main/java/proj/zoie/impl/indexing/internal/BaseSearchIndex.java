@@ -62,7 +62,6 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
 
   /**
    * gets number of docs in the index, .e.g maxdoc - number of deleted docs
-   * @return
    */
   abstract public int getNumdocs();
 

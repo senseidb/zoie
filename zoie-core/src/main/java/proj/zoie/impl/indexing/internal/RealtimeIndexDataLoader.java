@@ -60,8 +60,7 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D> extends BatchedIn
     _analyzer = analyzer;
     _similarity = similarity;
     _currentBatchSize = 0;
-    _ramConsumer = new RAMLuceneIndexDataLoader<R>(_analyzer, _similarity, _idxMgr, comparator,
-        lsnrList);
+    _ramConsumer = new RAMLuceneIndexDataLoader<R>(_analyzer, _similarity, _idxMgr, comparator);
     _luceneDataLoader = dataLoader;
   }
 

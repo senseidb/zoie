@@ -1,20 +1,16 @@
 package proj.zoie.perf.client;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.util.Version;
 
 import proj.zoie.api.IndexReaderFactory;
 
@@ -48,12 +44,6 @@ public class SearchQueryHandler implements QueryHandler<TopDocs> {
       TopDocs docs = searcher.search(q, 10);
       return docs;
     } finally {
-      if (searcher != null) {
-        try {
-          searcher.close();
-        } catch (IOException e) {
-        }
-      }
       if (readers != null) {
         _readerFactory.returnIndexReaders(readers);
       }

@@ -18,7 +18,7 @@ package proj.zoie.api.impl.util;
  */
 import java.io.IOException;
 
-import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentInfoPerCommit;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.Directory;
 
@@ -38,9 +38,9 @@ public class IndexUtil {
       infos.read(idx);
       StringBuilder buf = new StringBuilder();
       for (int i = 0; i < infos.size(); i++) {
-        SegmentInfo info = infos.info(i);
-        buf.append("[").append(info.name).append(",numDoc:").append(info.docCount)
-            .append(",numDel:").append(info.getDelCount()).append("]");
+        SegmentInfoPerCommit segInfo = infos.info(i);
+        buf.append("[").append(segInfo.info.name).append(",numDoc:").append(segInfo.info.getDocCount())
+            .append(",numDel:").append(segInfo.getDelCount()).append("]");
       }
       return buf.toString();
     } catch (Exception e) {

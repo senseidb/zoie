@@ -31,6 +31,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SegmentReader;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 
 import proj.zoie.api.indexing.IndexReaderDecorator;
@@ -89,12 +90,13 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
     }
   }
 
-  protected void doClose() throws IOException {
-    in.close();
+  @Override
+  public Directory directory() {
+    return ((DirectoryReader)in).directory();
   }
 
-  public int getRefCount() {
-    return in.getRefCount();
+  protected void doClose() throws IOException {
+    in.close();
   }
 
   public int[] getStarts() {
@@ -218,20 +220,6 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
     return hi;
   }
 
-  /** TODO
-    @Override
-    public TermDocs termDocs() throws IOException {
-      return new MultiZoieTermDocs(this,
-          _subZoieReaders.toArray(new ZoieIndexReader<?>[_subZoieReaders.size()]), _starts);
-    }
-
-    @Override
-    public TermPositions termPositions() throws IOException {
-      return new MultiZoieTermPositions(this,
-          _subZoieReaders.toArray(new ZoieIndexReader<?>[_subZoieReaders.size()]), _starts);
-    }
-  */
-
   @Override
   public ZoieMultiReader<R> reopen() throws IOException {
     long t0 = System.currentTimeMillis();
@@ -286,9 +274,6 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
 
   /**
    * makes exact shallow copy of a given ZoieMultiReader
-   * @param <R>
-   * @param source
-   * @return
    * @throws IOException
    */
   @Override

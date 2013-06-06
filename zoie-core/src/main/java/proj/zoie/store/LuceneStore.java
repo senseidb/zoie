@@ -4,13 +4,14 @@ import it.unimi.dsi.fastutil.longs.Long2IntRBTreeMap;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -22,6 +23,7 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 
 import proj.zoie.api.ZoieSegmentReader;
@@ -30,16 +32,14 @@ import proj.zoie.api.impl.ZoieMergePolicy;
 public class LuceneStore extends AbstractZoieStore {
 
   private static final String VERSION_NAME = "version";
-
   private static final Logger logger = Logger.getLogger(LuceneStore.class);
 
-  private static class ReaderData {
+  private static class ReaderData{
     final IndexReader reader;
     final Long2IntRBTreeMap uidMap;
     final long _minUID;
     final long _maxUID;
-
-    ReaderData(IndexReader reader) throws IOException {
+    ReaderData(IndexReader reader) throws IOException{
       this.reader = reader;
       long minUID = Long.MAX_VALUE;
       long maxUID = Long.MIN_VALUE;
@@ -47,42 +47,37 @@ public class LuceneStore extends AbstractZoieStore {
       uidMap = new Long2IntRBTreeMap();
       uidMap.defaultReturnValue(-1);
       int maxDoc = reader.maxDoc();
-      if (maxDoc == 0) {
+      if (maxDoc == 0){
         _minUID = Long.MIN_VALUE;
         _maxUID = Long.MIN_VALUE;
         return;
       }
-      TermPositions tp = null;
-      byte[] payloadBuffer = new byte[8]; // four bytes for a long
-      try {
-        tp = reader.termPositions(ZoieSegmentReader.UID_TERM);
-        while (tp.next()) {
-          int doc = tp.doc();
-          assert doc < maxDoc;
-
-          tp.nextPosition();
-          tp.getPayload(payloadBuffer, 0);
-          long uid = ZoieSegmentReader.bytesToLong(payloadBuffer);
-          if (uid < minUID) minUID = uid;
-          if (uid > maxUID) maxUID = uid;
-          uidMap.put(uid, doc);
-        }
-      } finally {
-        if (tp != null) {
-          tp.close();
-        }
-      }
-
+      DocsAndPositionsEnum tp = ((AtomicReader)reader).termPositionsEnum(ZoieSegmentReader.UID_TERM);
+      int doc;
+      while ((doc = tp.nextDoc()) != DocsAndPositionsEnum.NO_MORE_DOCS) {
+        assert doc < maxDoc;
+        tp.nextPosition();
+        BytesRef payLoad = tp.getPayload();
+        long uid = bytesToLong(payLoad.bytes);
+        if(uid < minUID) minUID = uid;
+        if(uid > maxUID) maxUID = uid;
+        uidMap.put(uid, doc);
+       }
       _minUID = minUID;
       _maxUID = maxUID;
     }
 
-    void close() {
-      if (this.reader != null) {
-        try {
-          this.reader.close();
+    public static long bytesToLong(byte[] bytes){
+      return ((long)(bytes[7] & 0xFF) << 56) | ((long)(bytes[6] & 0xFF) << 48) | ((long)(bytes[5] & 0xFF) << 40) | ((long)(bytes[4] & 0xFF) << 32) | ((long)(bytes[3] & 0xFF) << 24) | ((long)(bytes[2] & 0xFF) << 16)
+         | ((long)(bytes[1] & 0xFF) <<  8) |  (bytes[0] & 0xFF);
+}
+
+    void close(){
+      if (this.reader!=null){
+          try {
+        this.reader.close();
         } catch (IOException e) {
-          logger.error(e.getMessage(), e);
+        logger.error(e.getMessage(),e);
         }
       }
 
@@ -96,30 +91,29 @@ public class LuceneStore extends AbstractZoieStore {
   private volatile ReaderData _oldReaderData;
   private volatile boolean _closed = true;
 
-  private LuceneStore(Directory dir, String field) throws IOException {
+  private LuceneStore(Directory dir,String field) throws IOException{
     _field = field;
     _idxWriter = null;
     _dir = dir;
   }
 
   @Override
-  public void open() throws IOException {
-    if (_closed) {
-      IndexWriterConfig idxWriterConfig = new IndexWriterConfig(Version.LUCENE_43,
-          new StandardAnalyzer(Version.LUCENE_43));
+  public void open() throws IOException{
+    if (_closed){
+      IndexWriterConfig idxWriterConfig = new IndexWriterConfig(Version.LUCENE_40,new StandardAnalyzer(Version.LUCENE_34));
       idxWriterConfig.setMergePolicy(new ZoieMergePolicy());
       idxWriterConfig.setOpenMode(OpenMode.CREATE_OR_APPEND);
-      _idxWriter = new IndexWriter(_dir, idxWriterConfig);
+      _idxWriter = new IndexWriter(_dir,idxWriterConfig);
       updateReader();
       _closed = false;
     }
   }
 
-  private void updateReader() throws IOException {
+  private void updateReader() throws IOException{
 
     IndexReader oldReader = null;
 
-    if (_currentReaderData != null) {
+    if (_currentReaderData!=null){
       oldReader = _currentReaderData.reader;
     }
 
@@ -129,9 +123,8 @@ public class LuceneStore extends AbstractZoieStore {
     if (idxReader == oldReader) return;
 
     ReaderData readerData = new ReaderData(idxReader);
-
     _currentReaderData = readerData;
-    if (_oldReaderData != null) {
+    if (_oldReaderData!=null){
       ReaderData tmpOld = _oldReaderData;
       _oldReaderData = _currentReaderData;
       tmpOld.close();
@@ -139,17 +132,16 @@ public class LuceneStore extends AbstractZoieStore {
     _currentReaderData = readerData;
   }
 
-  public static ZoieStore openStore(Directory idxDir, String field, boolean compressionOff)
-      throws IOException {
-    LuceneStore store = new LuceneStore(idxDir, field);
+  public static ZoieStore openStore(Directory idxDir,String field,boolean compressionOff) throws IOException{
+    LuceneStore store = new LuceneStore(idxDir,field);
     store.setDataCompressed(!compressionOff);
     store.open();
     return store;
   }
 
-  private int mapDocId(long uid) {
-    if (_currentReaderData != null) {
-      if (_currentReaderData._maxUID >= uid && _currentReaderData._minUID <= uid) {
+  private int mapDocId(long uid){
+    if (_currentReaderData!=null){
+      if (_currentReaderData._maxUID>=uid && _currentReaderData._minUID<=uid){
         return _currentReaderData.uidMap.get(uid);
       }
     }
@@ -159,7 +151,7 @@ public class LuceneStore extends AbstractZoieStore {
   @Override
   protected void persist(long uid, byte[] data) throws IOException {
     Document doc = new Document();
-    doc.add(new Field(_field, data));
+    doc.add(new StoredField(_field,data));
     ZoieSegmentReader.fillDocumentID(doc, uid);
     _idxWriter.addDocument(doc);
   }
@@ -167,9 +159,9 @@ public class LuceneStore extends AbstractZoieStore {
   @Override
   protected void persistDelete(long uid) throws IOException {
     final int docid = mapDocId(uid);
-    if (docid < 0) return;
+    if (docid<0) return;
 
-    Query deleteQ = new ConstantScoreQuery(new Filter() {
+    Query deleteQ = new ConstantScoreQuery(new Filter(){
 
       /**
        *
@@ -178,7 +170,7 @@ public class LuceneStore extends AbstractZoieStore {
 
       @Override
       public DocIdSet getDocIdSet(AtomicReaderContext readerCtx, Bits acceptedDocs) throws IOException {
-        return new DocIdSet() {
+        return new DocIdSet(){
 
           @Override
           public DocIdSetIterator iterator() throws IOException {
@@ -187,9 +179,10 @@ public class LuceneStore extends AbstractZoieStore {
 
               @Override
               public int nextDoc() throws IOException {
-                if (currId == -1) {
+                if (currId == -1){
                   currId = docid;
-                } else {
+                }
+                else{
                   currId = DocIdSetIterator.NO_MORE_DOCS;
                 }
                 return currId;
@@ -202,14 +195,21 @@ public class LuceneStore extends AbstractZoieStore {
 
               @Override
               public int advance(int target) throws IOException {
-                if (currId != DocIdSetIterator.NO_MORE_DOCS) {
-                  if (target < docid) {
+                if (currId!=DocIdSetIterator.NO_MORE_DOCS){
+                  if (target<docid){
                     currId = docid;
-                  } else {
+                  }
+                  else{
                     currId = DocIdSetIterator.NO_MORE_DOCS;
                   }
                 }
                 return currId;
+              }
+
+              @Override
+              public long cost() {
+                // TODO Auto-generated method stub
+                return 0;
               }
             };
           }
@@ -219,23 +219,23 @@ public class LuceneStore extends AbstractZoieStore {
 
     });
     _idxWriter.deleteDocuments(deleteQ);
-    if (_currentReaderData != null) {
+    if (_currentReaderData!=null){
       _currentReaderData.uidMap.remove(uid);
     }
 
   }
 
   @Override
-  protected byte[] getFromStore(long uid) throws IOException {
+  protected BytesRef getFromStore(long uid) throws IOException {
     int docid = mapDocId(uid);
-    if (docid < 0) return null;
+    if (docid<0) return null;
     IndexReader reader = null;
-    if (_currentReaderData != null) {
+    if (_currentReaderData!=null){
       reader = _currentReaderData.reader;
     }
-    if (docid >= 0 && reader != null) {
+    if (docid>=0 && reader!=null){
       Document doc = reader.document(docid);
-      if (doc != null) {
+      if (doc!=null){
         return doc.getBinaryValue(_field);
       }
     }
@@ -244,29 +244,16 @@ public class LuceneStore extends AbstractZoieStore {
 
   @Override
   protected void commitVersion(String version) throws IOException {
-    HashMap<String, String> versionMap = new HashMap<String, String>();
-    versionMap.put(VERSION_NAME, version);
-    _idxWriter.setCommitData(versionMap);
-    _idxWriter.commit();
-    updateReader();
-  }
-
-  @Override
-  public String getPersistedVersion() throws IOException {
-    IndexReader reader = null;
-    if (_currentReaderData != null) {
-      reader = _currentReaderData.reader;
-    }
-    if (reader != null) {
-      Map<String, String> versionMap = reader.getCommitUserData();
-      return versionMap.get(VERSION_NAME);
-    }
-    return null;
+    HashMap<String,String> versionMap = new HashMap<String,String>();
+        versionMap.put(VERSION_NAME, version);
+        _idxWriter.setCommitData(versionMap);
+        _idxWriter.commit();
+        updateReader();
   }
 
   @Override
   public void close() throws IOException {
-    if (!_closed) {
+    if (!_closed){
       _idxWriter.close();
       _closed = true;
     }

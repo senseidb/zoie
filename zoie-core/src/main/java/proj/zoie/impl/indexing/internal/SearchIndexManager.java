@@ -63,10 +63,6 @@ public class SearchIndexManager<R extends IndexReader> implements
 
   private final Comparator<String> _versionComparator;
 
-  /**
-   * @param location
-   * @param indexReaderDecorator
-   */
   public SearchIndexManager(DirectoryManager dirMgr, Comparator<String> versionComparator,
       IndexReaderDecorator<R> indexReaderDecorator, DocIDMapperFactory docIDMapperFactory,
       RAMIndexFactory<R> ramIndexFactory) {
@@ -185,7 +181,6 @@ public class SearchIndexManager<R extends IndexReader> implements
 
   /**
    * Gets the current disk indexer status
-   * @return
    */
   public Status getDiskIndexerStatus() {
     return _diskIndexerStatus;

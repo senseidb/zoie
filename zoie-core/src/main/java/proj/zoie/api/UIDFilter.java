@@ -53,7 +53,6 @@ public class UIDFilter extends Filter {
   /**
    * Convenience method to build a Query from a uid list
    * @param uids
-   * @return
    */
   public static Query getUIDQuery(long[] uids) {
     return new ConstantScoreQuery(new UIDFilter(uids));

@@ -24,7 +24,6 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.SegmentInfoPerCommit;
 import org.apache.lucene.index.SegmentInfos;
@@ -321,7 +320,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy {
   }
 
   /** Checks if any merges are now necessary and returns a
-   *  {@link MergePolicy.MergeSpecification} if so.
+   *  {@link MergeSpecification} if so.
    *  This merge policy try to maintain {@link
    *  #setNumLargeSegments} of large segments in similar sizes.
    *  {@link LogByteSizeMergePolicy} to small segments.

@@ -25,7 +25,6 @@ import org.apache.lucene.store.Directory;
 
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DocIDMapper;
-import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieMultiReader;
 import proj.zoie.api.indexing.IndexReaderDecorator;
@@ -198,18 +197,13 @@ public class IndexReaderDispenser<R extends IndexReader> {
    */
   public void closeReader() {
     if (_currentReader != null) {
-      try {
-        _currentReader.decRef();
-        int count = _currentReader.getRefCount();
-        log.info("final closeReader in dispenser and current refCount: " + count);
-        if (count > 0) {
-          log.warn("final closeReader call with reference count == " + count
-              + " greater than 0. Potentially, "
-              + "the IndexReaders are not properly return to ZoieSystem.");
-        }
-      } catch (IOException e) {
-        ZoieHealth.setFatal();
-        log.error("problem closing reader", e);
+      _currentReader.decRef();
+      int count = _currentReader.getRefCount();
+      log.info("final closeReader in dispenser and current refCount: " + count);
+      if (count > 0) {
+        log.warn("final closeReader call with reference count == " + count
+            + " greater than 0. Potentially, "
+            + "the IndexReaders are not properly return to ZoieSystem.");
       }
       _currentReader = null;
     }

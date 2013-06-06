@@ -150,7 +150,7 @@ public class DefaultReaderCache<R extends IndexReader> extends AbstractReaderCac
         returningIndexReaderQueueLock.writeLock().unlock();
         for (List<ZoieIndexReader<R>> readers : oldreturningIndexReaderQueue) {
           for (ZoieIndexReader<R> r : readers) {
-            r.decZoieRef();
+            r.decRef();
           }
         }
         if (_readerfactory.get() == null && cachedreaders.size() == 0) {

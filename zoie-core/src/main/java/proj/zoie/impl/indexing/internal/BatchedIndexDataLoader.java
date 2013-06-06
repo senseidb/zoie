@@ -43,14 +43,14 @@ import proj.zoie.impl.indexing.IndexingThread;
 /**
  * Runs a background thread that flushes incoming data events in batch to the background DataConsumer.
  * Incoming data is buffered first.
- * A flush is carried out when the batch size is significant, 
+ * A flush is carried out when the batch size is significant,
  * a client requesting a flush, or significant amount of time has passed.
  * The data is flushed to the underlying dataloader, which is a DataConsumer.
  * When incoming data comes in too fast, the thread sending data will be put on hold.
  * This acts as incoming data throttling.
- * 
+ *
  * @param <R>
- * @param <V>
+ * @param <D>
  */
 public class BatchedIndexDataLoader<R extends IndexReader, D> implements
     LifeCycleCotrolledDataConsumer<D> {
@@ -161,9 +161,10 @@ public class BatchedIndexDataLoader<R extends IndexReader, D> implements
   }
 
   /**
-   * 
+   *
    * @see proj.zoie.api.DataConsumer#consume(java.util.Collection)
    */
+  @Override
   public void consume(Collection<DataEvent<D>> events) throws ZoieException {
     if (events != null) {
       ArrayList<DataEvent<ZoieIndexable>> indexableList = new ArrayList<DataEvent<ZoieIndexable>>(
@@ -172,7 +173,7 @@ public class BatchedIndexDataLoader<R extends IndexReader, D> implements
       while (iter.hasNext()) {
         try {
           DataEvent<D> event = iter.next();
-          ZoieIndexable indexable = ((ZoieIndexableInterpreter<D>) _interpreter)
+          ZoieIndexable indexable = _interpreter
               .convertAndInterpret(event.getData());
           DataEvent<ZoieIndexable> newEvent = new DataEvent<ZoieIndexable>(indexable,
               event.getVersion(), event.isDelete());
@@ -252,7 +253,7 @@ public class BatchedIndexDataLoader<R extends IndexReader, D> implements
 
   /**
    * Used by the indexing thread to flush incoming data events in batch.
-   * A flush is carried out when the batch size is significant, 
+   * A flush is carried out when the batch size is significant,
    * a client requesting a flush, or significant amount of time has passed.
    * The data is flushed to the underlying dataloader, which is a DataConsumer.
    */
@@ -339,6 +340,7 @@ public class BatchedIndexDataLoader<R extends IndexReader, D> implements
       super("disk indexer data loader");
     }
 
+    @Override
     public void run() {
       while (!_stop) {
         processBatch();
@@ -349,6 +351,7 @@ public class BatchedIndexDataLoader<R extends IndexReader, D> implements
   /**
    * Starts the build-in indexing thread.
    */
+  @Override
   public void start() {
     _loadMgrThread.setName(String.valueOf(this));
     _loadMgrThread.start();
@@ -357,6 +360,7 @@ public class BatchedIndexDataLoader<R extends IndexReader, D> implements
   /**
    * Shutdown the build-in indexing thread and wait until it dies.
    */
+  @Override
   public void stop() {
     synchronized (this) {
       _stop = true;
@@ -385,24 +389,29 @@ public class BatchedIndexDataLoader<R extends IndexReader, D> implements
       return _inner.buildIndexingReqs();
     }
 
+    @Override
     public long getUID() {
       return _inner.getUID();
     }
 
+    @Override
     public boolean isDeleted() {
       return _inner.isDeleted();
     }
 
+    @Override
     public boolean isSkip() {
       return _inner.isSkip();
     }
 
   }
 
+  @Override
   public String getVersion() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public Comparator<String> getVersionComparator() {
     throw new UnsupportedOperationException();
   }

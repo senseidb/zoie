@@ -13,8 +13,6 @@ public interface ZoieStore {
 
   void delete(long uid, String version) throws IOException;
 
-  String getPersistedVersion() throws IOException;
-
   void open() throws IOException;
 
   void close() throws IOException;

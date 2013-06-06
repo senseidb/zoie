@@ -24,7 +24,7 @@ import proj.zoie.impl.indexing.internal.IndexSignature;
 public class DefaultDirectoryManager implements DirectoryManager {
   public static final Logger log = Logger.getLogger(DefaultDirectoryManager.class);
 
-  private File _location;
+  private final File _location;
   private final DIRECTORY_MODE _mode;
 
   public DefaultDirectoryManager(File location) {
@@ -43,10 +43,12 @@ public class DefaultDirectoryManager implements DirectoryManager {
     return _location;
   }
 
+  @Override
   public Directory getDirectory() throws IOException {
     return getDirectory(false);
   }
 
+  @Override
   public Directory getDirectory(boolean create) throws IOException {
     if (!_location.exists() && create) {
       // create the parent directory
@@ -133,8 +135,6 @@ public class DefaultDirectoryManager implements DirectoryManager {
 
   /**
    * Gets the current signature
-   * @param indexHome
-   * @return
    */
   public IndexSignature getCurrentIndexSignature() {
     return getCurrentIndexSignature(_location);
@@ -146,11 +146,13 @@ public class DefaultDirectoryManager implements DirectoryManager {
     return sig;
   }
 
+  @Override
   public String getVersion() throws IOException {
     IndexSignature sig = getCurrentIndexSignature();
     return sig == null ? null : sig.getVersion();
   }
 
+  @Override
   public void setVersion(String version) throws IOException {
     // update new index file
     File directoryFile = new File(_location, INDEX_DIRECTORY);
@@ -170,23 +172,28 @@ public class DefaultDirectoryManager implements DirectoryManager {
 
   }
 
+  @Override
   public Date getLastIndexModifiedTime() {
     File directoryFile = new File(_location, INDEX_DIRECTORY);
     return new Date(directoryFile.lastModified());
   }
 
+  @Override
   public String getPath() {
     return _location.getAbsolutePath();
   }
 
+  @Override
   public void purge() {
     FileUtil.rmDir(_location);
   }
 
+  @Override
   public boolean exists() {
     return _location.exists();
   }
 
+  @Override
   public boolean transferFromChannelToFile(ReadableByteChannel channel, String fileName)
       throws IOException {
     if (!_location.exists()) {
@@ -219,6 +226,7 @@ public class DefaultDirectoryManager implements DirectoryManager {
     }
   }
 
+  @Override
   public long transferFromFileToChannel(String fileName, WritableByteChannel channel)
       throws IOException {
     long amount = 0;

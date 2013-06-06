@@ -23,8 +23,6 @@ import java.util.TimerTask;
 
 import org.apache.log4j.Logger;
 
-import proj.zoie.mbean.ZoieSystemAdminMBean;
-
 public class DefaultOptimizeScheduler extends OptimizeScheduler {
   private static long DAY_IN_MILLIS = 1000L * 60L * 60L * 24L;
   private static Logger logger = Logger.getLogger(DefaultOptimizeScheduler.class);
@@ -32,12 +30,11 @@ public class DefaultOptimizeScheduler extends OptimizeScheduler {
   private long _optimizeDuration;
 
   private volatile boolean _optimizeScheduled;
-  private OptimizeType _optimizeType;
+  private final OptimizeType _optimizeType;
 
-  private Timer _optimizeTimer;
+  private final Timer _optimizeTimer;
   private TimerTask _currentOptimizationTimerTask;
   private Date _dateToStartOptimize;
-  private final ZoieSystemAdminMBean _zoieAdmin;
 
   private class OptimizeTimerTask extends TimerTask {
     @Override
@@ -60,7 +57,7 @@ public class DefaultOptimizeScheduler extends OptimizeScheduler {
     return cal.getTime();
   }
 
-  public DefaultOptimizeScheduler(ZoieSystemAdminMBean zoieAdmin) {
+  public DefaultOptimizeScheduler() {
     _optimizeDuration = DAY_IN_MILLIS;
     _optimizeScheduled = false;
     _dateToStartOptimize = calculateNextDay();
@@ -69,7 +66,6 @@ public class DefaultOptimizeScheduler extends OptimizeScheduler {
     _optimizeTimer.scheduleAtFixedRate(_currentOptimizationTimerTask, _dateToStartOptimize,
       _optimizeDuration);
     _optimizeType = OptimizeType.PARTIAL;
-    _zoieAdmin = zoieAdmin;
   }
 
   public long getOptimizeDuration() {
@@ -106,10 +102,12 @@ public class DefaultOptimizeScheduler extends OptimizeScheduler {
     return _optimizeType;
   }
 
+  @Override
   public OptimizeType getScheduledOptimizeType() {
     return (_optimizeScheduled ? _optimizeType : OptimizeType.NONE);
   }
 
+  @Override
   public void finished() {
     _optimizeScheduled = false;
   }

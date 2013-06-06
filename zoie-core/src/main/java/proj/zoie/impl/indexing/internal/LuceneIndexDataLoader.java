@@ -27,12 +27,11 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.ConstantScoreQuery;
@@ -44,7 +43,6 @@ import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieHealth;
 import proj.zoie.api.ZoieSegmentReader;
 import proj.zoie.api.indexing.AbstractZoieIndexable;
-import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 
@@ -57,17 +55,13 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements
   protected final Comparator<String> _versionComparator;
   private Filter _purgeFilter;
 
-  private final Queue<IndexingEventListener> _lsnrList;
-
   protected LuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,
-      SearchIndexManager<R> idxMgr, Comparator<String> versionComparator,
-      Queue<IndexingEventListener> lsnrList) {
+      SearchIndexManager<R> idxMgr, Comparator<String> versionComparator) {
     _analyzer = analyzer;
     _similarity = similarity;
     _idxMgr = idxMgr;
     _versionComparator = versionComparator;
     _purgeFilter = null;
-    _lsnrList = lsnrList;
   }
 
   public void setPurgeFilter(Filter purgeFilter) {
@@ -106,7 +100,7 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements
   }
 
   /**
-   * @Precondition incoming events sorted by version number
+   * @param events incoming events sorted by version number
    * <br>every event in the events collection must be non-null
    *
    * @see proj.zoie.api.DataConsumer#consume(java.util.Collection)
@@ -161,7 +155,7 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements
                   if (indexable.isStorable()) {
                     byte[] bytes = indexable.getStoreValue();
                     if (bytes != null) {
-                      doc.add(new Field(AbstractZoieIndexable.DOCUMENT_STORE_FIELD, bytes));
+                      doc.add(new StoredField(AbstractZoieIndexable.DOCUMENT_STORE_FIELD, bytes));
                     }
                   }
                 }
@@ -178,10 +172,6 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements
             log.error("Couldn't index the event with uid - " + uid, ex);
           }
         }
-        // hao: we do not need the following few lines
-        // else {
-        // addList.remove(uid);
-        // }
       }
 
       List<IndexingReq> docList = new ArrayList<IndexingReq>(addList.size());

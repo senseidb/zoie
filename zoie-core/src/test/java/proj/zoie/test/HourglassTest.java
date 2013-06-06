@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 
@@ -32,7 +31,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
@@ -174,12 +172,12 @@ public class HourglassTest extends ZoieTestCaseBase {
 
           @Override
           public IndexReader decorate(ZoieIndexReader<IndexReader> indexReader) throws IOException {
-            return indexReader;
+            return indexReader.getInnerReader();
           }
 
           @Override
-          public IndexReader redecorate(IndexReader decorated, ZoieIndexReader<IndexReader> copy,
-              boolean withDeletes) throws IOException {
+          public IndexReader redecorate(IndexReader decorated, ZoieIndexReader<IndexReader> copy)
+              throws IOException {
             // TODO Auto-generated method stub
             return decorated;
           }
@@ -287,12 +285,11 @@ public class HourglassTest extends ZoieTestCaseBase {
 
           @Override
           public IndexReader decorate(ZoieIndexReader<IndexReader> indexReader) throws IOException {
-            return indexReader;
+            return indexReader.getInnerReader();
           }
 
           @Override
-          public IndexReader redecorate(IndexReader decorated, ZoieIndexReader<IndexReader> copy,
-              boolean withDeletes) throws IOException {
+          public IndexReader redecorate(IndexReader decorated, ZoieIndexReader<IndexReader> copy) throws IOException {
             // TODO Auto-generated method stub
             return decorated;
           }
@@ -334,11 +331,9 @@ public class HourglassTest extends ZoieTestCaseBase {
       int numDoc = -1;
       List<ZoieIndexReader<IndexReader>> readers = null;
       IndexReader reader = null;
-      Searcher searcher = null;
-      int oldNum = -1;
+      IndexSearcher searcher = null;
       while (numDoc < i + 1) {
         if (reader != null && readers != null) {
-          searcher.close();
           searcher = null;
           reader.close();
           hourglass.returnIndexReaders(readers);
@@ -348,7 +343,6 @@ public class HourglassTest extends ZoieTestCaseBase {
         searcher = new IndexSearcher(reader);
         TopDocs hitsall = searcher.search(new MatchAllDocsQuery(), 10);
         numDoc = hitsall.totalHits;
-        oldNum = numDoc;
         Thread.sleep(100);
       }
       accumulatedTime += (System.currentTimeMillis() - flushtime);
@@ -358,7 +352,6 @@ public class HourglassTest extends ZoieTestCaseBase {
         assertEquals("one hit for " + i, 1, hits.totalHits);
         assertEquals("MatchAllDocsHit ", i + 1, hitsall.totalHits);
       } finally {
-        searcher.close();
         searcher = null;
         reader.close();
         reader = null;
@@ -444,7 +437,7 @@ public class HourglassTest extends ZoieTestCaseBase {
       }
 
       private void handleSegment(ZoieSegmentReader segmentReader) {
-        System.out.println("!!!Deleted UID array" + Arrays.toString(segmentReader.getUIDArray()));
+        System.out.println("!!!Deleted UID array of segment: " + segmentReader.getSegmentName());
       }
     };
     Hourglass<IndexReader, String> hourglass = new Hourglass<IndexReader, String>(factory,
@@ -452,12 +445,11 @@ public class HourglassTest extends ZoieTestCaseBase {
 
           @Override
           public IndexReader decorate(ZoieIndexReader<IndexReader> indexReader) throws IOException {
-            return indexReader;
+            return indexReader.getInnerReader();
           }
 
           @Override
-          public IndexReader redecorate(IndexReader decorated, ZoieIndexReader<IndexReader> copy,
-              boolean withDeletes) throws IOException {
+          public IndexReader redecorate(IndexReader decorated, ZoieIndexReader<IndexReader> copy) throws IOException {
             // TODO Auto-generated method stub
             return decorated;
           }

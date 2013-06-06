@@ -25,12 +25,6 @@ import org.apache.lucene.document.Document;
  */
 public interface ZoieIndexable {
   /**
-   * document ID field name
-   * @deprecated this field should no longer be used
-  */
-  public static final String DOCUMENT_ID_FIELD = "id";
-
-  /**
    * Wrapper object for a Lucene {@link org.apache.lucene.document.Document} and an {@link org.apache.lucene.analysis.Analyzer}
    */
   public static final class IndexingReq {
@@ -82,7 +76,6 @@ public interface ZoieIndexable {
 
   /**
    * If true is returned, {@link #getStoreValue()} will be called to turn on k/v storage
-   * @return
    */
   boolean isStorable();
 

@@ -25,7 +25,6 @@ import proj.zoie.api.ZoieIndexReader;
 
 /**
  * Decorates a {@link proj.zoie.api.ZoieIndexReader} to a customized {@link org.apache.lucene.index.IndexReader}.
- * @see org.apache.lucene.index.FilterIndexReader
  */
 public interface IndexReaderDecorator<R extends IndexReader> {
   /**

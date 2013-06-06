@@ -1,7 +1,7 @@
 package proj.zoie.api.impl;
 
-import java.util.WeakHashMap;
 import java.util.Map.Entry;
+import java.util.WeakHashMap;
 
 import proj.zoie.api.ZoieIndexReader;
 
@@ -15,6 +15,7 @@ import proj.zoie.api.ZoieIndexReader;
  */
 public class ZoieContext {
   private static InheritableThreadLocal<ZoieContext> _context = new InheritableThreadLocal<ZoieContext>() {
+    @Override
     protected ZoieContext childValue(ZoieContext parentValue) {
       return parentValue.clone();
     }
@@ -36,7 +37,7 @@ public class ZoieContext {
   /**
    * Set the threadlocal ZoieContext. It always clone it so that the threads
    * won't interfere with each other.
-   * 
+   *
    * @param context
    */
   public static void setContext(ZoieContext context) {
@@ -45,9 +46,8 @@ public class ZoieContext {
 
   /**
    * Get the context of the given reader for the calling thread.
-   * 
+   *
    * @param reader
-   * @return
    */
   public synchronized ZoieReaderContext getReaderContext(ZoieIndexReader<?> reader) {
     ZoieReaderContext ctx = _zoieContextMap.get(reader);
@@ -62,7 +62,7 @@ public class ZoieContext {
    * clone the ZoieContext so that the internal hashmap is deep-copied to the
    * extend that in the clone, the ZoieReaderContexts are clones of the
    * original. Note that the internals of ZoieReaderContexts are shallow copies.
-   * 
+   *
    * @see java.lang.Object#clone()
    */
   @Override

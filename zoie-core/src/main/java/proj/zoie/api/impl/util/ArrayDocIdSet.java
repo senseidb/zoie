@@ -77,7 +77,6 @@ public class ArrayDocIdSet extends DocIdSet {
       public int advance(int target) throws IOException {
         int idx = current < 0 ? binarySearch(_docids, target) : binarySearch(_docids, target,
           current, largest);
-        // int idx = Arrays.binarySearch(_docids,target);
         if (idx < 0) {
           idx = -(idx + 1);
           if (idx >= _docids.length) return DocIdSetIterator.NO_MORE_DOCS;
@@ -85,6 +84,12 @@ public class ArrayDocIdSet extends DocIdSet {
         current = idx;
         doc = _docids[current];
         return doc;
+      }
+
+      @Override
+      public long cost() {
+        // TODO Auto-generated method stub
+        return 0;
       }
     };
   }

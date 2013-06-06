@@ -225,7 +225,6 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
 
   /**
    * Gets a new reader, force a reader refresh
-   * @return
    * @throws IOException
    */
   public ZoieIndexReader<R> getNewReader() throws IOException {

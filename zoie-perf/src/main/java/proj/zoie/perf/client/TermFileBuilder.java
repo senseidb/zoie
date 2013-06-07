@@ -14,8 +14,10 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.BytesRef;
 
 import proj.zoie.api.impl.util.PriorityQueue;
 
@@ -71,14 +73,10 @@ public class TermFileBuilder {
         });
 
     DirectoryReader reader = DirectoryReader.open(FSDirectory.open(idxDir));
-
-    TermEnum te = reader.terms(new Term(field, ""));
-    while (te.next()) {
-      Term term = te.term();
-      if (!term.field().equals(field)) {
-        break;
-      }
-      String text = term.text();
+    TermsEnum te = MultiFields.getTerms(reader, field).iterator(null);
+    BytesRef termBytes = null;
+    while ((termBytes = te.next()) != null) {
+      String text = termBytes.utf8ToString();
       if (text != null && text.length() > 0) {
         int freq = te.docFreq();
         if (freq > 0) {
@@ -86,8 +84,6 @@ public class TermFileBuilder {
         }
       }
     }
-
-    te.close();
     reader.close();
 
     OutputStreamWriter owriter = new OutputStreamWriter(new FileOutputStream(outFile),

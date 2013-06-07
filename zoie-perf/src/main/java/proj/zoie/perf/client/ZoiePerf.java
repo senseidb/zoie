@@ -14,8 +14,6 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MMapDirectory;
@@ -31,10 +29,8 @@ import org.mortbay.jetty.servlet.ServletHolder;
 import proj.zoie.api.DefaultDirectoryManager;
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DirectoryManager.DIRECTORY_MODE;
-import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.LifeCycleCotrolledDataConsumer;
 import proj.zoie.api.ZoieException;
-import proj.zoie.api.impl.ZoieMergePolicy;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.impl.indexing.DefaultIndexReaderDecorator;
 import proj.zoie.impl.indexing.SimpleReaderCache;
@@ -109,46 +105,6 @@ public class ZoiePerf {
         zoieSystem);
 
     return new PerfTestHandler(zoieSystem, queryHandler);
-  }
-
-  static PerfTestHandler buildNrtHandler(File idxDir, Configuration topConf, Configuration conf)
-      throws Exception {
-    long throttle = conf.getLong("throttle");
-    String modeConf = topConf.getString("perf.directory.type", "file");
-    Directory dir;
-    if ("file".equals(modeConf)) {
-      dir = FSDirectory.open(idxDir);
-    } else if ("mmap".equals(modeConf)) {
-      dir = MMapDirectory.open(idxDir);
-    } else if ("nio".equals(modeConf)) {
-      dir = NIOFSDirectory.open(idxDir);
-    } else {
-      dir = FSDirectory.open(idxDir);
-    }
-
-    MergePolicy mergePolicy = null;
-
-    String mergePolicyConf = conf.getString("mergePolicy");
-    if ("tier".equals(mergePolicyConf)) {
-      mergePolicy = new TieredMergePolicy();
-    } else if ("zoie".equals(mergePolicyConf)) {
-      mergePolicy = new ZoieMergePolicy();
-    }
-    ThrottledLuceneNRTDataConsumer<String> nrtSystem = new ThrottledLuceneNRTDataConsumer<String>(
-        dir, new StandardAnalyzer(Version.LUCENE_43), interpreter, throttle, mergePolicy);
-
-    boolean appendOnly = conf.getBoolean("appendOnly", false);
-    nrtSystem.setAppendOnly(appendOnly);
-
-    File queryFile = new File(topConf.getString("perf.query.file"));
-    if (!queryFile.exists()) {
-      throw new ConfigurationException(queryFile.getAbsolutePath() + " does not exist!");
-    }
-
-    SearchQueryHandler queryHandler = new SearchQueryHandler(queryFile,
-        (IndexReaderFactory) nrtSystem);
-
-    return new PerfTestHandler((LifeCycleCotrolledDataConsumer<String>) nrtSystem, queryHandler);
   }
 
   static PerfTestHandler buildZoieStoreHandler(Configuration topConf, File idxDir, File inputFile)
@@ -262,8 +218,6 @@ public class ZoiePerf {
 
     if ("zoie".equals(type)) {
       return buildZoieHandler(idxDir, conf, subConf);
-    } else if ("nrt".equals(type)) {
-      return buildNrtHandler(idxDir, conf, subConf);
     } else if ("store".equals(type)) {
       return buildZoieStoreHandler(conf, idxDir, inputFile);
     } else if ("feed".equals(type)) {

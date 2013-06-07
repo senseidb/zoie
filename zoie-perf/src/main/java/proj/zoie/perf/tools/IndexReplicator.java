@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -29,7 +30,7 @@ public class IndexReplicator {
     DirectoryManager srcDirMgr = new DefaultDirectoryManager(srcIndex);
     try {
       Directory dir = srcDirMgr.getDirectory();
-      reader = IndexReader.open(dir, true);
+      reader = DirectoryReader.open(dir);
       System.out.println("source index, numdocs: " + reader.numDocs());
     } catch (IOException e) {
       e.printStackTrace();
@@ -53,7 +54,7 @@ public class IndexReplicator {
         writer.addIndexes(new Directory[] { srcDirMgr.getDirectory() });
       }
       System.out.println("optimizing....");
-      writer.optimize();
+      writer.forceMerge(1);
       System.out.println("done optimizing....");
     } finally {
       if (writer != null) {
@@ -62,7 +63,7 @@ public class IndexReplicator {
     }
 
     try {
-      reader = IndexReader.open(targetDir, true);
+      reader = DirectoryReader.open(targetDir);
       System.out.println("target index, numdocs: " + reader.numDocs());
     } finally {
       if (reader != null) {

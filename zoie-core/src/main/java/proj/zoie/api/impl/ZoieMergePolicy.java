@@ -320,7 +320,7 @@ public class ZoieMergePolicy extends LogByteSizeMergePolicy {
   }
 
   /** Checks if any merges are now necessary and returns a
-   *  {@link MergeSpecification} if so.
+   *  {@link org.apache.lucene.index.MergePolicy.MergeSpecification} if so.
    *  This merge policy try to maintain {@link
    *  #setNumLargeSegments} of large segments in similar sizes.
    *  {@link LogByteSizeMergePolicy} to small segments.

@@ -9,19 +9,19 @@ import org.apache.lucene.index.IndexReader;
 
 import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieException;
-import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.ZoieMultiReader;
 
 public class NoopReaderCache<R extends IndexReader> extends AbstractReaderCache<R> {
   private static final Logger log = Logger.getLogger(NoopReaderCache.class);
   private volatile boolean alreadyShutdown = false;
-  private final IndexReaderFactory<ZoieIndexReader<R>> _readerfactory;
+  private final IndexReaderFactory<R> _readerfactory;
 
-  public NoopReaderCache(IndexReaderFactory<ZoieIndexReader<R>> readerfactory) {
+  public NoopReaderCache(IndexReaderFactory<R> readerfactory) {
     _readerfactory = readerfactory;
   }
 
   @Override
-  public List<ZoieIndexReader<R>> getIndexReaders() {
+  public List<ZoieMultiReader<R>> getIndexReaders() {
     if (!alreadyShutdown) {
       try {
         return _readerfactory.getIndexReaders();
@@ -29,14 +29,15 @@ public class NoopReaderCache<R extends IndexReader> extends AbstractReaderCache<
         log.error("getIndexReaders", e);
       }
     }
-    return new ArrayList<ZoieIndexReader<R>>(0);
+    return new ArrayList<ZoieMultiReader<R>>(0);
   }
 
   @Override
-  public void returnIndexReaders(List<ZoieIndexReader<R>> readers) {
+  public void returnIndexReaders(List<ZoieMultiReader<R>> readers) {
     _readerfactory.returnIndexReaders(readers);
   }
 
+  @Override
   public void refreshCache(long timeout) throws ZoieException {
   }
 
@@ -62,7 +63,7 @@ public class NoopReaderCache<R extends IndexReader> extends AbstractReaderCache<
 
     @Override
     public <R extends IndexReader> AbstractReaderCache<R> newInstance(
-        IndexReaderFactory<ZoieIndexReader<R>> readerfactory) {
+        IndexReaderFactory<R> readerfactory) {
       return new NoopReaderCache<R>(readerfactory);
     }
   };

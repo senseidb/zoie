@@ -20,10 +20,8 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Bits;
 
 import proj.zoie.api.impl.DefaultDocIDMapperFactory;
@@ -48,13 +46,5 @@ public class UIDFilter extends Filter {
   public DocIdSet getDocIdSet(AtomicReaderContext ctx, Bits bits) throws IOException {
     AtomicReader reader = ctx.reader();
     return new UIDDocIdSet(_filteredIDs, _docIdMapperFactory.getDocIDMapper(reader));
-  }
-
-  /**
-   * Convenience method to build a Query from a uid list
-   * @param uids
-   */
-  public static Query getUIDQuery(long[] uids) {
-    return new ConstantScoreQuery(new UIDFilter(uids));
   }
 }

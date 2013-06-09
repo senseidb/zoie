@@ -23,7 +23,6 @@ import org.apache.lucene.store.SimpleFSDirectory;
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.ZoieException;
-import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieMultiReader;
 import proj.zoie.api.impl.util.FileUtil;
 import proj.zoie.api.indexing.IndexReaderDecorator;
@@ -43,14 +42,13 @@ public class HourglassReaderManager<R extends IndexReader, D> {
 
   public HourglassReaderManager(final Hourglass<R, D> hourglass,
       HourglassDirectoryManagerFactory dirMgrFactory, IndexReaderDecorator<R> decorator,
-      List<ZoieIndexReader<R>> initArchives, List<ZoieSystem<R, D>> initArchiveZoies,
-      List<HourglassListener> hourglassListeners) {
+      List<ZoieMultiReader<R>> initArchives, List<ZoieSystem<R, D>> initArchiveZoies,
+      List<HourglassListener<R,D>> hourglassListeners) {
     hg = hourglass;
     _dirMgrFactory = dirMgrFactory;
     _appendOnly = _dirMgrFactory.getScheduler().isAppendOnly();
     _decorator = decorator;
-    this.listener = new CompositeHourglassListener(
-        hourglassListeners);
+    this.listener = new CompositeHourglassListener<R, D>(hourglassListeners);
 
     List<ZoieSystem<R, D>> emptyList = Collections.emptyList();
 
@@ -69,8 +67,8 @@ public class HourglassReaderManager<R extends IndexReader, D> {
           } catch (InterruptedException e) {
             log.warn(e);
           }
-          List<ZoieIndexReader<R>> archives = new LinkedList<ZoieIndexReader<R>>(box._archives);
-          List<ZoieIndexReader<R>> add = new LinkedList<ZoieIndexReader<R>>();
+          List<ZoieMultiReader<R>> archives = new LinkedList<ZoieMultiReader<R>>(box._archives);
+          List<ZoieMultiReader<R>> add = new LinkedList<ZoieMultiReader<R>>();
           List<ZoieSystem<R, D>> archiveZoies = new LinkedList<ZoieSystem<R, D>>(box._archiveZoies);
           List<ZoieSystem<R, D>> addZoies = new LinkedList<ZoieSystem<R, D>>();
           try {
@@ -133,11 +131,11 @@ public class HourglassReaderManager<R extends IndexReader, D> {
 
       if (foundOldestToKeep) {
         if (listener != null) {
-          List<ZoieIndexReader<R>> readers = null;
+          List<ZoieMultiReader<R>> readers = null;
           try {
             readers = zoie.getIndexReaders();
             if (readers != null) {
-              for (ZoieIndexReader reader : readers)
+              for (ZoieMultiReader<R> reader : readers)
                 listener.onIndexReaderCleanUp(reader);
             }
           } catch (Exception e) {
@@ -179,18 +177,17 @@ public class HourglassReaderManager<R extends IndexReader, D> {
    * @param toRemove
    * @param add
    */
-  private void trim(List<ZoieIndexReader<R>> toRemove) {
+  private void trim(List<ZoieMultiReader<R>> toRemove) {
     long timenow = System.currentTimeMillis();
-    List<ZoieIndexReader<R>> toKeep = new LinkedList<ZoieIndexReader<R>>();
+    List<ZoieMultiReader<R>> toKeep = new LinkedList<ZoieMultiReader<R>>();
     Calendar now = Calendar.getInstance();
     now.setTimeInMillis(timenow);
     Calendar threshold = hg._scheduler.getTrimTime(now);
 
-    // ZoieIndexReader<R>[] readerArray = toRemove.toArray(new ZoieIndexReader[toRemove.size()]);
-    List<ZoieIndexReader<R>> readerList = new ArrayList<ZoieIndexReader<R>>(toRemove);
-    Collections.sort(readerList, new Comparator<ZoieIndexReader<R>>() {
+    List<ZoieMultiReader<R>> readerList = new ArrayList<ZoieMultiReader<R>>(toRemove);
+    Collections.sort(readerList, new Comparator<ZoieMultiReader<R>>() {
       @Override
-      public int compare(ZoieIndexReader<R> r1, ZoieIndexReader<R> r2) {
+      public int compare(ZoieMultiReader<R> r1, ZoieMultiReader<R> r2) {
         String name1 = ((SimpleFSDirectory)(r1.directory())).getDirectory().getName();
         String name2 = ((SimpleFSDirectory)(r1.directory())).getDirectory().getName();
         return name2.compareTo(name1);
@@ -199,7 +196,7 @@ public class HourglassReaderManager<R extends IndexReader, D> {
 
     boolean foundOldestToKeep = false;
 
-    for (ZoieIndexReader<R> reader : readerList) {
+    for (ZoieMultiReader<R> reader : readerList) {
       SimpleFSDirectory dir = (SimpleFSDirectory) reader.directory();
       String path = dir.getDirectory().getName();
 
@@ -255,24 +252,24 @@ public class HourglassReaderManager<R extends IndexReader, D> {
   }
 
   /**
-   * The readers removed will also be decRef(). But the readers to be added will NOT get incRef(),
+   * The readers removed will also be decZoieRef(). But the readers to be added will NOT get incZoieRef(),
    * which means we assume the newly added ones have already been incRef().
    * remove and add should be <b>disjoint</b>
    * @param remove the readers to be remove. This has to be disjoint from add.
    * @param add
    */
-  public synchronized void swapArchives(List<ZoieIndexReader<R>> remove,
-      List<ZoieIndexReader<R>> add) {
-    List<ZoieIndexReader<R>> archives = new LinkedList<ZoieIndexReader<R>>(add);
+  public synchronized void swapArchives(List<ZoieMultiReader<R>> remove,
+      List<ZoieMultiReader<R>> add) {
+    List<ZoieMultiReader<R>> archives = new LinkedList<ZoieMultiReader<R>>(add);
     if (!box._archives.containsAll(remove)) {
       log.error("swapArchives: potential sync issue. ");
     }
     archives.addAll(box._archives);
     archives.removeAll(remove);
-    for (ZoieIndexReader<R> r : remove) {
-      r.decRef();
+    for (ZoieMultiReader<R> r : remove) {
+      r.decZoieRef();
       if (log.isDebugEnabled()) {
-        log.debug("remove time " + r.directory() + " refCount: " + r.getRefCount());
+        log.debug("remove time " + r.directory() + " refCount: " + r.getInnerRefCount());
       }
     }
     Box<R, D> newbox = new Box<R, D>(archives, box._archiveZoies, box._retiree, box._actives,
@@ -314,7 +311,7 @@ public class HourglassReaderManager<R extends IndexReader, D> {
    * @param reader the IndexReader opened on the index the give zoie had written to.
    */
   public synchronized void archive(ZoieSystem<R, D> zoie, ZoieMultiReader<R> reader) {
-    List<ZoieIndexReader<R>> archives = new LinkedList<ZoieIndexReader<R>>(box._archives);
+    List<ZoieMultiReader<R>> archives = new LinkedList<ZoieMultiReader<R>>(box._archives);
     List<ZoieSystem<R, D>> archiveZoies = new LinkedList<ZoieSystem<R, D>>(box._archiveZoies);
     List<ZoieSystem<R, D>> actives = new LinkedList<ZoieSystem<R, D>>(box._actives);
     List<ZoieSystem<R, D>> retiring = new LinkedList<ZoieSystem<R, D>>(box._retiree);
@@ -360,15 +357,15 @@ public class HourglassReaderManager<R extends IndexReader, D> {
     log.info("shutting down indices complete.");
   }
 
-  public synchronized List<ZoieIndexReader<R>> getIndexReaders() throws IOException {
-    List<ZoieIndexReader<R>> list = new ArrayList<ZoieIndexReader<R>>();
+  public synchronized List<ZoieMultiReader<R>> getIndexReaders() throws IOException {
+    List<ZoieMultiReader<R>> list = new ArrayList<ZoieMultiReader<R>>();
     if (_appendOnly) {
       // add the archived index readers.
-      for (ZoieIndexReader<R> r : box._archives) {
+      for (ZoieMultiReader<R> r : box._archives) {
         if (log.isDebugEnabled()) {
           log.debug("add reader from box archives");
         }
-        r.incRef();
+        r.incZoieRef();
         list.add(r);
       }
     } else {
@@ -429,7 +426,7 @@ public class HourglassReaderManager<R extends IndexReader, D> {
     ZoieMultiReader<R> zoiereader = null;
 
     if (_appendOnly) {
-      IndexReader reader = null;
+      DirectoryReader reader = null;
       try {
         reader = getArchive(zoie);
       } catch (CorruptIndexException e) {
@@ -459,10 +456,10 @@ public class HourglassReaderManager<R extends IndexReader, D> {
     return box._archiveZoies;
   }
 
-  private IndexReader getArchive(ZoieSystem<R, D> zoie) throws CorruptIndexException, IOException {
+  private DirectoryReader getArchive(ZoieSystem<R, D> zoie) throws CorruptIndexException, IOException {
     String dirName = zoie.getAdminMBean().getIndexDir();
     Directory dir = new SimpleFSDirectory(new File(dirName));
-    IndexReader reader = null;
+    DirectoryReader reader = null;
     if (DirectoryReader.indexExists(dir)) {
       reader = DirectoryReader.open(dir);
     } else {

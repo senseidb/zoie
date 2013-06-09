@@ -22,7 +22,7 @@ public class DefaultDocIDMapperFactory implements DocIDMapperFactory {
 
   @Override
   public DocIDMapper getDocIDMapper(final ZoieMultiReader<?> reader) throws IOException {
-    final List<AtomicReaderContext> subReaderContextList = reader.getInnerReader().leaves();
+    final List<AtomicReaderContext> subReaderContextList = reader.leaves();
     final DocIDMapper[] mappers = new DocIDMapper[subReaderContextList.size()];
     for (int i = 0; i < subReaderContextList.size(); ++i) {
       mappers[i] = getDocIDMapper(subReaderContextList.get(i).reader());

@@ -22,9 +22,8 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.jmx.HierarchyDynamicMBean;
 import org.apache.log4j.spi.LoggerRepository;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
@@ -38,9 +37,7 @@ import org.junit.Test;
 
 import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.api.DocIDMapper;
-import proj.zoie.api.Zoie;
 import proj.zoie.api.ZoieException;
-import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieMultiReader;
 import proj.zoie.api.ZoieSegmentReader;
 import proj.zoie.api.indexing.IndexReaderDecorator;
@@ -49,7 +46,6 @@ import proj.zoie.hourglass.api.HourglassIndexableInterpreter;
 import proj.zoie.hourglass.impl.HourGlassScheduler;
 import proj.zoie.hourglass.impl.Hourglass;
 import proj.zoie.hourglass.impl.HourglassDirectoryManagerFactory;
-import proj.zoie.hourglass.impl.HourglassListener;
 import proj.zoie.hourglass.mbean.HourglassAdmin;
 import proj.zoie.impl.indexing.MemoryStreamDataProvider;
 import proj.zoie.impl.indexing.ZoieConfig;
@@ -171,14 +167,14 @@ public class HourglassTest extends ZoieTestCaseBase {
         new HourglassTestInterpreter(), new IndexReaderDecorator<IndexReader>() {
 
           @Override
-          public IndexReader decorate(ZoieIndexReader<IndexReader> indexReader) throws IOException {
-            return indexReader.getInnerReader();
+          public IndexReader decorate(ZoieSegmentReader<IndexReader> indexReader)
+              throws IOException {
+            return indexReader;
           }
 
           @Override
-          public IndexReader redecorate(IndexReader decorated, ZoieIndexReader<IndexReader> copy)
+          public IndexReader redecorate(IndexReader decorated, ZoieSegmentReader<IndexReader> copy)
               throws IOException {
-            // TODO Auto-generated method stub
             return decorated;
           }
 
@@ -208,7 +204,7 @@ public class HourglassTest extends ZoieTestCaseBase {
     System.out.println("initial number of DOCs: " + initNumDocs);
     assertTrue("initNumDocs should > 2", initNumDocs > 2);
 
-    List<ZoieIndexReader<IndexReader>> readers = hourglass.getIndexReaders();
+    List<ZoieMultiReader<IndexReader>> readers = hourglass.getIndexReaders();
     try {
       assertTrue("before delete, 0 should be found", findUID(readers, 0));
       assertTrue("before update, 1 should be found", findUID(readers, 1));
@@ -255,9 +251,9 @@ public class HourglassTest extends ZoieTestCaseBase {
     hourglass.shutdown();
   }
 
-  private boolean findUID(List<ZoieIndexReader<IndexReader>> readers, long uid) {
+  private boolean findUID(List<ZoieMultiReader<IndexReader>> readers, long uid) {
     boolean found = false;
-    for (ZoieIndexReader reader : readers) {
+    for (ZoieMultiReader<IndexReader> reader : readers) {
       int doc = reader.getDocIDMaper().getDocID(uid);
       if (doc != DocIDMapper.NOT_FOUND && !reader.isDeleted(doc)) {
         found = true;
@@ -284,13 +280,14 @@ public class HourglassTest extends ZoieTestCaseBase {
         new HourglassTestInterpreter(), new IndexReaderDecorator<IndexReader>() {
 
           @Override
-          public IndexReader decorate(ZoieIndexReader<IndexReader> indexReader) throws IOException {
-            return indexReader.getInnerReader();
+          public IndexReader decorate(ZoieSegmentReader<IndexReader> indexReader)
+              throws IOException {
+            return indexReader;
           }
 
           @Override
-          public IndexReader redecorate(IndexReader decorated, ZoieIndexReader<IndexReader> copy) throws IOException {
-            // TODO Auto-generated method stub
+          public IndexReader redecorate(IndexReader decorated, ZoieSegmentReader<IndexReader> copy)
+              throws IOException {
             return decorated;
           }
 
@@ -319,7 +316,6 @@ public class HourglassTest extends ZoieTestCaseBase {
     int initNumDocs = getTotalNumDocs(hourglass);
     System.out.println("initial number of DOCs: " + initNumDocs);
 
-    long accumulatedTime = 0;
     for (int i = initNumDocs; i < initNumDocs + numTestContent; i++) {
       List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(2);
       list.add(new DataEvent<String>("" + i, "" + i));
@@ -327,9 +323,8 @@ public class HourglassTest extends ZoieTestCaseBase {
 
       if (i == 0 || i % 1130 != 0) continue;
       memoryProvider.flush();
-      long flushtime = System.currentTimeMillis();
       int numDoc = -1;
-      List<ZoieIndexReader<IndexReader>> readers = null;
+      List<ZoieMultiReader<IndexReader>> readers = null;
       IndexReader reader = null;
       IndexSearcher searcher = null;
       while (numDoc < i + 1) {
@@ -345,7 +340,6 @@ public class HourglassTest extends ZoieTestCaseBase {
         numDoc = hitsall.totalHits;
         Thread.sleep(100);
       }
-      accumulatedTime += (System.currentTimeMillis() - flushtime);
       TopDocs hits = searcher.search(new TermQuery(new Term("contents", "" + i)), 10);
       TopDocs hitsall = searcher.search(new MatchAllDocsQuery(), 10);
       try {
@@ -405,52 +399,18 @@ public class HourglassTest extends ZoieTestCaseBase {
     zConfig.setBatchSize(1);
     zConfig.setBatchDelay(10);
     zConfig.setFreshness(10);
-    HourglassListener<IndexReader, String> listener = new HourglassListener<IndexReader, String>() {
-
-      @Override
-      public void onNewZoie(Zoie<IndexReader, String> zoie) {
-        // TODO Auto-generated method stub
-
-      }
-
-      @Override
-      public void onRetiredZoie(Zoie<IndexReader, String> zoie) {
-        // TODO Auto-generated method stub
-
-      }
-
-      @Override
-      public void onIndexReaderCleanUp(ZoieIndexReader<IndexReader> indexReader) {
-        if (indexReader instanceof ZoieMultiReader) {
-          ZoieSegmentReader[] segments = (ZoieSegmentReader[]) ((ZoieMultiReader) indexReader)
-              .getSequentialSubReaders();
-          for (ZoieSegmentReader segmentReader : segments) {
-            handleSegment(segmentReader);
-          }
-        } else if (indexReader instanceof ZoieSegmentReader) {
-          handleSegment((ZoieSegmentReader) indexReader);
-        } else {
-          throw new UnsupportedOperationException(
-              "Only segment and multisegment readers can be handled");
-        }
-
-      }
-
-      private void handleSegment(ZoieSegmentReader segmentReader) {
-        System.out.println("!!!Deleted UID array of segment: " + segmentReader.getSegmentName());
-      }
-    };
     Hourglass<IndexReader, String> hourglass = new Hourglass<IndexReader, String>(factory,
         new HourglassTestInterpreter(), new IndexReaderDecorator<IndexReader>() {
 
           @Override
-          public IndexReader decorate(ZoieIndexReader<IndexReader> indexReader) throws IOException {
-            return indexReader.getInnerReader();
+          public IndexReader decorate(ZoieSegmentReader<IndexReader> indexReader)
+              throws IOException {
+            return indexReader;
           }
 
           @Override
-          public IndexReader redecorate(IndexReader decorated, ZoieIndexReader<IndexReader> copy) throws IOException {
-            // TODO Auto-generated method stub
+          public IndexReader redecorate(IndexReader decorated, ZoieSegmentReader<IndexReader> copy)
+              throws IOException {
             return decorated;
           }
 
@@ -460,7 +420,6 @@ public class HourglassTest extends ZoieTestCaseBase {
           }
         }, zConfig);
     HourglassAdmin mbean = new HourglassAdmin(hourglass);
-    java.lang.reflect.Field field;
     Object readerManager = getFieldValue(hourglass, "_readerMgr");
     Object maintenanceThread = getFieldValue(readerManager, "maintenanceThread");
     Runnable runnable = (Runnable) getFieldValue(maintenanceThread, "target");
@@ -534,8 +493,6 @@ public class HourglassTest extends ZoieTestCaseBase {
       runnable.notifyAll();
     }
 
-    int numDirs = idxDir.listFiles().length;
-
     try {
       mbeanServer.unregisterMBean(new ObjectName("HouseGlass:name=hourglass"));
     } catch (Exception e) {
@@ -559,10 +516,10 @@ public class HourglassTest extends ZoieTestCaseBase {
 
   private int getTotalNumDocs(Hourglass<IndexReader, String> hourglass) {
     int numDocs = 0;
-    List<ZoieIndexReader<IndexReader>> readers = null;
+    List<ZoieMultiReader<IndexReader>> readers = null;
     try {
       readers = hourglass.getIndexReaders();
-      for (ZoieIndexReader<IndexReader> reader : readers) {
+      for (ZoieMultiReader<IndexReader> reader : readers) {
         numDocs += reader.numDocs();
       }
     } catch (IOException e) {
@@ -596,10 +553,7 @@ public class HourglassTest extends ZoieTestCaseBase {
 
     public Document buildDocument() {
       Document doc = new Document();
-      doc.add(new Field("contents", _str, Store.YES, Index.ANALYZED));
-      /*
-       * try { Thread.sleep(25); // slow down indexing process } catch (Exception e) { }
-       */
+      doc.add(new TextField("contents", _str, Store.YES));
       return doc;
     }
 
@@ -617,10 +571,6 @@ public class HourglassTest extends ZoieTestCaseBase {
     public final boolean isDeleted() {
       return _str.charAt(0) == 'D';
     }
-
-    /*
-     * @Override public byte[] getStoreValue() { return String.valueOf(getUID()).getBytes(); }
-     */
   }
 
   public static class HourglassTestInterpreter implements HourglassIndexableInterpreter<String> {

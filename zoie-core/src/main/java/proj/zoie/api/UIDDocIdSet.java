@@ -39,7 +39,7 @@ public class UIDDocIdSet extends DocIdSet {
   public static int[] mapUID(long[] uidArray, DocIDMapper mapper) {
     IntRBTreeSet idSet = new IntRBTreeSet();
     for (long uid : uidArray) {
-      if (uid != ZoieIndexReader.DELETED_UID) {
+      if (uid != ZoieSegmentReader.DELETED_UID) {
         int docid = mapper.getDocID(uid);
         if (docid != DocIDMapper.NOT_FOUND) {
           idSet.add(docid);

@@ -12,40 +12,40 @@ import org.apache.lucene.index.IndexReader;
 
 import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieException;
-import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.ZoieMultiReader;
 
 public class DefaultReaderCache<R extends IndexReader> extends AbstractReaderCache<R> {
   private static final Logger log = Logger.getLogger(DefaultReaderCache.class);
   private final Thread _maintenance;
   private volatile boolean alreadyShutdown = false;
-  private volatile List<ZoieIndexReader<R>> cachedreaders = new ArrayList<ZoieIndexReader<R>>(0);
+  private volatile List<ZoieMultiReader<R>> cachedreaders = new ArrayList<ZoieMultiReader<R>>(0);
   private volatile long cachedreaderTimestamp = 0;
   private final ReentrantReadWriteLock cachedreadersLock = new ReentrantReadWriteLock();
-  private volatile ConcurrentLinkedQueue<List<ZoieIndexReader<R>>> returningIndexReaderQueue = new ConcurrentLinkedQueue<List<ZoieIndexReader<R>>>();
+  private volatile ConcurrentLinkedQueue<List<ZoieMultiReader<R>>> returningIndexReaderQueue = new ConcurrentLinkedQueue<List<ZoieMultiReader<R>>>();
   private final ReentrantReadWriteLock returningIndexReaderQueueLock = new ReentrantReadWriteLock();
   private final Object cachemonitor = new Object();
   private long _freshness = 10000L;
-  private final WeakReference<IndexReaderFactory<ZoieIndexReader<R>>> _readerfactory;
+  private final WeakReference<IndexReaderFactory<R>> _readerfactory;
 
-  public DefaultReaderCache(IndexReaderFactory<ZoieIndexReader<R>> readerfactory) {
-    _readerfactory = new WeakReference<IndexReaderFactory<ZoieIndexReader<R>>>(readerfactory);
+  public DefaultReaderCache(IndexReaderFactory<R> readerfactory) {
+    _readerfactory = new WeakReference<IndexReaderFactory<R>>(readerfactory);
     _maintenance = newMaintenanceThread();
     _maintenance.setDaemon(true);
   }
 
   @Override
-  public List<ZoieIndexReader<R>> getIndexReaders() {
+  public List<ZoieMultiReader<R>> getIndexReaders() {
     cachedreadersLock.readLock().lock();
-    List<ZoieIndexReader<R>> readers = cachedreaders;
-    for (ZoieIndexReader<R> r : readers) {
-      r.incRef();
+    List<ZoieMultiReader<R>> readers = cachedreaders;
+    for (ZoieMultiReader<R> r : readers) {
+      r.incZoieRef();
     }
     cachedreadersLock.readLock().unlock();
     return readers;
   }
 
   @Override
-  public void returnIndexReaders(List<ZoieIndexReader<R>> readers) {
+  public void returnIndexReaders(List<ZoieMultiReader<R>> readers) {
     if (readers == null || readers.size() == 0) return;
     returningIndexReaderQueueLock.readLock().lock();
     try {
@@ -116,24 +116,24 @@ public class DefaultReaderCache<R extends IndexReader> extends AbstractReaderCac
         } catch (InterruptedException e) {
           Thread.interrupted(); // clear interrupted state
         }
-        List<ZoieIndexReader<R>> newreaders = null;
+        List<ZoieMultiReader<R>> newreaders = null;
         if (alreadyShutdown) {
-          newreaders = new ArrayList<ZoieIndexReader<R>>();
+          newreaders = new ArrayList<ZoieMultiReader<R>>();
           // clean up and quit
         } else {
           try {
-            IndexReaderFactory<ZoieIndexReader<R>> readerfactory = _readerfactory.get();
+            IndexReaderFactory<R> readerfactory = _readerfactory.get();
             if (readerfactory != null) {
               newreaders = readerfactory.getIndexReaders();
             } else {
-              newreaders = new ArrayList<ZoieIndexReader<R>>();
+              newreaders = new ArrayList<ZoieMultiReader<R>>();
             }
           } catch (IOException e) {
             log.info("DefaultReaderCache-zoie-indexReader-maintenance", e);
-            newreaders = new ArrayList<ZoieIndexReader<R>>();
+            newreaders = new ArrayList<ZoieMultiReader<R>>();
           }
         }
-        List<ZoieIndexReader<R>> oldreaders = cachedreaders;
+        List<ZoieMultiReader<R>> oldreaders = cachedreaders;
         cachedreadersLock.writeLock().lock();
         cachedreaders = newreaders;
         cachedreadersLock.writeLock().unlock();
@@ -145,12 +145,12 @@ public class DefaultReaderCache<R extends IndexReader> extends AbstractReaderCac
         if (!oldreaders.isEmpty()) returnIndexReaders(oldreaders);
         // process the returing index reader queue
         returningIndexReaderQueueLock.writeLock().lock();
-        ConcurrentLinkedQueue<List<ZoieIndexReader<R>>> oldreturningIndexReaderQueue = returningIndexReaderQueue;
-        returningIndexReaderQueue = new ConcurrentLinkedQueue<List<ZoieIndexReader<R>>>();
+        ConcurrentLinkedQueue<List<ZoieMultiReader<R>>> oldreturningIndexReaderQueue = returningIndexReaderQueue;
+        returningIndexReaderQueue = new ConcurrentLinkedQueue<List<ZoieMultiReader<R>>>();
         returningIndexReaderQueueLock.writeLock().unlock();
-        for (List<ZoieIndexReader<R>> readers : oldreturningIndexReaderQueue) {
-          for (ZoieIndexReader<R> r : readers) {
-            r.decRef();
+        for (List<ZoieMultiReader<R>> readers : oldreturningIndexReaderQueue) {
+          for (ZoieMultiReader<R> r : readers) {
+            r.decZoieRef();
           }
         }
         if (_readerfactory.get() == null && cachedreaders.size() == 0) {
@@ -166,7 +166,7 @@ public class DefaultReaderCache<R extends IndexReader> extends AbstractReaderCac
 
     @Override
     public <R extends IndexReader> AbstractReaderCache<R> newInstance(
-        IndexReaderFactory<ZoieIndexReader<R>> readerfactory) {
+        IndexReaderFactory<R> readerfactory) {
       return new DefaultReaderCache<R>(readerfactory);
     }
   };

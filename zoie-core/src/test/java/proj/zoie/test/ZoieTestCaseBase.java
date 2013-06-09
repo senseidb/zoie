@@ -18,7 +18,7 @@ import org.junit.After;
 import org.junit.Before;
 
 import proj.zoie.api.DocIDMapperFactory;
-import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.ZoieSegmentReader;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.impl.indexing.SimpleReaderCache;
 import proj.zoie.impl.indexing.ZoieConfig;
@@ -151,12 +151,12 @@ public class ZoieTestCaseBase {
 
   protected static class TestIndexReaderDecorator implements IndexReaderDecorator<IndexReader> {
     @Override
-    public IndexReader decorate(ZoieIndexReader<IndexReader> indexReader) throws IOException {
-      return indexReader.getInnerReader();
+    public IndexReader decorate(ZoieSegmentReader<IndexReader> indexReader) throws IOException {
+      return indexReader;
     }
 
     @Override
-    public IndexReader redecorate(IndexReader decorated, ZoieIndexReader<IndexReader> copy) throws IOException {
+    public IndexReader redecorate(IndexReader decorated, ZoieSegmentReader<IndexReader> copy) throws IOException {
       return decorated;
     }
 

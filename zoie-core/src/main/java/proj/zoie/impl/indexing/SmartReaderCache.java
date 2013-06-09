@@ -13,37 +13,38 @@ import org.apache.lucene.index.IndexReader;
 
 import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieException;
-import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.ZoieMultiReader;
 
 public class SmartReaderCache<R extends IndexReader> extends AbstractReaderCache<R> {
   private static final Logger log = Logger.getLogger(DefaultReaderCache.class);
   private final Thread _maintenance;
   private volatile boolean alreadyShutdown = false;
-  private volatile List<ZoieIndexReader<R>> cachedreaders = new ArrayList<ZoieIndexReader<R>>(0);
+  private volatile List<ZoieMultiReader<R>> cachedreaders = new ArrayList<ZoieMultiReader<R>>(0);
   private volatile long cachedreaderTimestamp = 0;
   private final Object cachemonitor = new Object();
   private long _freshness = 10000L;
-  private final IndexReaderFactory<ZoieIndexReader<R>> _readerfactory;
-  private final HashMap<WeakReference<List<ZoieIndexReader<R>>>, List<ZoieIndexReader<R>>> readermap;
-  private final ReferenceQueue<List<ZoieIndexReader<R>>> refq;
+  private final IndexReaderFactory<R> _readerfactory;
+  private final HashMap<WeakReference<List<ZoieMultiReader<R>>>, List<ZoieMultiReader<R>>> readermap;
+  private final ReferenceQueue<List<ZoieMultiReader<R>>> refq;
 
-  public SmartReaderCache(IndexReaderFactory<ZoieIndexReader<R>> readerfactory) {
-    readermap = new HashMap<WeakReference<List<ZoieIndexReader<R>>>, List<ZoieIndexReader<R>>>();
-    refq = new ReferenceQueue<List<ZoieIndexReader<R>>>();
+  public SmartReaderCache(IndexReaderFactory<R> readerfactory) {
+    readermap = new HashMap<WeakReference<List<ZoieMultiReader<R>>>, List<ZoieMultiReader<R>>>();
+    refq = new ReferenceQueue<List<ZoieMultiReader<R>>>();
     _readerfactory = readerfactory;
     _maintenance = newMaintenanceThread();
     _maintenance.setDaemon(true);
   }
 
   @Override
-  public List<ZoieIndexReader<R>> getIndexReaders() {
+  public List<ZoieMultiReader<R>> getIndexReaders() {
     return cachedreaders;
   }
 
   @Override
-  public void returnIndexReaders(List<ZoieIndexReader<R>> readers) {
+  public void returnIndexReaders(List<ZoieMultiReader<R>> readers) {
   }
 
+  @Override
   public void refreshCache(long timeout) throws ZoieException {
     long begintime = System.currentTimeMillis();
     while (cachedreaderTimestamp <= begintime) {
@@ -102,21 +103,21 @@ public class SmartReaderCache<R extends IndexReader> extends AbstractReaderCache
           } catch (InterruptedException e) {
             Thread.interrupted(); // clear interrupted state
           }
-          List<ZoieIndexReader<R>> newreaders = null;
+          List<ZoieMultiReader<R>> newreaders = null;
           if (alreadyShutdown) {
-            newreaders = new ArrayList<ZoieIndexReader<R>>(0);
+            newreaders = new ArrayList<ZoieMultiReader<R>>(0);
             // clean up and quit
           } else {
             try {
               newreaders = _readerfactory.getIndexReaders();
             } catch (IOException e) {
               log.info("SmartReaderCache-zoie-indexReader-maintenance", e);
-              newreaders = new ArrayList<ZoieIndexReader<R>>();
+              newreaders = new ArrayList<ZoieMultiReader<R>>();
             }
           }
-          cachedreaders = new ArrayList<ZoieIndexReader<R>>(newreaders);
+          cachedreaders = new ArrayList<ZoieMultiReader<R>>(newreaders);
           if (cachedreaders.size() > 0) {
-            WeakReference<List<ZoieIndexReader<R>>> w = new WeakReference<List<ZoieIndexReader<R>>>(
+            WeakReference<List<ZoieMultiReader<R>>> w = new WeakReference<List<ZoieMultiReader<R>>>(
                 cachedreaders, refq);
             readermap.put(w, newreaders); // when nobody uses cachedreaders, we will clean
                                           // newreaders :)
@@ -126,9 +127,9 @@ public class SmartReaderCache<R extends IndexReader> extends AbstractReaderCache
             cachemonitor.notifyAll();
           }
           // cleaning and reference counting on the ones no longer in use
-          Reference<? extends List<ZoieIndexReader<R>>> wclean = null;
+          Reference<? extends List<ZoieMultiReader<R>>> wclean = null;
           while ((wclean = refq.poll()) != null) {
-            List<ZoieIndexReader<R>> readers = readermap.remove(wclean);
+            List<ZoieMultiReader<R>> readers = readermap.remove(wclean);
             _readerfactory.returnIndexReaders(readers);
           }
           if (alreadyShutdown && readermap.size() == 0) {
@@ -143,8 +144,7 @@ public class SmartReaderCache<R extends IndexReader> extends AbstractReaderCache
   public static ReaderCacheFactory FACTORY = new ReaderCacheFactory() {
 
     @Override
-    public <R extends IndexReader> AbstractReaderCache<R> newInstance(
-        IndexReaderFactory<ZoieIndexReader<R>> readerfactory) {
+    public <R extends IndexReader> AbstractReaderCache<R> newInstance(IndexReaderFactory<R> readerfactory) {
       return new SmartReaderCache<R>(readerfactory);
     }
   };

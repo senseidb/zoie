@@ -51,6 +51,7 @@
 		<!-- <module>zoie-solr</module> -->
 		<module>zoie-jms</module>
 		<module>zoie-perf</module>
+		<module>zoie-example</module>
 	</modules>
 
 	<build>

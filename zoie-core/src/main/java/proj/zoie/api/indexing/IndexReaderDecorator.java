@@ -21,10 +21,10 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.DocIdSet;
 
-import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.ZoieSegmentReader;
 
 /**
- * Decorates a {@link proj.zoie.api.ZoieIndexReader} to a customized {@link org.apache.lucene.index.IndexReader}.
+ * Decorates a {@link proj.zoie.api.ZoieSegmentReader} to a customized {@link org.apache.lucene.index.IndexReader}.
  */
 public interface IndexReaderDecorator<R extends IndexReader> {
   /**
@@ -33,7 +33,7 @@ public interface IndexReaderDecorator<R extends IndexReader> {
    * @return a decorated reader
    * @throws IOException
    */
-  R decorate(ZoieIndexReader<R> indexReader) throws IOException;
+  R decorate(ZoieSegmentReader<R> indexReader) throws IOException;
 
   /**
    * This is called when the actual underlying reader was not changed, but a new reference was created.
@@ -45,7 +45,7 @@ public interface IndexReaderDecorator<R extends IndexReader> {
    * @return Re-decorated reader
    * @throws IOException
    */
-  R redecorate(R decorated, ZoieIndexReader<R> copy) throws IOException;
+  R redecorate(R decorated, ZoieSegmentReader<R> copy) throws IOException;
 
   void setDeleteSet(R reader, DocIdSet docIds);
 }

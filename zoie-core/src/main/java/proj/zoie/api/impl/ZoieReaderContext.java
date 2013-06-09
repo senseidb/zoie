@@ -2,7 +2,7 @@ package proj.zoie.api.impl;
 
 import java.util.HashMap;
 
-import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.ZoieMultiReader;
 
 public class ZoieReaderContext {
   protected HashMap<String, Object> _contextMap = new HashMap<String, Object>();
@@ -29,9 +29,9 @@ public class ZoieReaderContext {
 
   public static class ContextAccessor<E> {
     private final String _key;
-    private final ZoieIndexReader<?> _reader;
+    private final ZoieMultiReader<?> _reader;
 
-    public ContextAccessor(ZoieIndexReader<?> reader, String key) {
+    public ContextAccessor(ZoieMultiReader<?> reader, String key) {
       _key = key.intern();
       _reader = reader;
     }

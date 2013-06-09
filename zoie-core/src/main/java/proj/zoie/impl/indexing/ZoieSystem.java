@@ -45,7 +45,7 @@ import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.Zoie;
 import proj.zoie.api.ZoieException;
 import proj.zoie.api.ZoieHealth;
-import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.ZoieMultiReader;
 import proj.zoie.api.impl.DefaultDocIDMapperFactory;
 import proj.zoie.api.impl.util.FileUtil;
 import proj.zoie.api.indexing.AbstractZoieIndexable;
@@ -80,7 +80,6 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
   private final ZoieIndexableInterpreter<D> _interpreter;
   private final Analyzer _analyzer;
   private final Similarity _similarity;
-
   private final Queue<IndexingEventListener> _lsnrList;
   private final BatchedIndexDataLoader<R, D> _rtdc;
   private final DiskLuceneIndexDataLoader<R> _diskLoader;
@@ -619,9 +618,9 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
   }
 
   /**
-   * return a list of ZoieIndexReaders. These readers are reference counted and
+   * return a list of ZoieMultiReader. These readers are reference counted and
    * this method should be used in pair with
-   * returnIndexReaders(List<ZoieIndexReader<R>> readers)
+   * returnIndexReaders(List<ZoieMultiReader<R>> readers)
    * {@link #returnIndexReaders(List)}. It is typical that we create a
    * MultiReader from these readers. When creating MultiReader, it should be
    * created with the closeSubReaders parameter set to false in order to do
@@ -629,9 +628,9 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
    * @see proj.zoie.api.IndexReaderFactory#getIndexReaders()
    */
   @Override
-  public List<ZoieIndexReader<R>> getIndexReaders() throws IOException {
+  public List<ZoieMultiReader<R>> getIndexReaders() throws IOException {
     long t0 = System.currentTimeMillis();
-    List<ZoieIndexReader<R>> readers = readercache.getIndexReaders();
+    List<ZoieMultiReader<R>> readers = readercache.getIndexReaders();
     t0 = System.currentTimeMillis() - t0;
     if (t0 > SLA) {
       log.warn("getIndexReaders returned in " + t0 + "ms more than " + SLA + "ms using"
@@ -664,7 +663,7 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
    * @see proj.zoie.api.IndexReaderFactory#returnIndexReaders(java.util.List)
    */
   @Override
-  public void returnIndexReaders(List<ZoieIndexReader<R>> readers) {
+  public void returnIndexReaders(List<ZoieMultiReader<R>> readers) {
     long t0 = System.currentTimeMillis();
     if (readers == null || readers.size() == 0) return;
     readercache.returnIndexReaders(readers);

@@ -21,7 +21,6 @@ import java.util.Arrays;
 import org.apache.lucene.index.NumericDocValues;
 
 import proj.zoie.api.DocIDMapper;
-import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieSegmentReader;
 
 /**
@@ -59,7 +58,7 @@ public class DocIDMapperImpl implements DocIDMapper {
     // bit. from one miss, we can tell the uid is definitely not inside the _uidArray.
     for (int i = 0; i < maxDoc; ++i) {
       long uid = uidValues.get(i);
-      if (uid != ZoieIndexReader.DELETED_UID) {
+      if (uid != ZoieSegmentReader.DELETED_UID) {
         // the hash function is (int)((uid >>> 32) ^ uid) * MIXER,
         // and we mod number of partions by "& _mask" (because & is much faster than mod).
         int h = (int) ((uid >>> 32) ^ uid) * MIXER;
@@ -202,17 +201,5 @@ public class DocIDMapperImpl implements DocIDMapper {
 
   public int[] getDocArray() {
     return _docArray;
-  }
-
-  public int getReaderIndex(long uid) {
-    throw new UnsupportedOperationException();
-  }
-
-  public int[] getStarts() {
-    throw new UnsupportedOperationException();
-  }
-
-  public ZoieIndexReader<?>[] getSubReaders() {
-    throw new UnsupportedOperationException();
   }
 }

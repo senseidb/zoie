@@ -29,39 +29,39 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.log4j.Logger;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.FilterDirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SegmentReader;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
-public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
+public class ZoieMultiReader<R extends IndexReader> extends FilterDirectoryReader {
   private static final Logger log = Logger.getLogger(ZoieMultiReader.class.getName());
   private final Map<String, ZoieSegmentReader<R>> _readerMap;
   private final List<ZoieSegmentReader<R>> _subZoieReaders;
-  private int[] _starts;
   private List<R> _decoratedReaders;
+  private final IndexReaderDecorator<R> _decorator;
+  private DocIDMapper _docIDMapper;
 
-  public ZoieMultiReader(IndexReader in, IndexReaderDecorator<R> decorator) throws IOException {
-    super(in, decorator);
+  public ZoieMultiReader(DirectoryReader in, IndexReaderDecorator<R> decorator) throws IOException {
+    super(in);
+    _decorator = decorator;
     _readerMap = new HashMap<String, ZoieSegmentReader<R>>();
     _decoratedReaders = null;
-    if (!(in instanceof DirectoryReader)) {
-      throw new IllegalStateException("in not instance of " + DirectoryReader.class);
-    }
     List<AtomicReaderContext> subReaderContextList = in.leaves();
     _subZoieReaders = new ArrayList<ZoieSegmentReader<R>>(subReaderContextList.size());
     for (int i = 0; i < subReaderContextList.size(); ++i) {
       _subZoieReaders
-          .add(new ZoieSegmentReader<R>(subReaderContextList.get(i).reader(), _decorator));
+          .add(new ZoieSegmentReader<R>(subReaderContextList.get(i).reader(), decorator));
     }
     init();
   }
 
-  private ZoieMultiReader(IndexReader in, List<ZoieSegmentReader<R>> subReaders,
+  private ZoieMultiReader(DirectoryReader in, List<ZoieSegmentReader<R>> subReaders,
       IndexReaderDecorator<R> decorator) throws IOException {
-    super(in, decorator);
+    super(in);
+    _decorator = decorator;
     _readerMap = new HashMap<String, ZoieSegmentReader<R>>();
     _decoratedReaders = null;
     _subZoieReaders = subReaders;
@@ -70,13 +70,11 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
 
   private final AtomicLong zoieRefCounter = new AtomicLong(1);
 
-  @Override
-  public void incRef() {
+  public void incZoieRef() {
     zoieRefCounter.incrementAndGet();
   }
 
-  @Override
-  public void decRef() {
+  public void decZoieRef() {
     long refCount = zoieRefCounter.decrementAndGet();
     if (refCount < 0) {
       log.warn("refCount should never be lower than 0");
@@ -85,47 +83,37 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
       try {
         in.decRef();
       } catch (IOException e) {
-        log.error("decZoieRef", e);
+        log.error("decZoieRef exception, ", e);
       }
     }
   }
 
-  @Override
-  public Directory directory() {
-    return ((DirectoryReader)in).directory();
+  public int getInnerRefCount() {
+    return in.getRefCount();
   }
 
-  protected void doClose() throws IOException {
-    in.close();
+  public DocIDMapper getDocIDMaper() {
+    return _docIDMapper;
   }
 
-  public int[] getStarts() {
-    return _starts;
+  public void setDocIDMapper(DocIDMapper docIDMapper) {
+    _docIDMapper = docIDMapper;
   }
 
-  @Override
   public BytesRef getStoredValue(long uid) throws IOException {
     int docid = _docIDMapper.getDocID(uid);
     if (docid < 0) return null;
     int idx = readerIndex(docid);
     if (idx < 0) return null;
     ZoieSegmentReader<R> subReader = _subZoieReaders.get(idx);
-    return subReader.getStoredValue(uid);
+    return subReader.getStoredValue(docid);
   }
 
   private void init() throws IOException {
-    _starts = new int[_subZoieReaders.size() + 1];
-    int i = 0;
-    int startCount = 0;
     for (ZoieSegmentReader<R> subReader : _subZoieReaders) {
       String segmentName = subReader.getSegmentName();
       _readerMap.put(segmentName, subReader);
-      _starts[i] = startCount;
-      i++;
-      startCount += subReader.maxDoc();
     }
-
-    _starts[_subZoieReaders.size()] = in.maxDoc();
 
     ArrayList<R> decoratedList = new ArrayList<R>(_subZoieReaders.size());
     for (ZoieSegmentReader<R> subReader : _subZoieReaders) {
@@ -135,99 +123,55 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
     _decoratedReaders = decoratedList;
   }
 
-  @Override
   public long getUID(int docid) {
     int idx = readerIndex(docid);
-    ZoieIndexReader<R> subReader = _subZoieReaders.get(idx);
-    return subReader.getUID(docid - _starts[idx]);
+    ZoieSegmentReader<R> subReader = _subZoieReaders.get(idx);
+    return subReader.getUID(docid - readerBase(idx));
   }
 
   @SuppressWarnings("unchecked")
-  @Override
-  public ZoieIndexReader<R>[] getSequentialSubReaders() {
+  public ZoieSegmentReader<R>[] getSubReaders() {
     return (_subZoieReaders.toArray(new ZoieSegmentReader[_subZoieReaders.size()]));
   }
 
-  @Override
   public void markDeletes(LongSet delDocs, LongSet deletedUIDs) {
-    ZoieIndexReader<R>[] subReaders = getSequentialSubReaders();
+    ZoieSegmentReader<R>[] subReaders = getSubReaders();
     if (subReaders != null && subReaders.length > 0) {
-      for (int i = 0; i < subReaders.length; i++) {
-        ZoieSegmentReader<R> subReader = (ZoieSegmentReader<R>) subReaders[i];
+      for (ZoieSegmentReader<R> subReader : subReaders) {
         subReader.markDeletes(delDocs, deletedUIDs);
       }
     }
   }
 
-  @Override
   public void commitDeletes() {
-    ZoieIndexReader<R>[] subReaders = getSequentialSubReaders();
+    ZoieSegmentReader<R>[] subReaders = getSubReaders();
     if (subReaders != null && subReaders.length > 0) {
-      for (int i = 0; i < subReaders.length; i++) {
-        ZoieSegmentReader<R> subReader = (ZoieSegmentReader<R>) subReaders[i];
+      for (ZoieSegmentReader<R> subReader : subReaders) {
         subReader.commitDeletes();
       }
     }
   }
 
-  @Override
   public void setDelDocIds() {
-    ZoieIndexReader<R>[] subReaders = getSequentialSubReaders();
-    for (ZoieIndexReader<R> subReader : subReaders) {
+    ZoieSegmentReader<R>[] subReaders = getSubReaders();
+    for (ZoieSegmentReader<R> subReader : subReaders) {
       subReader.setDelDocIds();
     }
   }
 
-  @Override
   public List<R> getDecoratedReaders() throws IOException {
     return _decoratedReaders;
   }
 
-  @Override
   public boolean isDeleted(int docid) {
     int idx = readerIndex(docid);
-    ZoieIndexReader<R> subReader = _subZoieReaders.get(idx);
-    return subReader.isDeleted(docid - _starts[idx]);
+    ZoieSegmentReader<R> subReader = _subZoieReaders.get(idx);
+    return subReader.isDeleted(docid - readerBase(idx));
   }
 
-  private int readerIndex(int n) {
-    return readerIndex(n, _starts, _starts.length);
-  }
-
-  final static int readerIndex(int n, int[] starts, int numSubReaders) { // find reader for doc n:
-    int lo = 0; // search starts array
-    int hi = numSubReaders - 1; // for first element less
-
-    while (hi >= lo) {
-      int mid = (lo + hi) >> 1;
-      int midValue = starts[mid];
-      if (n < midValue) {
-        hi = mid - 1;
-      } else if (n > midValue) // could be in this segment or subsequent ones
-      {
-        if (n < starts[mid + 1]) return mid;
-        lo = mid + 1;
-      } else {
-        // scan to last match
-        while (mid + 1 < numSubReaders && starts[mid + 1] == midValue) {
-          mid++;
-        }
-
-        return mid;
-      }
-    }
-
-    return hi;
-  }
-
-  @Override
   public ZoieMultiReader<R> reopen() throws IOException {
     long t0 = System.currentTimeMillis();
-    if (!(in instanceof DirectoryReader)) {
-      throw new IllegalStateException("in not instance of " + DirectoryReader.class);
-    }
-
-    IndexReader inner = DirectoryReader.openIfChanged((DirectoryReader) in);
+    DirectoryReader inner = DirectoryReader.openIfChanged(in);
     if (inner == null) {
       t0 = System.currentTimeMillis() - t0;
       if (t0 > 1000) {
@@ -276,10 +220,9 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
    * makes exact shallow copy of a given ZoieMultiReader
    * @throws IOException
    */
-  @Override
   public ZoieMultiReader<R> copy() throws IOException {
-    // increase DirectoryReader refcounter
-    this.incRef();
+    // increase DirectoryReader reference counter
+    this.in.incRef();
     List<ZoieSegmentReader<R>> sourceZoieSubReaders = this._subZoieReaders;
     List<ZoieSegmentReader<R>> zoieSubReaders = new ArrayList<ZoieSegmentReader<R>>(
         this._subZoieReaders.size());
@@ -289,5 +232,10 @@ public class ZoieMultiReader<R extends IndexReader> extends ZoieIndexReader<R> {
     ZoieMultiReader<R> ret = new ZoieMultiReader<R>(this.in, zoieSubReaders, this._decorator);
     ret._docIDMapper = this._docIDMapper;
     return ret;
+  }
+
+  @Override
+  protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) {
+    return in;
   }
 }

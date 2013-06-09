@@ -1,38 +1,38 @@
 package proj.zoie.impl.indexing;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.index.IndexReader;
 
 import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieException;
-import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.ZoieMultiReader;
 
 public class SimpleReaderCache<R extends IndexReader> extends AbstractReaderCache<R> {
 
   private static final Logger logger = Logger.getLogger(SimpleReaderCache.class);
 
-  private final IndexReaderFactory<ZoieIndexReader<R>> _readerFactory;
+  private final IndexReaderFactory<R> _readerFactory;
 
-  public SimpleReaderCache(IndexReaderFactory<ZoieIndexReader<R>> readerfactory) {
+  public SimpleReaderCache(IndexReaderFactory<R> readerfactory) {
     _readerFactory = readerfactory;
   }
 
   @Override
-  public List<ZoieIndexReader<R>> getIndexReaders() {
+  public List<ZoieMultiReader<R>> getIndexReaders() {
     try {
       return _readerFactory.getIndexReaders();
     } catch (IOException e) {
       logger.error(e.getMessage(), e);
-      return new ArrayList<ZoieIndexReader<R>>();
+      return new ArrayList<ZoieMultiReader<R>>();
     }
   }
 
   @Override
-  public void returnIndexReaders(List<ZoieIndexReader<R>> readers) {
+  public void returnIndexReaders(List<ZoieMultiReader<R>> readers) {
     _readerFactory.returnIndexReaders(readers);
   }
 
@@ -65,7 +65,7 @@ public class SimpleReaderCache<R extends IndexReader> extends AbstractReaderCach
 
     @Override
     public <R extends IndexReader> AbstractReaderCache<R> newInstance(
-        IndexReaderFactory<ZoieIndexReader<R>> readerfactory) {
+        IndexReaderFactory<R> readerfactory) {
       return new SimpleReaderCache<R>(readerfactory);
     }
   };

@@ -35,7 +35,7 @@ import org.apache.lucene.util.Version;
 
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.ZoieHealth;
-import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.ZoieMultiReader;
 import proj.zoie.api.impl.ZoieMergePolicy;
 import proj.zoie.api.impl.ZoieMergePolicy.MergePolicyParams;
 import proj.zoie.api.impl.util.IndexUtil;
@@ -76,7 +76,7 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
    */
   @Override
   public int getNumdocs() {
-    ZoieIndexReader<R> reader = _dispenser.getIndexReader();
+    ZoieMultiReader<R> reader = _dispenser.getIndexReader();
     if (reader != null) {
       return reader.numDocs();
     } else {
@@ -192,14 +192,14 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
    * Gets the current reader
    */
   @Override
-  public ZoieIndexReader<R> openIndexReader() throws IOException {
+  public ZoieMultiReader<R> openIndexReader() throws IOException {
     // use dispenser to get the reader
     return _dispenser.getIndexReader();
   }
 
   private final Object readerOpenLock = new Object();
 
-  public ZoieIndexReader<R> openIndexReader(String minVersion, long timeout) throws IOException,
+  public ZoieMultiReader<R> openIndexReader(String minVersion, long timeout) throws IOException,
       TimeoutException {
     if (_versionComparator.compare(minVersion, _dispenser.getCurrentVersion()) <= 0) {
       return _dispenser.getIndexReader();
@@ -227,11 +227,11 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
    * Gets a new reader, force a reader refresh
    * @throws IOException
    */
-  public ZoieIndexReader<R> getNewReader() throws IOException {
+  public ZoieMultiReader<R> getNewReader() throws IOException {
     synchronized (this) {
       refresh();
       commitDeletes();
-      ZoieIndexReader<R> reader = _dispenser.getIndexReader();
+      ZoieMultiReader<R> reader = _dispenser.getIndexReader();
       return reader;
     }
   }

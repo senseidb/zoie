@@ -32,6 +32,7 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StoredField;
+import org.apache.lucene.index.FilterAtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.ConstantScoreQuery;
@@ -138,7 +139,7 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements
         if (indexable == null || indexable.isSkip()) continue;
 
         long uid = indexable.getUID();
-        delSet.add(uid);
+        delSet.add(uid);  FilterAtomicReader re = null;
         addList.remove(uid);
         if (!(indexable.isDeleted() || evt.isDelete())) // update event
         {

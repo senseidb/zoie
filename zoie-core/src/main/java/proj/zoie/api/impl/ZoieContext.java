@@ -3,7 +3,7 @@ package proj.zoie.api.impl;
 import java.util.Map.Entry;
 import java.util.WeakHashMap;
 
-import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.ZoieMultiReader;
 
 /**
  * This class holds the ZoieContext for each thread. Any child thread inherits
@@ -28,7 +28,7 @@ public class ZoieContext {
 
   // use weakHashMap so that if a reader is no longer used, the map entry goes
   // away.
-  protected WeakHashMap<ZoieIndexReader<?>, ZoieReaderContext> _zoieContextMap = new WeakHashMap<ZoieIndexReader<?>, ZoieReaderContext>();
+  protected WeakHashMap<ZoieMultiReader<?>, ZoieReaderContext> _zoieContextMap = new WeakHashMap<ZoieMultiReader<?>, ZoieReaderContext>();
 
   public static ZoieContext getContext() {
     return _context.get();
@@ -49,7 +49,7 @@ public class ZoieContext {
    *
    * @param reader
    */
-  public synchronized ZoieReaderContext getReaderContext(ZoieIndexReader<?> reader) {
+  public synchronized ZoieReaderContext getReaderContext(ZoieMultiReader<?> reader) {
     ZoieReaderContext ctx = _zoieContextMap.get(reader);
     if (ctx == null) {
       ctx = new ZoieReaderContext();
@@ -68,7 +68,7 @@ public class ZoieContext {
   @Override
   protected ZoieContext clone() {
     ZoieContext ctx = new ZoieContext();
-    for (Entry<ZoieIndexReader<?>, ZoieReaderContext> pair : _zoieContextMap.entrySet()) {
+    for (Entry<ZoieMultiReader<?>, ZoieReaderContext> pair : _zoieContextMap.entrySet()) {
       ctx._zoieContextMap.put(pair.getKey(), pair.getValue().clone());
     }
     return ctx;

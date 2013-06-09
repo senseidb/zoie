@@ -16,6 +16,7 @@ import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.FilterDirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -28,7 +29,7 @@ import org.junit.Test;
 
 import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.api.ZoieException;
-import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.ZoieMultiReader;
 import proj.zoie.impl.indexing.MemoryStreamDataProvider;
 import proj.zoie.impl.indexing.ZoieConfig;
 import proj.zoie.impl.indexing.ZoieSystem;
@@ -76,7 +77,7 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
           int expected = DataForTests.testdata.length;
           while (!stop) {
             IndexSearcher searcher = null;
-            List<ZoieIndexReader<IndexReader>> readers = null;
+            List<ZoieMultiReader<IndexReader>> readers = null;
             MultiReader reader = null;
             try {
               readers = idxSystem.getIndexReaders();
@@ -121,14 +122,16 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
           }
         }
 
-        private String groupDump(List<ZoieIndexReader<IndexReader>> readers, Query q)
+        FilterDirectoryReader a = null;
+
+        private String groupDump(List<ZoieMultiReader<IndexReader>> readers, Query q)
             throws IOException {
           StringBuffer sb = new StringBuffer();
-          for (ZoieIndexReader<IndexReader> reader : readers) {
+          for (ZoieMultiReader<IndexReader> reader : readers) {
             sb.append(reader).append("\n");
-            IndexSearcher searcher = new IndexSearcher(reader.getInnerReader());
+            IndexSearcher searcher = new IndexSearcher(reader);
             TopDocs hits = searcher.search(q, 20);
-            sb.append(dump(reader.getInnerReader(), hits));
+            sb.append(dump(reader, hits));
             searcher = null;
           }
           return sb.toString();
@@ -280,7 +283,7 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
           int expected = testdata.length;
           while (!stop) {
             IndexSearcher searcher = null;
-            List<ZoieIndexReader<IndexReader>> readers = null;
+            List<ZoieMultiReader<IndexReader>> readers = null;
             MultiReader reader = null;
             try {
               readers = idxSystem.getIndexReaders();
@@ -325,14 +328,14 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
           }
         }
 
-        private String groupDump(List<ZoieIndexReader<IndexReader>> readers, Query q)
+        private String groupDump(List<ZoieMultiReader<IndexReader>> readers, Query q)
             throws IOException {
           StringBuffer sb = new StringBuffer();
-          for (ZoieIndexReader<IndexReader> reader : readers) {
+          for (ZoieMultiReader<IndexReader> reader : readers) {
             sb.append(reader).append("\n");
-            IndexSearcher searcher = new IndexSearcher(reader.getInnerReader());
+            IndexSearcher searcher = new IndexSearcher(reader);
             TopDocs hits = searcher.search(q, 20);
-            sb.append(dump(reader.getInnerReader(), hits));
+            sb.append(dump(reader, hits));
             searcher = null;
           }
           return sb.toString();

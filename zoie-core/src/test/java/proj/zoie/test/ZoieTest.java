@@ -51,7 +51,8 @@ import proj.zoie.api.DefaultDirectoryManager;
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.UIDDocIdSet;
 import proj.zoie.api.ZoieException;
-import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.ZoieMultiReader;
+import proj.zoie.api.ZoieSegmentReader;
 import proj.zoie.api.impl.DocIDMapperImpl;
 import proj.zoie.api.indexing.IndexingEventListener;
 import proj.zoie.api.indexing.ZoieIndexable;
@@ -73,7 +74,7 @@ public class ZoieTest extends ZoieTestCaseBase {
       throws IOException {
     IndexSearcher searcher = null;
     MultiReader reader = null;
-    List<ZoieIndexReader<IndexReader>> readers = null;
+    List<ZoieMultiReader<IndexReader>> readers = null;
     try {
       readers = idxSystem.getIndexReaders();
       reader = new MultiReader(readers.toArray(new IndexReader[readers.size()]), false);
@@ -113,7 +114,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 
     memoryProvider.flush();
     idxSystem.syncWithVersion(10000, "1");
-    List<ZoieIndexReader<IndexReader>> readers = null;
+    List<ZoieMultiReader<IndexReader>> readers = null;
     IndexSearcher searcher = null;
     MultiReader reader = null;
     try {
@@ -167,10 +168,10 @@ public class ZoieTest extends ZoieTestCaseBase {
 
       idxSystem.flushEvents(10000);
 
-      List<ZoieIndexReader<IndexReader>> readers = idxSystem.getIndexReaders();
+      List<ZoieMultiReader<IndexReader>> readers = idxSystem.getIndexReaders();
 
       int numDocs = 0;
-      for (ZoieIndexReader<IndexReader> r : readers) {
+      for (ZoieMultiReader<IndexReader> r : readers) {
         numDocs += r.numDocs();
       }
       idxSystem.returnIndexReaders(readers);
@@ -395,7 +396,7 @@ public class ZoieTest extends ZoieTestCaseBase {
 
       idxSystem.flushEvents(10000);
 
-      List<ZoieIndexReader<IndexReader>> readers = idxSystem.getIndexReaders();
+      List<ZoieMultiReader<IndexReader>> readers = idxSystem.getIndexReaders();
 
       MultiReader multiReader = new MultiReader(readers.toArray(new IndexReader[0]), false);
 
@@ -461,10 +462,10 @@ public class ZoieTest extends ZoieTestCaseBase {
 
       idxSystem.flushEvents(1000);
 
-      List<ZoieIndexReader<IndexReader>> readers = idxSystem.getIndexReaders();
+      List<ZoieMultiReader<IndexReader>> readers = idxSystem.getIndexReaders();
 
       BytesRef data = null;
-      for (ZoieIndexReader<IndexReader> r : readers) {
+      for (ZoieMultiReader<IndexReader> r : readers) {
         data = r.getStoredValue(((Integer.MAX_VALUE) * 2L));
         if (data != null) break;
       }
@@ -476,7 +477,7 @@ public class ZoieTest extends ZoieTestCaseBase {
       TestCase.assertEquals(0L, id);
 
       data = null;
-      for (ZoieIndexReader<IndexReader> r : readers) {
+      for (ZoieMultiReader<IndexReader> r : readers) {
         data = r.getStoredValue(((Integer.MAX_VALUE) * 2L) + 1L);
         if (data != null) break;
       }
@@ -533,7 +534,7 @@ public class ZoieTest extends ZoieTestCaseBase {
       // should be consumed by the idxing system
       IndexSearcher searcher = null;
       MultiReader reader = null;
-      List<ZoieIndexReader<IndexReader>> readers = null;
+      List<ZoieMultiReader<IndexReader>> readers = null;
       for (int i = 0; i < repeat; ++i) {
         try {
           readers = idxSystem.getIndexReaders();
@@ -726,13 +727,13 @@ public class ZoieTest extends ZoieTestCaseBase {
           int expected = DataForTests.testdata.length;
           while (!stop) {
             IndexSearcher searcher = null;
-            List<ZoieIndexReader<IndexReader>> readers = null;
+            List<ZoieMultiReader<IndexReader>> readers = null;
             MultiReader reader = null;
             try {
               readers = idxSystem.getIndexReaders();
               IndexReader[] subReaders = new IndexReader[readers.size()];
               for (int i = 0; i < subReaders.length; ++i) {
-                subReaders[i] = readers.get(i).getInnerReader();
+                subReaders[i] = readers.get(i);
               }
               reader = new MultiReader(subReaders, false);
 
@@ -775,14 +776,14 @@ public class ZoieTest extends ZoieTestCaseBase {
           }
         }
 
-        private String groupDump(List<ZoieIndexReader<IndexReader>> readers, Query q)
+        private String groupDump(List<ZoieMultiReader<IndexReader>> readers, Query q)
             throws IOException {
           StringBuffer sb = new StringBuffer();
-          for (ZoieIndexReader<IndexReader> reader : readers) {
+          for (ZoieMultiReader<IndexReader> reader : readers) {
             sb.append(reader).append("\n");
-            IndexSearcher searcher = new IndexSearcher(reader.getInnerReader());
+            IndexSearcher searcher = new IndexSearcher(reader);
             TopDocs hits = searcher.search(q, 20);
-            sb.append(dump(reader.getInnerReader(), hits));
+            sb.append(dump(reader, hits));
             searcher = null;
           }
           return sb.toString();
@@ -829,8 +830,6 @@ public class ZoieTest extends ZoieTestCaseBase {
       final int count = DataForTests.testdata.length;
       List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(count);
       for (int i = 0; i < count; i++) {
-        // list.add(new DataEvent<String>(i,
-        // TestData.testdata[i]));
         list.add(new DataEvent<String>(DataForTests.testdata[i], "" + i));
       }
       memoryProvider.addEvents(list);
@@ -893,25 +892,25 @@ public class ZoieTest extends ZoieTestCaseBase {
       for (int i = 0; i < intersection; i++) {
         do {
           id = rand.nextInt() + (Integer.MAX_VALUE) * 2L;
-        } while (id == ZoieIndexReader.DELETED_UID || uidset.contains(id));
+        } while (id == ZoieSegmentReader.DELETED_UID || uidset.contains(id));
 
         uidset.add(id);
-        uidList[i] = (i % del) > 0 ? id : ZoieIndexReader.DELETED_UID;
+        uidList[i] = (i % del) > 0 ? id : ZoieSegmentReader.DELETED_UID;
         qryList[i] = id;
         ansList1[i] = (i % del) > 0 ? i : -1;
       }
       for (int i = intersection; i < uidList.length; i++) {
         do {
           id = rand.nextInt() + (Integer.MAX_VALUE) * 2L;
-        } while (id == ZoieIndexReader.DELETED_UID || uidset.contains(id));
+        } while (id == ZoieSegmentReader.DELETED_UID || uidset.contains(id));
 
         uidset.add(id);
-        uidList[i] = (i % del) > 0 ? id : ZoieIndexReader.DELETED_UID;
+        uidList[i] = (i % del) > 0 ? id : ZoieSegmentReader.DELETED_UID;
       }
       for (int i = intersection; i < qryList.length; i++) {
         do {
           id = rand.nextInt() + (Integer.MAX_VALUE) * 2L;
-        } while (id == ZoieIndexReader.DELETED_UID || uidset.contains(id) || qryset.contains(id));
+        } while (id == ZoieSegmentReader.DELETED_UID || uidset.contains(id) || qryset.contains(id));
 
         qryset.add(id);
         qryList[i] = id;
@@ -1021,7 +1020,7 @@ public class ZoieTest extends ZoieTestCaseBase {
     for (int i = 0; i < count; ++i) {
       do {
         id = rand.nextInt();
-      } while (id == ZoieIndexReader.DELETED_UID || uidset.contains(id));
+      } while (id == ZoieSegmentReader.DELETED_UID || uidset.contains(id));
       uidset.add(id);
     }
 

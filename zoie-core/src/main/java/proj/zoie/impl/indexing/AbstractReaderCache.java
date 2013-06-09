@@ -5,12 +5,12 @@ import java.util.List;
 import org.apache.lucene.index.IndexReader;
 
 import proj.zoie.api.ZoieException;
-import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.ZoieMultiReader;
 
 public abstract class AbstractReaderCache<R extends IndexReader> {
-  public abstract List<ZoieIndexReader<R>> getIndexReaders();
+  public abstract List<ZoieMultiReader<R>> getIndexReaders();
 
-  public abstract void returnIndexReaders(List<ZoieIndexReader<R>> readers);
+  public abstract void returnIndexReaders(List<ZoieMultiReader<R>> readers);
 
   public abstract void refreshCache(long timeout) throws ZoieException;
 

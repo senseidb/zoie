@@ -27,7 +27,6 @@ import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.Zoie;
 import proj.zoie.api.ZoieException;
-import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieMultiReader;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 import proj.zoie.api.indexing.ZoieIndexableInterpreter;
@@ -51,31 +50,30 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
   private long _freshness = 1000;
   final HourGlassScheduler _scheduler;
   public volatile long SLA = 4; // getIndexReaders should return in 4ms or a warning is logged
-  private List<HourglassListener> _hourglassListeners;
+  private List<HourglassListener<R, D>> _hourglassListeners;
 
-  @SuppressWarnings("rawtypes")
   public Hourglass(HourglassDirectoryManagerFactory dirMgrFactory,
       ZoieIndexableInterpreter<D> interpreter, IndexReaderDecorator<R> readerDecorator,
-      ZoieConfig zoieConfig, List<HourglassListener> hourglassListeners) {
+      ZoieConfig zoieConfig, List<HourglassListener<R, D>> hourglassListeners) {
     _zConfig = zoieConfig;
     _dirMgrFactory = dirMgrFactory;
     if (hourglassListeners == null) {
-      hourglassListeners = Collections.EMPTY_LIST;
+      hourglassListeners = Collections.emptyList();
     } else {
-      hourglassListeners = new CopyOnWriteArrayList<HourglassListener>(hourglassListeners);
+      hourglassListeners = new CopyOnWriteArrayList<HourglassListener<R, D>>(hourglassListeners);
     }
     _hourglassListeners = hourglassListeners;
     _scheduler = _dirMgrFactory.getScheduler();
     _dirMgrFactory.clearRecentlyChanged();
     _interpreter = interpreter;
     _decorator = readerDecorator;
-    List<ZoieIndexReader<R>> archives;
+    List<ZoieMultiReader<R>> archives;
     List<ZoieSystem<R, D>> archiveZoies;
     if (_dirMgrFactory.getScheduler().isAppendOnly()) {
       archives = loadArchives();
-      archiveZoies = Collections.EMPTY_LIST;
+      archiveZoies = Collections.emptyList();
     } else {
-      archives = Collections.EMPTY_LIST;
+      archives = Collections.emptyList();
       archiveZoies = loadArchiveZoies();
     }
     _readerMgr = new HourglassReaderManager<R, D>(this, _dirMgrFactory, _decorator, archives,
@@ -90,12 +88,13 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
   public Hourglass(HourglassDirectoryManagerFactory dirMgrFactory,
       ZoieIndexableInterpreter<D> interpreter, IndexReaderDecorator<R> readerDecorator,
       ZoieConfig zoieConfig) {
-    this(dirMgrFactory, interpreter, readerDecorator, zoieConfig, Collections.EMPTY_LIST);
+    this(dirMgrFactory, interpreter, readerDecorator, zoieConfig, Collections.<HourglassListener<R, D>> emptyList());
   }
 
+  @SuppressWarnings("unchecked")
   public Hourglass(HourglassDirectoryManagerFactory dirMgrFactory,
       ZoieIndexableInterpreter<D> interpreter, IndexReaderDecorator<R> readerDecorator,
-      ZoieConfig zoieConfig, HourglassListener hourglassListener) {
+      ZoieConfig zoieConfig, HourglassListener<R, D> hourglassListener) {
     this(dirMgrFactory, interpreter, readerDecorator, zoieConfig, Arrays.asList(hourglassListener));
   }
 
@@ -104,7 +103,6 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
     long t0 = System.currentTimeMillis();
     List<File> dirs = _dirMgrFactory.getAllArchivedDirs();
     for (File dir : dirs) {
-      IndexReader reader;
       try {
         DirectoryManager dirMgr = new DefaultDirectoryManager(dir, _dirMgrFactory.getMode());
         ZoieSystem<R, D> zoie = new ZoieSystem<R, D>(dirMgr, _interpreter, _decorator, _zConfig);
@@ -119,8 +117,8 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
     return archives;
   }
 
-  protected List<ZoieIndexReader<R>> loadArchives() {
-    List<ZoieIndexReader<R>> archives = new ArrayList<ZoieIndexReader<R>>();
+  protected List<ZoieMultiReader<R>> loadArchives() {
+    List<ZoieMultiReader<R>> archives = new ArrayList<ZoieMultiReader<R>>();
     long t0 = System.currentTimeMillis();
     List<Directory> dirs = _dirMgrFactory.getAllArchivedDirectories();
     for (Directory dir : dirs) {
@@ -171,8 +169,8 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
   }
 
   /**
-   * return a list of ZoieIndexReaders. These readers are reference counted and this method
-   * should be used in pair with returnIndexReaders(List<ZoieIndexReader<R>> readers) {@link #returnIndexReaders(List)}.
+   * return a list of ZoieMultiReaders. These readers are reference counted and this method
+   * should be used in pair with returnIndexReaders(List<ZoieMultiReader<R>> readers) {@link #returnIndexReaders(List)}.
    * It is typical that we create a MultiReader from these readers. When creating MultiReader, it should be created with
    * the closeSubReaders parameter set to false in order to do reference counting correctly.
    * <br> If this indexing system is already shut down, then we return an empty list.
@@ -180,13 +178,13 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
    * @see proj.zoie.api.IndexReaderFactory#getIndexReaders()
    */
   @Override
-  public List<ZoieIndexReader<R>> getIndexReaders() throws IOException {
+  public List<ZoieMultiReader<R>> getIndexReaders() throws IOException {
     long t0 = System.currentTimeMillis();
     try {
       _shutdownLock.readLock().lock();
       if (_isShutdown) {
         log.warn("System already shut down. No search request allowed.");
-        List<ZoieIndexReader<R>> list = new ArrayList<ZoieIndexReader<R>>();
+        List<ZoieMultiReader<R>> list = new ArrayList<ZoieMultiReader<R>>();
         return list;// if already shutdown, return an empty list
       }
       try {
@@ -194,9 +192,9 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
         if (System.currentTimeMillis() - lastupdate > _freshness) {
           updateCachedReaders();
         }
-        List<ZoieIndexReader<R>> rlist = list;
-        for (ZoieIndexReader<R> r : rlist) {
-          r.incRef();
+        List<ZoieMultiReader<R>> rlist = list;
+        for (ZoieMultiReader<R> r : rlist) {
+          r.incZoieRef();
         }
         t0 = System.currentTimeMillis() - t0;
         if (t0 > SLA) {
@@ -221,7 +219,7 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
     if (log.isDebugEnabled()) {
       log.debug("updating reader cache");
     }
-    List<ZoieIndexReader<R>> olist = list;
+    List<ZoieMultiReader<R>> olist = list;
     returnIndexReaders(olist);
     if (log.isDebugEnabled()) {
       log.debug("getting new reader from reader cache");
@@ -239,14 +237,14 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
    * lock.
    */
   private void clearCachedReaders() {
-    List<ZoieIndexReader<R>> olist = list;
+    List<ZoieMultiReader<R>> olist = list;
     returnIndexReaders(olist);
     list = null;
     lastupdate = 0;
   }
 
   private volatile long lastupdate = 0;
-  private volatile List<ZoieIndexReader<R>> list = new ArrayList<ZoieIndexReader<R>>();
+  private volatile List<ZoieMultiReader<R>> list = new ArrayList<ZoieMultiReader<R>>();
   private final ReentrantLock cacheLock = new ReentrantLock();
 
   /*
@@ -254,7 +252,7 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
    * @see proj.zoie.api.IndexReaderFactory#returnIndexReaders(java.util.List)
    */
   @Override
-  public void returnIndexReaders(List<ZoieIndexReader<R>> readers) {
+  public void returnIndexReaders(List<ZoieMultiReader<R>> readers) {
     long t0 = System.currentTimeMillis();
     _currentZoie.returnIndexReaders(readers);
     t0 = System.currentTimeMillis() - t0;
@@ -398,7 +396,6 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
 
   @Override
   public void start() {
-    // TODO Auto-generated method stub
     log.info("starting Hourglass... already done due by auto-start");
   }
 
@@ -412,7 +409,7 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
     return _currentZoie == null ? null : _currentZoie.getCurrentReaderVersion();
   }
 
-  public void addHourglassListener(HourglassListener hourglassListener) {
+  public void addHourglassListener(HourglassListener<R, D> hourglassListener) {
     if (hourglassListener != null) {
       _hourglassListeners.add(hourglassListener);
     }

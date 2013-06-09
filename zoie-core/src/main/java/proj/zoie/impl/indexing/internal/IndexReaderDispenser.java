@@ -25,7 +25,6 @@ import org.apache.lucene.store.Directory;
 
 import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DocIDMapper;
-import proj.zoie.api.ZoieIndexReader;
 import proj.zoie.api.ZoieMultiReader;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
@@ -94,7 +93,7 @@ public class IndexReaderDispenser<R extends IndexReader> {
         if (log.isDebugEnabled()) {
           log.debug("opening index reader at: " + dirMgr.getPath());
         }
-        IndexReader srcReader = DirectoryReader.open(dir);
+        DirectoryReader srcReader = DirectoryReader.open(dir);
 
         try {
           reader = new ZoieMultiReader<R>(srcReader, decorator);
@@ -123,7 +122,7 @@ public class IndexReaderDispenser<R extends IndexReader> {
    * @return an IndexReader instance, can be null if index does not yet exit
    * @throws IOException
    */
-  public ZoieIndexReader<R> getNewReader() throws IOException {
+  public ZoieMultiReader<R> getNewReader() throws IOException {
     int numTries = INDEX_OPEN_NUM_RETRIES;
     ZoieMultiReader<R> reader = null;
 
@@ -171,12 +170,12 @@ public class IndexReaderDispenser<R extends IndexReader> {
       // all the clients release their hold on it, the reader will be closed
       // automatically.
       log.info("swap disk reader and release old one from system");
-      if (oldReader != null) oldReader.decRef();
+      if (oldReader != null) oldReader.decZoieRef();
     }
     return reader;
   }
 
-  public ZoieIndexReader<R> getIndexReader() {
+  public ZoieMultiReader<R> getIndexReader() {
     if (_currentReader != null) {
       return _currentReader;
     } else {
@@ -197,8 +196,8 @@ public class IndexReaderDispenser<R extends IndexReader> {
    */
   public void closeReader() {
     if (_currentReader != null) {
-      _currentReader.decRef();
-      int count = _currentReader.getRefCount();
+      _currentReader.decZoieRef();
+      int count = _currentReader.getInnerRefCount();
       log.info("final closeReader in dispenser and current refCount: " + count);
       if (count > 0) {
         log.warn("final closeReader call with reference count == " + count

@@ -7,7 +7,7 @@ import org.apache.lucene.index.IndexReader;
 import proj.zoie.mbean.ZoieAdminMBean;
 
 public interface Zoie<R extends IndexReader, D> extends DataConsumer<D>,
-    IndexReaderFactory<ZoieIndexReader<R>> {
+    IndexReaderFactory<R> {
   void start();
 
   void shutdown();

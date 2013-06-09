@@ -31,11 +31,10 @@ import proj.zoie.api.DirectoryManager;
 import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.IndexReaderFactory;
 import proj.zoie.api.ZoieHealth;
-import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.ZoieMultiReader;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
-public class SearchIndexManager<R extends IndexReader> implements
-    IndexReaderFactory<ZoieIndexReader<R>> {
+public class SearchIndexManager<R extends IndexReader> implements IndexReaderFactory<R> {
   private static final Logger log = Logger.getLogger(SearchIndexManager.class);
 
   public static enum Status {
@@ -77,7 +76,7 @@ public class SearchIndexManager<R extends IndexReader> implements
     }
     _diskIndexerStatus = Status.Sleep;
     _diskIndex = new DiskSearchIndex<R>(_dirMgr, _indexReaderDecorator, this);
-    ZoieIndexReader<R> diskIndexReader = null;
+    ZoieMultiReader<R> diskIndexReader = null;
 
     try {
       diskIndexReader = _diskIndex.getNewReader();
@@ -90,7 +89,7 @@ public class SearchIndexManager<R extends IndexReader> implements
         .newInstance(version, _indexReaderDecorator, this);
     Mem<R> mem = new Mem<R>(memIndexA, null, memIndexA, null, diskIndexReader);
     if (diskIndexReader != null) {
-      diskIndexReader.incRef();
+      diskIndexReader.incZoieRef();
     }
     _mem = mem;
   }
@@ -187,9 +186,9 @@ public class SearchIndexManager<R extends IndexReader> implements
   }
 
   @Override
-  public List<ZoieIndexReader<R>> getIndexReaders() throws IOException {
-    ArrayList<ZoieIndexReader<R>> readers = new ArrayList<ZoieIndexReader<R>>();
-    ZoieIndexReader<R> reader = null;
+  public List<ZoieMultiReader<R>> getIndexReaders() throws IOException {
+    ArrayList<ZoieMultiReader<R>> readers = new ArrayList<ZoieMultiReader<R>>();
+    ZoieMultiReader<R> reader = null;
 
     synchronized (this) {
       synchronized (_memLock) {
@@ -197,7 +196,7 @@ public class SearchIndexManager<R extends IndexReader> implements
         RAMSearchIndex<R> memIndexB = mem.get_memIndexB();
         RAMSearchIndex<R> memIndexA = mem.get_memIndexA();
 
-        // the following order, e.g. B,A,Disk matters, see ZoieIndexReader.getSubZoieReaderAccessor:
+        // the following order, e.g. B,A,Disk matters, see ZoieMultiReader.getSubZoieReaderAccessor:
         // when doing UID->docid mapping, the freshest index needs to be first
         if (memIndexB != null) // load memory index B
         {
@@ -259,9 +258,9 @@ public class SearchIndexManager<R extends IndexReader> implements
   }
 
   @Override
-  public void returnIndexReaders(List<ZoieIndexReader<R>> readers) {
-    for (ZoieIndexReader<R> r : readers) {
-      r.decRef();
+  public void returnIndexReaders(List<ZoieMultiReader<R>> readers) {
+    for (ZoieMultiReader<R> r : readers) {
+      r.decZoieRef();
     }
   }
 
@@ -290,12 +289,12 @@ public class SearchIndexManager<R extends IndexReader> implements
         log.info("Current writable index is B, new B created");
       } else {
         // from working to sleep
-        ZoieIndexReader<R> diskIndexReader = null;
+        ZoieMultiReader<R> diskIndexReader = null;
         try {
           synchronized (_diskIndex) {
             // a new reader is already loaded in loadFromIndex
             diskIndexReader = _diskIndex.openIndexReader();
-            if (diskIndexReader != null) diskIndexReader.incRef();
+            if (diskIndexReader != null) diskIndexReader.incZoieRef();
           }
 
           Mem<R> oldMem = _mem;
@@ -310,7 +309,7 @@ public class SearchIndexManager<R extends IndexReader> implements
           log.error(e.getMessage(), e);
           return;
         } finally {
-          if (diskIndexReader != null) diskIndexReader.decRef();
+          if (diskIndexReader != null) diskIndexReader.decZoieRef();
         }
       }
       _diskIndexerStatus = status;
@@ -342,7 +341,7 @@ public class SearchIndexManager<R extends IndexReader> implements
       mem.get_memIndexB().close();
     }
     if (mem.get_diskIndexReader() != null) {
-      mem.get_diskIndexReader().decRef();
+      mem.get_diskIndexReader().decZoieRef();
       _diskIndex.close();
     }
   }
@@ -425,7 +424,7 @@ public class SearchIndexManager<R extends IndexReader> implements
 
   public void refreshDiskReader() throws IOException {
     log.info("refreshing disk reader ...");
-    ZoieIndexReader<R> diskIndexReader = null;
+    ZoieMultiReader<R> diskIndexReader = null;
     try {
       // load a new reader, not in the lock because this should be done in the background
       // and should not contend with the readers
@@ -438,14 +437,14 @@ public class SearchIndexManager<R extends IndexReader> implements
 
     synchronized (_memLock) {
       Mem<R> oldMem = _mem;
-      ZoieIndexReader<R> oldDiskIndexReader = oldMem.get_diskIndexReader();
+      ZoieMultiReader<R> oldDiskIndexReader = oldMem.get_diskIndexReader();
       if (diskIndexReader != oldDiskIndexReader) {
         Mem<R> mem = new Mem<R>(oldMem.get_memIndexA(), oldMem.get_memIndexB(),
             oldMem.get_currentWritable(), oldMem.get_currentReadOnly(), diskIndexReader);
         if (oldDiskIndexReader != null) {
-          oldDiskIndexReader.decRef();
+          oldDiskIndexReader.decZoieRef();
         }
-        diskIndexReader.incRef();
+        diskIndexReader.incZoieRef();
         _mem = mem;
       }
     }
@@ -455,20 +454,20 @@ public class SearchIndexManager<R extends IndexReader> implements
   /**
    * swap the disk IndexReader cached in mem. In order to count the reference properly,
    * we need to lock the access to _mem so that it is safe to compare whether the old
-   * and new disk IndexReader are different. decRef the old IndexReader only when they
+   * and new disk IndexReader are different. decZoieRef the old IndexReader only when they
    * differ.
    * @param diskIndexReader the new disk IndexReader
    * @param oldDiskReader the old disk IndexReader from old mem
    * @param mem the new mem
    */
-  private void lockAndSwapMem(ZoieIndexReader<R> diskIndexReader, ZoieIndexReader<R> oldDiskReader,
+  private void lockAndSwapMem(ZoieMultiReader<R> diskIndexReader, ZoieMultiReader<R> oldDiskReader,
       Mem<R> mem) {
     synchronized (_memLock) {
       if (oldDiskReader != diskIndexReader) {
         if (oldDiskReader != null) {
-          oldDiskReader.decRef();
+          oldDiskReader.decZoieRef();
         }
-        diskIndexReader.incRef();
+        diskIndexReader.incZoieRef();
       }
       _mem = mem;
     }
@@ -479,10 +478,10 @@ public class SearchIndexManager<R extends IndexReader> implements
     private final RAMSearchIndex<R> _memIndexB;
     private final RAMSearchIndex<R> _currentWritable;
     private final RAMSearchIndex<R> _currentReadOnly;
-    private final ZoieIndexReader<R> _diskIndexReader;
+    private final ZoieMultiReader<R> _diskIndexReader;
 
     Mem(RAMSearchIndex<R> a, RAMSearchIndex<R> b, RAMSearchIndex<R> w, RAMSearchIndex<R> r,
-        ZoieIndexReader<R> d) {
+        ZoieMultiReader<R> d) {
       _memIndexA = a;
       _memIndexB = b;
       _currentWritable = w;
@@ -506,7 +505,7 @@ public class SearchIndexManager<R extends IndexReader> implements
       return _currentReadOnly;
     }
 
-    protected ZoieIndexReader<R> get_diskIndexReader() {
+    protected ZoieMultiReader<R> get_diskIndexReader() {
       return _diskIndexReader;
     }
   }

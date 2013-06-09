@@ -34,7 +34,7 @@ import org.apache.lucene.search.similarities.Similarity;
 
 import proj.zoie.api.UIDFilter;
 import proj.zoie.api.ZoieHealth;
-import proj.zoie.api.ZoieIndexReader;
+import proj.zoie.api.ZoieMultiReader;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 
 public abstract class BaseSearchIndex<R extends IndexReader> {
@@ -79,7 +79,7 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
     closeIndexWriter();
   }
 
-  abstract public ZoieIndexReader<R> openIndexReader() throws IOException;
+  abstract public ZoieMultiReader<R> openIndexReader() throws IOException;
 
   abstract public void refresh() throws IOException;
 
@@ -127,25 +127,25 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
 
   public void markDeletes(LongSet delDocs) throws IOException {
     if (delDocs != null && delDocs.size() > 0) {
-      ZoieIndexReader<R> reader = null;
+      ZoieMultiReader<R> reader = null;
       synchronized (this) {
         reader = openIndexReader();
         if (reader == null) return;
-        reader.incRef();
+        reader.incZoieRef();
         reader.markDeletes(delDocs, _delDocs);
-        reader.decRef();
+        reader.decZoieRef();
       }
     }
   }
 
   public void commitDeletes() throws IOException {
-    ZoieIndexReader<R> reader = null;
+    ZoieMultiReader<R> reader = null;
     synchronized (this) {
       reader = openIndexReader();
       if (reader == null) return;
-      reader.incRef();
+      reader.incZoieRef();
       reader.commitDeletes();
-      reader.decRef();
+      reader.decZoieRef();
     }
 
   }
@@ -171,19 +171,14 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
     }
 
     // hao: open readOnly ram index reader
-    ZoieIndexReader<R> reader = index.openIndexReader();
+    ZoieMultiReader<R> reader = index.openIndexReader();
     if (reader == null) return;
-
-    // hao: delete docs in disk index
-    LongSet delDocs = _delDocs;
-    clearDeletes();
-    deleteDocs(delDocs);
 
     // hao: merge the readOnly ram index with the disk index
     IndexWriter writer = null;
     try {
       writer = openIndexWriter(null, null);
-      writer.addIndexes(reader.getInnerReader());
+      writer.addIndexes(reader.directory());
       writer.maybeMerge();
     } finally {
       closeIndexWriter();

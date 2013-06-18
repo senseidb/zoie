@@ -267,7 +267,6 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
     if (data != null && data.size() > 0) {
       List<DataEvent<D>> deletes = new ArrayList<DataEvent<D>>(data.size());
       for (DataEvent<D> event : data) {
-        if (event instanceof MarkerDataEvent) continue;
         deletes.add(new DataEvent<D>(event.getData(), event.getVersion(), true));
       }
       for (ZoieSystem<R, D> zoie : _readerMgr.getArchiveZoies()) {

@@ -100,6 +100,30 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
     return new ZoieSegmentReader<R>(this, this.in);
   }
 
+  @Override
+  public Bits getLiveDocs() {
+    ensureOpen();
+    return new Bits() {
+      @Override
+      public boolean get(int index) {
+        int[] delSet = _delDocIds;
+        if (delSet != null && Arrays.binarySearch(delSet, index) >= 0) {
+          return false;
+        }
+        Bits liveDocs = in.getLiveDocs();
+        if (liveDocs == null) {
+          return true;
+        }
+        return liveDocs.get(index);
+      }
+
+      @Override
+      public int length() {
+        return in.getLiveDocs().length();
+      }
+    };
+  }
+
   public void markDeletes(LongSet delDocs, LongSet deletedUIDs) {
     LongIterator iter = delDocs.iterator();
     IntRBTreeSet delDocIdSet = _delDocIdSet;
@@ -114,15 +138,6 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
         }
       }
     }
-  }
-
-  @Override
-  public boolean hasDeletions() {
-    int[] delSet = _delDocIds;
-    if (delSet != null && delSet.length > 0) {
-      return true;
-    }
-    return in.hasDeletions();
   }
 
   public void commitDeletes() {
@@ -151,6 +166,11 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
     _uidValues = reader.getNumericDocValues(AbstractZoieIndexable.DOCUMENT_ID_PAYLOAD_FIELD);
   }
 
+
+  public void setDocIDMapper(DocIDMapper docIDMapper){
+    _docIDMapper = docIDMapper;
+  }
+
   public long getUID(int docid) {
     return _uidValues.get(docid);
   }
@@ -174,8 +194,8 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
 
   @Override
   public int numDocs() {
-    if (_currentDelDocIds != null) {
-      return super.maxDoc() - _currentDelDocIds.length;
+    if (_delDocIds != null) {
+      return super.maxDoc() - _delDocIds.length;
     } else {
       return super.numDocs();
     }

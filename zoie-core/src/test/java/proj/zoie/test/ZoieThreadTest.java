@@ -15,8 +15,6 @@ import java.util.concurrent.Future;
 import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.FilterDirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -73,7 +71,6 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
             exception = e;
             return;
           }
-
           int expected = DataForTests.testdata.length;
           while (!stop) {
             IndexSearcher searcher = null;
@@ -82,12 +79,9 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
             try {
               readers = idxSystem.getIndexReaders();
               reader = new MultiReader(readers.toArray(new IndexReader[readers.size()]), false);
-
               searcher = new IndexSearcher(reader);
-
               TopDocs hits = searcher.search(q, 10);
               int count = hits.totalHits;
-
               if (count != expected) {
                 mismatch = true;
                 message = "hit count: " + count + " / expected: " + expected;
@@ -122,8 +116,6 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
           }
         }
 
-        FilterDirectoryReader a = null;
-
         private String groupDump(List<ZoieMultiReader<IndexReader>> readers, Query q)
             throws IOException {
           StringBuffer sb = new StringBuffer();
@@ -142,13 +134,6 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
           StringBuffer sb = new StringBuffer();
           ScoreDoc[] sd = hits.scoreDocs;
           long[] uids = new long[sd.length];
-          try {
-            if (reader.hasDeletions()) sb.append(" there are deletions @ version: "
-                + ((DirectoryReader) reader).getVersion());
-          } catch (UnsupportedOperationException e) {
-            if (reader.hasDeletions()) sb.append(" there are deletions @ version: N/A");
-          }
-          sb.append("\n");
           for (int i = 0; i < sd.length; i++) {
             Document doc = reader.document(sd[i].doc);
             uids[i] = Long.parseLong(doc.get("id"));
@@ -165,7 +150,6 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
         }
       };
     }
-
     MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(
         ZoieConfig.DEFAULT_VERSION_COMPARATOR);
     memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
@@ -174,35 +158,24 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
     ExecutorService threadPool = Executors.newCachedThreadPool();
     try {
       idxSystem.setBatchSize(10);
-
       final int count = DataForTests.testdata.length;
       List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(count);
       for (int i = 0; i < count; i++) {
-        // list.add(new DataEvent<String>(i, TestData.testdata[i]));
         list.add(new DataEvent<String>(DataForTests.testdata[i], "" + i));
       }
       memoryProvider.addEvents(list);
-
       idxSystem.syncWithVersion(100000, "" + (count - 1));
+      @SuppressWarnings("rawtypes")
       Future[] futures = new Future<?>[queryRunnables.length];
       for (int x = 0; x < queryRunnables.length; x++) {
         futures[x] = threadPool.submit(queryRunnables[x]);
       }
-
       for (int n = 1; n <= 3; n++) {
         for (int i = 0; i < count; i++) {
-          // long version = n * count + i;
-          // list = new ArrayList<DataEvent<String>>(1);
-          // list.add(new DataEvent<String>(version,
-          // TestData.testdata[i]));
-
           long version = n * count + i;
-
           list = new ArrayList<DataEvent<String>>(1);
           list.add(new DataEvent<String>(DataForTests.testdata[i], "" + version));
-
           memoryProvider.addEvents(list);
-
           idxSystem.syncWithVersion(100000, "" + version);
         }
         boolean stopNow = false;
@@ -246,7 +219,7 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
 
   private void testDelBigSetImpl() throws ZoieException {
     long starttime = System.currentTimeMillis();
-    final long testduration = 3000L; // one minute
+    final long testduration = 3000L;
     final long endtime = starttime + testduration;
     final int membatchsize = 1;
     File idxDir = getIdxDir();
@@ -288,9 +261,7 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
             try {
               readers = idxSystem.getIndexReaders();
               reader = new MultiReader(readers.toArray(new IndexReader[readers.size()]), false);
-
               searcher = new IndexSearcher(reader);
-
               TopDocs hits = searcher.search(q, 10);
               int count = hits.totalHits;
 
@@ -332,10 +303,10 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
             throws IOException {
           StringBuffer sb = new StringBuffer();
           for (ZoieMultiReader<IndexReader> reader : readers) {
-            sb.append(reader).append("\n");
+            sb.append(reader);
             IndexSearcher searcher = new IndexSearcher(reader);
             TopDocs hits = searcher.search(q, 20);
-            sb.append(dump(reader, hits));
+            sb.append(dump(reader, hits)).append("\n");
             searcher = null;
           }
           return sb.toString();
@@ -346,17 +317,12 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
           StringBuffer sb = new StringBuffer();
           ScoreDoc[] sd = hits.scoreDocs;
           long[] uids = new long[sd.length];
-          try {
-            if (reader.hasDeletions()) sb.append(" there are deletions @ version: "
-                + ((DirectoryReader) reader).getVersion());
-          } catch (UnsupportedOperationException e) {
-            if (reader.hasDeletions()) sb.append(" there are deletions @ version: N/A");
-          }
           sb.append("\n");
           for (int i = 0; i < sd.length; i++) {
             Document doc = reader.document(sd[i].doc);
             uids[i] = Long.parseLong(doc.get("id"));
           }
+          Arrays.sort(uids);
           sb.append(Thread.currentThread() + Arrays.toString(uids)).append("\n");
           int max = reader.maxDoc();
           uids = new long[max];
@@ -364,6 +330,7 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
             Document doc = reader.document(i);
             uids[i] = Long.parseLong(doc.get("id"));
           }
+          Arrays.sort(uids);
           sb.append("uids: " + Arrays.toString(uids)).append("\n");
           return sb.toString();
         }
@@ -398,10 +365,12 @@ public class ZoieThreadTest extends ZoieTestCaseBase {
           list = new ArrayList<DataEvent<String>>(1);
           list.add(new DataEvent<String>(testdata[r.nextInt(testdata.length)], "" + version));
           memoryProvider.addEvents(list);
-
           idxSystem.syncWithVersion(100000, "" + version);
-          if (System.currentTimeMillis() > endtime) break;
+          if (System.currentTimeMillis() > endtime) {
+            break;
+          }
         }
+
         boolean stopNow = false;
         for (QueryThread queryThread : queryThreads)
           stopNow |= queryThread.stop;

@@ -24,7 +24,6 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.NumericDocValues;
@@ -794,13 +793,6 @@ public class ZoieTest extends ZoieTestCaseBase {
           StringBuffer sb = new StringBuffer();
           ScoreDoc[] sd = hits.scoreDocs;
           long[] uids = new long[sd.length];
-          try {
-            if (reader.hasDeletions()) sb.append(" there are deletions @ version: "
-                + ((DirectoryReader) reader).getVersion());
-          } catch (UnsupportedOperationException e) {
-            if (reader.hasDeletions()) sb.append(" there are deletions @ version: N/A");
-          }
-          sb.append("\n");
           for (int i = 0; i < sd.length; i++) {
             Document doc = reader.document(sd[i].doc);
             uids[i] = Long.parseLong(doc.get("id"));

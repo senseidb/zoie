@@ -87,7 +87,6 @@ public class UIDDocIdSet extends DocIdSet {
       public long cost() {
         return 0;
       }
-
     };
   }
 

@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.log4j.Logger;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FilterDirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -45,26 +45,17 @@ public class ZoieMultiReader<R extends IndexReader> extends FilterDirectoryReade
   private DocIDMapper _docIDMapper;
 
   public ZoieMultiReader(DirectoryReader in, IndexReaderDecorator<R> decorator) throws IOException {
-    super(in);
-    _decorator = decorator;
-    _readerMap = new HashMap<String, ZoieSegmentReader<R>>();
-    _decoratedReaders = null;
-    List<AtomicReaderContext> subReaderContextList = in.leaves();
-    _subZoieReaders = new ArrayList<ZoieSegmentReader<R>>(subReaderContextList.size());
-    for (int i = 0; i < subReaderContextList.size(); ++i) {
-      _subZoieReaders
-          .add(new ZoieSegmentReader<R>(subReaderContextList.get(i).reader(), decorator));
-    }
-    init();
+    this(in, decorator, new ZoieSubReaderWrapper<R>(decorator));
   }
 
-  private ZoieMultiReader(DirectoryReader in, List<ZoieSegmentReader<R>> subReaders,
-      IndexReaderDecorator<R> decorator) throws IOException {
-    super(in);
+  @SuppressWarnings("unchecked")
+  private ZoieMultiReader(DirectoryReader in, IndexReaderDecorator<R> decorator,
+      ZoieSubReaderWrapper<R> wrapper) throws IOException {
+    super(in, wrapper);
+    _subZoieReaders = (List<ZoieSegmentReader<R>>) getSequentialSubReaders();
     _decorator = decorator;
     _readerMap = new HashMap<String, ZoieSegmentReader<R>>();
     _decoratedReaders = null;
-    _subZoieReaders = subReaders;
     init();
   }
 
@@ -184,27 +175,8 @@ public class ZoieMultiReader<R extends IndexReader> extends FilterDirectoryReade
       return this;
     }
 
-    List<AtomicReaderContext> subReaderContextList = inner.leaves();
-    List<ZoieSegmentReader<R>> subReaderList = new ArrayList<ZoieSegmentReader<R>>(
-        subReaderContextList.size());
-    for (AtomicReaderContext subReaderContext : subReaderContextList) {
-      if (subReaderContext.reader() instanceof SegmentReader) {
-        SegmentReader sr = (SegmentReader) subReaderContext.reader();
-        String segmentName = sr.getSegmentName();
-        ZoieSegmentReader<R> zoieSegmentReader = _readerMap.get(segmentName);
-        // TODO Here is a bug, same segment name doesn't mean the segment has no change
-        // The fix is easy, but we need check performance before the fix
-        if (zoieSegmentReader != null) {
-          zoieSegmentReader = new ZoieSegmentReader<R>(zoieSegmentReader, sr);
-        } else {
-          zoieSegmentReader = new ZoieSegmentReader<R>(sr, _decorator);
-        }
-        subReaderList.add(zoieSegmentReader);
-      } else {
-        throw new IllegalStateException("reader not insance of " + SegmentReader.class);
-      }
-    }
-    ZoieMultiReader<R> ret = new ZoieMultiReader<R>(inner, subReaderList, _decorator);
+    ZoieMultiReader<R> ret = new ZoieMultiReader<R>(inner, _decorator, new ZoieSubReaderWrapper<R>(
+        _decorator, _readerMap));
     t0 = System.currentTimeMillis() - t0;
     if (t0 > 1000) {
       log.info("reopen returns in " + t0 + "ms with change");
@@ -223,13 +195,8 @@ public class ZoieMultiReader<R extends IndexReader> extends FilterDirectoryReade
   public ZoieMultiReader<R> copy() throws IOException {
     // increase DirectoryReader reference counter
     this.in.incRef();
-    List<ZoieSegmentReader<R>> sourceZoieSubReaders = this._subZoieReaders;
-    List<ZoieSegmentReader<R>> zoieSubReaders = new ArrayList<ZoieSegmentReader<R>>(
-        this._subZoieReaders.size());
-    for (ZoieSegmentReader<R> r : sourceZoieSubReaders) {
-      zoieSubReaders.add(r.copy());
-    }
-    ZoieMultiReader<R> ret = new ZoieMultiReader<R>(this.in, zoieSubReaders, this._decorator);
+    ZoieMultiReader<R> ret = new ZoieMultiReader<R>(this.in, this._decorator,
+        new ZoieSubReaderWrapper<R>(this._decorator, this._readerMap));
     ret._docIDMapper = this._docIDMapper;
     return ret;
   }
@@ -237,5 +204,45 @@ public class ZoieMultiReader<R extends IndexReader> extends FilterDirectoryReade
   @Override
   protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) {
     return in;
+  }
+
+  public static class ZoieSubReaderWrapper<R extends IndexReader> extends SubReaderWrapper {
+    private final IndexReaderDecorator<R> _decorator;
+    private final Map<String, ZoieSegmentReader<R>> _readerMap;
+
+    /** Constructor */
+    public ZoieSubReaderWrapper(IndexReaderDecorator<R> decorator) {
+      this(decorator, null);
+    }
+
+    public ZoieSubReaderWrapper(IndexReaderDecorator<R> decorator,
+        Map<String, ZoieSegmentReader<R>> readerMap) {
+      _decorator = decorator;
+      _readerMap = readerMap;
+    }
+
+    @Override
+    public AtomicReader wrap(AtomicReader reader) {
+      if (!(reader instanceof SegmentReader)) {
+        throw new IllegalStateException("reader not insance of " + SegmentReader.class);
+      }
+
+      try {
+        if (_readerMap != null && !_readerMap.isEmpty()) {
+          SegmentReader sr = (SegmentReader) reader;
+          String segmentName = sr.getSegmentName();
+          ZoieSegmentReader<R> zoieSegmentReader = _readerMap.get(segmentName);
+          // TODO Here is a bug, same segment name doesn't mean the segment has no change
+          // The fix is easy, but we need check performance before the fix
+          if (zoieSegmentReader != null) {
+            return new ZoieSegmentReader<R>(zoieSegmentReader, sr);
+          }
+        }
+        return new ZoieSegmentReader<R>(reader, _decorator);
+      } catch (IOException e) {
+        e.printStackTrace();
+        throw new RuntimeException(e);
+      }
+    }
   }
 }

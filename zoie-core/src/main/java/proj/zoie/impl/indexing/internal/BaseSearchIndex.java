@@ -151,6 +151,10 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
   }
 
   private void deleteDocs(LongSet delDocs) throws IOException {
+    if (delDocs == null || delDocs.size() == 0) {
+      return;
+    }
+
     UIDFilter uidFilter = new UIDFilter(delDocs.toLongArray());
     IndexWriter writer = null;
     try {

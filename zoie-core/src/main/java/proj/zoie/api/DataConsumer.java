@@ -28,8 +28,8 @@ public interface DataConsumer<D> {
    * Data event abstraction.
    */
   public static class DataEvent<D> {
-    private D _data;
-    private String _version;
+    private final D _data;
+    private final String _version;
     // This will override ZoieIndexable.isDeleted()
     private boolean _delete = false;
 
@@ -77,17 +77,6 @@ public interface DataConsumer<D> {
      */
     public boolean isDelete() {
       return _delete;
-    }
-  }
-
-  public static final class MarkerDataEvent<D> extends DataEvent<D> {
-
-    private MarkerDataEvent(String version) {
-      super(null, version);
-    }
-
-    public static <D> MarkerDataEvent<D> createMarkerEvent(String version) {
-      return new MarkerDataEvent<D>(version);
     }
   }
 

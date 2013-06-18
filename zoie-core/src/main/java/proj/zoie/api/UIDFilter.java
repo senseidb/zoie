@@ -43,7 +43,7 @@ public class UIDFilter extends Filter {
   }
 
   @Override
-  public DocIdSet getDocIdSet(AtomicReaderContext ctx, Bits bits) throws IOException {
+  public DocIdSet getDocIdSet(AtomicReaderContext ctx, Bits acceptDocs) throws IOException {
     AtomicReader reader = ctx.reader();
     return new UIDDocIdSet(_filteredIDs, _docIdMapperFactory.getDocIDMapper(reader));
   }

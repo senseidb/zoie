@@ -47,7 +47,7 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
 
   final MergePolicyParams _mergePolicyParams;
 
-  private final ZoieIndexDeletionPolicy _deletionPolicy;
+  private ZoieIndexDeletionPolicy _deletionPolicy;
 
   public static final Logger log = Logger.getLogger(DiskSearchIndex.class);
 
@@ -58,7 +58,7 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
     _mergePolicyParams = new MergePolicyParams();
     _dispenser = new IndexReaderDispenser<R>(_dirMgr, decorator, this);
     _mergeScheduler = new SerialMergeScheduler();
-    _deletionPolicy = new ZoieIndexDeletionPolicy();
+    _deletionPolicy = null;
   }
 
   @Override
@@ -174,6 +174,7 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
     // hao: autocommit is set to false with this constructor
     IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_43, analyzer);
     config.setOpenMode(OpenMode.CREATE_OR_APPEND);
+    _deletionPolicy = new ZoieIndexDeletionPolicy();
     config.setIndexDeletionPolicy(_deletionPolicy);
     config.setMergeScheduler(_mergeScheduler);
     config.setMergePolicy(mergePolicy);
@@ -183,6 +184,8 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
     }
     config.setRAMBufferSizeMB(5);
     IndexWriter idxWriter = new IndexWriter(directory, config);
+    // we need retrieve deletionPolicy from IndexWriter since deletionPolicy is deep cloned
+    _deletionPolicy = (ZoieIndexDeletionPolicy)(idxWriter.getConfig().getIndexDeletionPolicy());
 
     _indexWriter = idxWriter;
     return idxWriter;

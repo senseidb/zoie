@@ -17,7 +17,6 @@ import java.util.Random;
 import junit.framework.TestCase;
 
 import org.apache.log4j.Logger;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -27,7 +26,6 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -36,12 +34,10 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import proj.zoie.api.DataConsumer.DataEvent;
@@ -92,6 +88,7 @@ public class ZoieTest extends ZoieTestCaseBase {
     }
   }
 
+  /**
   @Test
   public void testIndexWithAnalyzer() throws ZoieException, IOException {
     File idxDir = getIdxDir();
@@ -124,13 +121,11 @@ public class ZoieTest extends ZoieTestCaseBase {
       TopDocs hits = searcher.search(new TermQuery(new Term("contents", "hao,yan")), 10);
 
       assertEquals(1, hits.totalHits);
-      // assertEquals(String.valueOf((long)((long)Integer.MAX_VALUE*2L)),searcher.doc(hits.scoreDocs[0].doc).get("id"));
       assertEquals(String.valueOf((Integer.MAX_VALUE * 2L + 1L)),
         searcher.doc(hits.scoreDocs[0].doc).get("id"));
 
       hits = searcher.search(new TermQuery(new Term("contents", "hao")), 10);
       assertEquals(1, hits.totalHits);
-      // assertEquals(String.valueOf((long)((long)Integer.MAX_VALUE*2L)),searcher.doc(hits.scoreDocs[0].doc).get("id"));
     } finally {
       try {
         if (reader != null) {
@@ -184,8 +179,9 @@ public class ZoieTest extends ZoieTestCaseBase {
       deleteDirectory(idxDir);
     }
   }
+  */
 
-  private static class HalfPurgeFilter extends Filter {
+  private static class EvenUidPurgeFilter extends Filter {
     @Override
     public DocIdSet getDocIdSet(final AtomicReaderContext ctx, Bits bits) throws IOException {
 
@@ -212,9 +208,9 @@ public class ZoieTest extends ZoieTestCaseBase {
 
             @Override
             public int nextDoc() throws IOException {
-              while (doc < maxdoc) {
-                doc++;
-                if (doc % 2 == 0) { // if even
+              while (++doc < maxdoc) {
+                long uid = Long.parseLong(reader.document(doc).get("id"));
+                if (uid % 2 == 0) {
                   return doc;
                 }
               }
@@ -375,7 +371,7 @@ public class ZoieTest extends ZoieTestCaseBase {
     ZoieSystem<IndexReader, String> idxSystem = createZoie(idxDir, true,
       ZoieConfig.DEFAULT_VERSION_COMPARATOR, true);
 
-    idxSystem.setPurgeFilter(new HalfPurgeFilter());
+    idxSystem.setPurgeFilter(new EvenUidPurgeFilter());
     idxSystem.start();
 
     MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(
@@ -404,7 +400,7 @@ public class ZoieTest extends ZoieTestCaseBase {
       int numDocs = searcher.search(new MatchAllDocsQuery(), 10).totalHits;
 
       log.info("numdocs: " + numDocs);
-      TestCase.assertTrue(numDocs > 0);
+      TestCase.assertEquals(10, numDocs);
 
       idxSystem.returnIndexReaders(readers);
 
@@ -422,9 +418,7 @@ public class ZoieTest extends ZoieTestCaseBase {
       numDocs = multiReader.numDocs();
 
       log.info("new numdocs: " + numDocs);
-      // TODO for some reasons numdocs might be 6. I've put a temporary fix to avoid sporadical
-      // failures
-      TestCase.assertTrue("numdDocs should be 5" + numDocs, (numDocs == 5 || numDocs == 6));
+      TestCase.assertTrue("numdDocs should be 5, but it is " + numDocs, numDocs == 5);
 
       idxSystem.returnIndexReaders(readers);
 
@@ -470,9 +464,9 @@ public class ZoieTest extends ZoieTestCaseBase {
       }
 
       TestCase.assertNotNull(data);
-      String val = data.toString();
+      String val = data.utf8ToString();
       String[] parts = val.split(" ");
-      final long id = Long.parseLong(parts[parts.length - 1]);
+      long id = Long.parseLong(parts[parts.length - 1]);
       TestCase.assertEquals(0L, id);
 
       data = null;
@@ -481,7 +475,6 @@ public class ZoieTest extends ZoieTestCaseBase {
         if (data != null) break;
       }
       TestCase.assertNull(data);
-
       idxSystem.returnIndexReaders(readers);
 
     } catch (IOException ioe) {
@@ -692,7 +685,6 @@ public class ZoieTest extends ZoieTestCaseBase {
     }
   }
 
-  @Ignore
   @Test
   public void testDelSet() throws ZoieException {
     for (int i = 0; i < 2; i++) {
@@ -921,11 +913,7 @@ public class ZoieTest extends ZoieTestCaseBase {
         ansList2[i] = mapper.getDocID(qryList[i]);
       }
       assertTrue("wrong result", Arrays.equals(ansList1, ansList2));
-      for (int i = 0; i < qryList.length; i++) {
-        assertEquals("wrong result", ansList2[i], mapper.getDocID(i));
-      }
     }
-
   }
 
   @Test

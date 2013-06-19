@@ -166,8 +166,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
     _uidValues = reader.getNumericDocValues(AbstractZoieIndexable.DOCUMENT_ID_PAYLOAD_FIELD);
   }
 
-
-  public void setDocIDMapper(DocIDMapper docIDMapper){
+  public void setDocIDMapper(DocIDMapper docIDMapper) {
     _docIDMapper = docIDMapper;
   }
 
@@ -185,6 +184,9 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
       return true;
     }
     Bits liveDocs = MultiFields.getLiveDocs(in);
+    if (liveDocs == null) {
+      return false;
+    }
     return !liveDocs.get(docid);
   }
 

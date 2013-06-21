@@ -12,13 +12,13 @@ import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
 
 public class TweetInterpreter extends AbstractZoieIndexableInterpreter<String> {
-
+  
+  private static long id = 0; 
   @Override
   public ZoieIndexable convertAndInterpret(String tweet) {
     try {
-      JSONObject obj = new JSONObject(tweet);
-      final String text = obj.optString("text");
-      final long uid = obj.getLong("id_str");
+      final String text = tweet;
+      final long uid = id++;
       return new AbstractZoieIndexable() {
 
         @Override

@@ -267,6 +267,7 @@ public class ZoiePerf {
         }
       }
 
+      @SuppressWarnings("unchecked")
       @Override
       public void run() {
         while (!stop) {

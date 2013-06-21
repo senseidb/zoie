@@ -138,7 +138,10 @@ public abstract class AbstractZoieStore implements ZoieStore {
       _readLock.unlock();
     }
     if (data == null) {
-      data = getFromStore(uid).bytes;
+      BytesRef dataBytesRef = getFromStore(uid);
+      if (dataBytesRef != null) {
+        data = dataBytesRef.bytes;
+      }
     }
     if (data != null && _dataCompressed) {
       data = uncompress(data);

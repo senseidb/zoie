@@ -453,7 +453,7 @@ public class ZoieTest extends ZoieTestCaseBase {
       memoryProvider.addEvents(list);
       memoryProvider.flush();
 
-      idxSystem.flushEvents(1000);
+      idxSystem.flushEvents(5000);
 
       List<ZoieMultiReader<IndexReader>> readers = idxSystem.getIndexReaders();
 

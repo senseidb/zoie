@@ -105,11 +105,6 @@ public class HourglassTest extends ZoieTestCaseBase {
     return;
   }
 
-  /*
-   * @Test public void testMultipleTrimming() throws Exception { for (int i = 0 ; i< 100; i++) {
-   * System.out.println("Run - " + i); tearDown(); minDirs = Integer.MAX_VALUE; // Minimum number of
-   * dirs after system is stable maxDirs = 0; testTrimming(); } }
-   */
   @Test
   public void testTrimming() throws Exception {
     File idxDir = getIdxDir();
@@ -148,7 +143,7 @@ public class HourglassTest extends ZoieTestCaseBase {
     int trimThreshold = 1;
     doTrimmingTest(idxDir, schedule, trimThreshold);
 
-    assertTrue("Maxdir should be > than " + (trimThreshold + 2) + "but it's " + maxDirs,
+    assertTrue("Maxdir should be >= than " + (trimThreshold + 2) + "but it's " + maxDirs,
       maxDirs >= trimThreshold + 2);
     assertEquals(trimThreshold + 1, minDirs);
     return;
@@ -445,31 +440,31 @@ public class HourglassTest extends ZoieTestCaseBase {
       List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(2);
       list.add(new DataEvent<String>("" + i, "" + i));
       memoryProvider.addEvents(list);
-
       System.out.println((i - initNumDocs + 1) + " of " + (1200 - initNumDocs));
       if (idxDir.exists()) {
         int numDirs = idxDir.listFiles().length;
-        // System.out.println("!!" + numDirs + "time = " + now());
         if (numDirs > maxDirs) {
           System.out.println("Set maxDirs to " + numDirs);
           maxDirs = numDirs;
         }
-        if (maxDirs >= trimThreshold + 2) wait = true;
-        if (maxDirs >= trimThreshold + 2 && numDirs < minDirs) {
+        if (maxDirs >= trimThreshold + 2) {
+          wait = true;
+          if (numDirs < minDirs) {
+            boolean stop = false;
 
-          boolean stop = false;
-
-          // We want to make sure that number of directories does shrink
-          // to trimThreshold + 1. Exactly when trimming is done is
-          // controlled by HourglassReaderManager, which checks trimming
-          // condition only once per minute.
-          System.out.println("Set minDirs to " + numDirs);
-          minDirs = numDirs;
-          if (minDirs == 2) {
-            stop = true;
-          }
-          if (stop) {
-            break;
+            // We want to make sure that number of directories does shrink
+            // to trimThreshold + 1. Exactly when trimming is done is
+            // controlled by HourglassReaderManager, which checks trimming
+            // condition only once per minute.
+            System.out.println("Set minDirs to " + numDirs);
+            minDirs = numDirs;
+            if (minDirs == 2) {
+              stop = true;
+            }
+            if (stop) {
+              System.out.println("TrimmingTest succeeded, terminate the loop.");
+              break;
+            }
           }
         }
       }
@@ -477,13 +472,12 @@ public class HourglassTest extends ZoieTestCaseBase {
         currentZoie.notifyAll();
       }
       if (wait) {
-        Thread.sleep(600);
+        Thread.sleep(1000);
       }
       synchronized (runnable) {
         runnable.notifyAll();
       }
       synchronized (currentZoie) {
-        // currentZoie.flushEvents(150);
         Thread.sleep(10);
       }
 

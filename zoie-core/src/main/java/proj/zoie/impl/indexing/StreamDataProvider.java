@@ -24,9 +24,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.log4j.Logger;
 
 import proj.zoie.api.DataConsumer;
+import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.api.DataProvider;
 import proj.zoie.api.ZoieException;
-import proj.zoie.api.DataConsumer.DataEvent;
 import proj.zoie.mbean.DataProviderAdminMBean;
 
 public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProviderAdminMBean {
@@ -67,16 +67,19 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
 
   public abstract void reset();
 
+  @Override
   public int getBatchSize() {
     return _batchSize;
   }
 
+  @Override
   public long getEventsPerMinute() {
     DataThread<D> thread = _thread;
     if (thread == null) return 0;
     return thread.getEventsPerMinute();
   }
 
+  @Override
   public long getMaxEventsPerMinute() {
     return _maxEventsPerMinute;
   }
@@ -87,6 +90,7 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
 
   // indexing
 
+  @Override
   public void setMaxEventsPerMinute(long maxEventsPerMinute) {
     _maxEventsPerMinute = maxEventsPerMinute;
     DataThread<D> thread = _thread;
@@ -101,34 +105,40 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
     thread.setMaxVolatileTime(_maxVolatileTimeInMillis);
   }
 
+  @Override
   public String getStatus() {
     DataThread<D> thread = _thread;
     if (thread == null) return "dead";
     return thread.getStatus() + " : " + thread.getState();
   }
 
+  @Override
   public void pause() {
     if (_thread != null) {
       _thread.pauseDataFeed();
     }
   }
 
+  @Override
   public void resume() {
     if (_thread != null) {
       _thread.resumeDataFeed();
     }
   }
 
+  @Override
   public void setBatchSize(int batchSize) {
     _batchSize = Math.max(1, batchSize);
   }
 
+  @Override
   public long getEventCount() {
     DataThread<D> thread = _thread;
     if (thread != null) return _thread.getEventCount();
     else return 0;
   }
 
+  @Override
   public void stop() {
     if (_thread != null && _thread.isAlive()) {
       _thread.terminate();
@@ -140,6 +150,7 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
     }
   }
 
+  @Override
   public void start() {
     if (_thread == null || !_thread.isAlive()) {
       reset();
@@ -157,11 +168,12 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
 
   private static final class DataThread<D> extends Thread {
     private Collection<DataEvent<D>> _batch;
-    private volatile String _currentVersion;
+    private volatile String _flushedVersion;
+    private volatile String _bufferedVersion;
     private final StreamDataProvider<D> _dataProvider;
     private volatile boolean _paused;
     private volatile boolean _stop;
-    private AtomicLong _eventCount = new AtomicLong(0);
+    private final AtomicLong _eventCount = new AtomicLong(0);
     private volatile long _throttle = 40000;
     private volatile long _maxVolatileTimeInMillis = Long.MAX_VALUE;
     private volatile long _lastFlushTime = System.currentTimeMillis();
@@ -184,7 +196,8 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
       super("Stream DataThread");
       setDaemon(false);
       _dataProvider = dataProvider;
-      _currentVersion = null;
+      _flushedVersion = null;
+      _bufferedVersion = null;
       _paused = false;
       _stop = false;
       _batch = new LinkedList<DataEvent<D>>();
@@ -257,8 +270,8 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
       long due = now + timeInMillis;
       synchronized (this) {
         try {
-          while (_currentVersion == null
-              || _versionComparator.compare(_currentVersion, version) < 0) {
+          while (_flushedVersion == null
+              || _versionComparator.compare(_flushedVersion, version) < 0) {
             if (now >= due) {
               throw new ZoieException("sync timed out");
             }
@@ -277,8 +290,8 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
       }
     }
 
+    @Override
     public void run() {
-      String version = _currentVersion;
       while (!_stop) {
         updateStats();
         synchronized (this) {
@@ -295,22 +308,22 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
         if (!_stop) {
           DataEvent<D> data = _dataProvider.next();
           if (data != null) {
-            version = _versionComparator.compare(version, data.getVersion()) >= 0 ? version : data
-                .getVersion();
+            _bufferedVersion = _versionComparator.compare(_bufferedVersion, data.getVersion()) >= 0 ? _bufferedVersion
+                : data.getVersion();
             synchronized (this) {
               _batch.add(data);
               if (_batch.size() >= _dataProvider._batchSize || _flushing
                   || System.currentTimeMillis() - _lastFlushTime > _maxVolatileTimeInMillis) {
                 flush();
-                _currentVersion = version;
+                _flushedVersion = _bufferedVersion;
                 this.notifyAll();
               }
             }
           } else {
             synchronized (this) {
-              if (_flushing || _batch.size() > 0) {
+              if (_batch.size() > 0) {
                 flush();
-                _currentVersion = version;
+                _flushedVersion = _bufferedVersion;
               }
               this.notifyAll();
               try {
@@ -329,8 +342,8 @@ public abstract class StreamDataProvider<D> implements DataProvider<D>, DataProv
       return _eventCount.get();
     }
 
-    private long[] last60 = new long[60];
-    private long[] last60slots = new long[60];
+    private final long[] last60 = new long[60];
+    private final long[] last60slots = new long[60];
     private volatile int currentslot = 0;
     private static final int window = 3;// window size 3 seconds
 

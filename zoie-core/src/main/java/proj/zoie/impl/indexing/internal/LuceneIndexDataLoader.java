@@ -128,7 +128,6 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements
     try {
       for (DataEvent<ZoieIndexable> evt : events) {
         if (evt == null) continue;
-        // version = Math.max(version, evt.getVersion());
         version = version == null ? evt.getVersion() : (_versionComparator.compare(version,
           evt.getVersion()) < 0 ? evt.getVersion() : version);
 
@@ -191,9 +190,8 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements
     } finally {
       try {
         if (idx != null) {
-          idx.setVersion(version); // update the version of the
+          idx.setVersion(version);
           idx.incrementEventCount(eventCount);
-          // index
         }
       } catch (Exception e) // catch all exceptions, or it would screw
       // up jobs framework
@@ -209,31 +207,23 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements
 
   public void loadFromIndex(RAMSearchIndex<R> ramIndex) throws ZoieException {
     try {
-      // hao: get disk search idx,
+      // get disk search idx,
       BaseSearchIndex<R> idx = getSearchIndex();
-      // hao: merge the realyOnly ram idx with the disk idx
+      // merge the realyOnly ram idx with the disk idx
       idx.loadFromIndex(ramIndex);
-      // duplicate clearDeletes, delDoc may change for realtime delete after loadFromIndex()
-      // idx.clearDeletes(); // clear old deletes as deletes are written to the lucene index
-      // hao: update the disk idx reader
-      idx.refresh(); // load the index reader
-      purgeDocuments();
-      idx.markDeletes(ramIndex.getDelDocs()); // inherit deletes
-      idx.commitDeletes();
-      idx.incrementEventCount(ramIndex.getEventsHandled());
-
-      // Map<String, String> commitData = idx.getCommitData();
-      // System.out.println("disk vesion from the commit data" + commitData);
-
-      // V newVersion = idx.getVersion().compareTo(ramIndex.getVersion()) < 0 ?
-      // ramIndex.getVersion(): idx.getVersion();
+      // set new version
       String newVersion = idx.getVersion() == null ? ramIndex.getVersion() : (_versionComparator
           .compare(idx.getVersion(), ramIndex.getVersion()) < 0 ? ramIndex.getVersion() : idx
           .getVersion());
       idx.setVersion(newVersion);
-      // System.out.println("disk verson from the signature" + newVersion.toString());
+      // update the disk idx reader
+      idx.refresh();
+      purgeDocuments();
+      // inherit deletes
+      idx.markDeletes(ramIndex.getDelDocs());
+      idx.commitDeletes();
+      idx.incrementEventCount(ramIndex.getEventsHandled());
 
-      // idx.setVersion(Math.max(idx.getVersion(), ramIndex.getVersion()));
     } catch (IOException ioe) {
       ZoieHealth.setFatal();
       log.error("Problem copying segments: " + ioe.getMessage(), ioe);

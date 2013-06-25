@@ -21,11 +21,16 @@ public class DefaultDocIDMapperFactory implements DocIDMapperFactory {
 
   @Override
   public DocIDMapper getDocIDMapper(final ZoieMultiReader<?> reader) throws IOException {
-    final ZoieSegmentReader<?> []zoieSegmentReaders = reader.getSubReaders();
+    final ZoieSegmentReader<?>[] zoieSegmentReaders = reader.getSubReaders();
     final DocIDMapper[] mappers = new DocIDMapper[zoieSegmentReaders.length];
     for (int i = 0; i < zoieSegmentReaders.length; ++i) {
-      mappers[i] = getDocIDMapper(zoieSegmentReaders[i]);
-      zoieSegmentReaders[i].setDocIDMapper(mappers[i]);
+      // reuse DocIDMapper since ZoieSegmentReader may be reused
+      if (zoieSegmentReaders[i].getDocIDMapper() != null) {
+        mappers[i] = zoieSegmentReaders[i].getDocIDMapper();
+      } else {
+        mappers[i] = getDocIDMapper(zoieSegmentReaders[i]);
+        zoieSegmentReaders[i].setDocIDMapper(mappers[i]);
+      }
     }
 
     return new DocIDMapper() {

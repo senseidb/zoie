@@ -114,12 +114,6 @@ public class ZoieMultiReader<R extends IndexReader> extends FilterDirectoryReade
     _decoratedReaders = decoratedList;
   }
 
-  public long getUID(int docid) {
-    int idx = readerIndex(docid);
-    ZoieSegmentReader<R> subReader = _subZoieReaders.get(idx);
-    return subReader.getUID(docid - readerBase(idx));
-  }
-
   @SuppressWarnings("unchecked")
   public ZoieSegmentReader<R>[] getSubReaders() {
     return (_subZoieReaders.toArray(new ZoieSegmentReader[_subZoieReaders.size()]));
@@ -232,9 +226,7 @@ public class ZoieMultiReader<R extends IndexReader> extends FilterDirectoryReade
           SegmentReader sr = (SegmentReader) reader;
           String segmentName = sr.getSegmentName();
           ZoieSegmentReader<R> zoieSegmentReader = _readerMap.get(segmentName);
-          // TODO Here is a bug, same segment name doesn't mean the segment has no change
-          // The fix is easy, but we need check performance before the fix
-          if (zoieSegmentReader != null) {
+          if (zoieSegmentReader != null && zoieSegmentReader.getInnerReader() == sr) {
             return new ZoieSegmentReader<R>(zoieSegmentReader, sr);
           }
         }

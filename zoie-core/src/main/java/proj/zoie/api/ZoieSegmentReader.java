@@ -30,7 +30,6 @@ import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.FilterAtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.Bits;
@@ -47,11 +46,10 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
       termVal);
   private R _decoratedReader;
   private final IndexReaderDecorator<R> _decorator;
-  private NumericDocValues _uidValues;
   private IntRBTreeSet _delDocIdSet = new IntRBTreeSet();
-  private int[] _currentDelDocIds;
-  private int[] _delDocIds;
-  private DocIDMapper _docIDMapper;
+  private int[] _currentDelDocIds = null;
+  private int[] _delDocIds = null;
+  private DocIDMapper _docIDMapper = null;
 
   public static void fillDocumentID(Document doc, long id) {
     Field uidField = new NumericDocValuesField(AbstractZoieIndexable.DOCUMENT_ID_PAYLOAD_FIELD, id);
@@ -64,10 +62,8 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
       throw new IllegalStateException("ZoieSegmentReader can only be constucted from "
           + SegmentReader.class);
     }
-    _delDocIds = null;
     _decorator = decorator;
     _decoratedReader = (_decorator == null ? null : _decorator.decorate(this));
-    init(in);
   }
 
   /**
@@ -78,12 +74,10 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
    */
   ZoieSegmentReader(ZoieSegmentReader<R> copyFrom, AtomicReader innerReader) throws IOException {
     super(innerReader);
-    _uidValues = copyFrom._uidValues;
     _docIDMapper = copyFrom._docIDMapper;
     _decorator = copyFrom._decorator;
     _delDocIdSet = copyFrom._delDocIdSet;
     _currentDelDocIds = copyFrom._currentDelDocIds;
-    _delDocIds = null;
 
     if (copyFrom._decorator == null) {
       _decoratedReader = null;
@@ -98,6 +92,10 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
    */
   public ZoieSegmentReader<R> copy() throws IOException {
     return new ZoieSegmentReader<R>(this, this.in);
+  }
+
+  public AtomicReader getInnerReader() {
+    return in;
   }
 
   @Override
@@ -162,20 +160,12 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
     return null;
   }
 
-  private void init(AtomicReader reader) throws IOException {
-    _uidValues = reader.getNumericDocValues(AbstractZoieIndexable.DOCUMENT_ID_PAYLOAD_FIELD);
+  public DocIDMapper getDocIDMapper() {
+    return _docIDMapper;
   }
 
   public void setDocIDMapper(DocIDMapper docIDMapper) {
     _docIDMapper = docIDMapper;
-  }
-
-  public long getUID(int docid) {
-    return _uidValues.get(docid);
-  }
-
-  public NumericDocValues getUIDValues() {
-    return _uidValues;
   }
 
   public boolean isDeleted(int docid) {
@@ -197,7 +187,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
   @Override
   public int numDocs() {
     if (_delDocIds != null) {
-      return super.maxDoc() - _delDocIds.length;
+      return super.numDocs() - _delDocIds.length;
     } else {
       return super.numDocs();
     }

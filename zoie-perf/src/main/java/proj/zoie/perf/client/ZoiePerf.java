@@ -306,7 +306,6 @@ public class ZoiePerf {
 
     testHandler.consumer.start();
 
-    long dataAmount;
     final long start = System.currentTimeMillis();
 
     Metric metric = null;
@@ -431,7 +430,8 @@ public class ZoiePerf {
     }
 
     ZoiePerfVersion perfVersion = ZoiePerfVersion.fromString(testHandler.consumer.getVersion());
-    while ((dataAmount = perfVersion.offsetVersion) < maxSize) {
+    long eventCount;
+    while ((eventCount = perfVersion.countVersion + 1) < maxSize) {
       Thread.sleep(500);
       perfVersion = ZoiePerfVersion.fromString(testHandler.consumer.getVersion());
     }
@@ -456,7 +456,7 @@ public class ZoiePerf {
 
     System.out.println("Test duration: " + (end - start) + " ms");
 
-    System.out.println("Amount of data consumed: " + dataAmount);
+    System.out.println("Amount of event consumed: " + eventCount);
   }
 
   /**

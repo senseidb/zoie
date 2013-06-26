@@ -17,6 +17,7 @@ import java.util.Random;
 import junit.framework.TestCase;
 
 import org.apache.log4j.Logger;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -26,6 +27,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -34,6 +36,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -88,7 +91,6 @@ public class ZoieTest extends ZoieTestCaseBase {
     }
   }
 
-  /**
   @Test
   public void testIndexWithAnalyzer() throws ZoieException, IOException {
     File idxDir = getIdxDir();
@@ -179,7 +181,6 @@ public class ZoieTest extends ZoieTestCaseBase {
       deleteDirectory(idxDir);
     }
   }
-  */
 
   private static class EvenUidPurgeFilter extends Filter {
     @Override

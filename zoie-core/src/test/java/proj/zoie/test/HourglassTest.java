@@ -27,7 +27,6 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TermQuery;
@@ -172,11 +171,6 @@ public class HourglassTest extends ZoieTestCaseBase {
               throws IOException {
             return decorated;
           }
-
-          @Override
-          public void setDeleteSet(IndexReader reader, DocIdSet docIds) {
-            // do nothing
-          }
         }, zConfig);
     HourglassAdmin mbean = new HourglassAdmin(hourglass);
     // HourglassAdminMBean mbean = admin.getMBean();
@@ -284,11 +278,6 @@ public class HourglassTest extends ZoieTestCaseBase {
           public IndexReader redecorate(IndexReader decorated, ZoieSegmentReader<IndexReader> copy)
               throws IOException {
             return decorated;
-          }
-
-          @Override
-          public void setDeleteSet(IndexReader reader, DocIdSet docIds) {
-            // do nothing
           }
         }, zConfig);
     HourglassAdmin mbean = new HourglassAdmin(hourglass);
@@ -407,11 +396,6 @@ public class HourglassTest extends ZoieTestCaseBase {
           public IndexReader redecorate(IndexReader decorated, ZoieSegmentReader<IndexReader> copy)
               throws IOException {
             return decorated;
-          }
-
-          @Override
-          public void setDeleteSet(IndexReader reader, DocIdSet docIds) {
-            // Do nothing
           }
         }, zConfig);
     HourglassAdmin mbean = new HourglassAdmin(hourglass);

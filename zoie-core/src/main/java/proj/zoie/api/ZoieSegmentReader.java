@@ -35,7 +35,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
-import proj.zoie.api.impl.util.ArrayDocIdSet;
 import proj.zoie.api.indexing.AbstractZoieIndexable;
 import proj.zoie.api.indexing.IndexReaderDecorator;
 
@@ -144,8 +143,6 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
 
   public void setDelDocIds() {
     _delDocIds = _currentDelDocIds;
-    if (_decorator != null && _decoratedReader != null) _decorator.setDeleteSet(_decoratedReader,
-      new ArrayDocIdSet(_currentDelDocIds));
   }
 
   public R getDecoratedReader() {

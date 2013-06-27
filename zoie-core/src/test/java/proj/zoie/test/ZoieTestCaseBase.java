@@ -13,7 +13,6 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.DocIdSet;
 import org.junit.After;
 import org.junit.Before;
 
@@ -158,11 +157,6 @@ public class ZoieTestCaseBase {
     @Override
     public IndexReader redecorate(IndexReader decorated, ZoieSegmentReader<IndexReader> copy) throws IOException {
       return decorated;
-    }
-
-    @Override
-    public void setDeleteSet(IndexReader reader, DocIdSet docIds) {
-      // do nothing
     }
   }
 

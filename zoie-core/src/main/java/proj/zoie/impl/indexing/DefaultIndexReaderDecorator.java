@@ -19,7 +19,6 @@ package proj.zoie.impl.indexing;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.DocIdSet;
 
 import proj.zoie.api.ZoieSegmentReader;
 import proj.zoie.api.indexing.IndexReaderDecorator;
@@ -32,13 +31,8 @@ public class DefaultIndexReaderDecorator implements IndexReaderDecorator<IndexRe
   }
 
   @Override
-  public IndexReader redecorate(IndexReader decorated, ZoieSegmentReader<IndexReader> copy) throws IOException {
+  public IndexReader redecorate(IndexReader decorated, ZoieSegmentReader<IndexReader> copy)
+      throws IOException {
     return copy;
   }
-
-  @Override
-  public void setDeleteSet(IndexReader reader, DocIdSet docIds) {
-    // do nothing
-  }
-
 }

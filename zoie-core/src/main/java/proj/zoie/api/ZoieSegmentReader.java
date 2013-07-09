@@ -29,7 +29,6 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.FilterAtomicReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.Bits;
@@ -170,7 +169,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
     if (delSet != null && Arrays.binarySearch(delSet, docid) >= 0) {
       return true;
     }
-    Bits liveDocs = MultiFields.getLiveDocs(in);
+    Bits liveDocs = in.getLiveDocs();
     if (liveDocs == null) {
       return false;
     }

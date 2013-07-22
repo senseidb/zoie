@@ -79,7 +79,7 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
     closeIndexWriter();
   }
 
-  abstract public ZoieMultiReader<R> openIndexReader() throws IOException;
+  abstract public ZoieMultiReader<R> openIndexReader();
 
   abstract public void refresh() throws IOException;
 
@@ -167,18 +167,17 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
   }
 
   public void loadFromIndex(BaseSearchIndex<R> index) throws IOException {
-    // yozhao: delete docs in disk index first
+    // delete docs in disk index first
     if (_delDocs != null && _delDocs.size() > 0) {
       LongSet delDocs = _delDocs;
       clearDeletes();
       deleteDocs(delDocs);
     }
 
-    // hao: open readOnly ram index reader
+    // open readOnly ram index reader, the reader should not be null
     ZoieMultiReader<R> reader = index.openIndexReader();
-    if (reader == null) return;
 
-    // hao: merge the readOnly ram index with the disk index
+    // merge the readOnly ram index with the disk index
     IndexWriter writer = null;
     try {
       writer = openIndexWriter(null, null);

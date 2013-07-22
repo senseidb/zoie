@@ -185,7 +185,7 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
     config.setRAMBufferSizeMB(5);
     IndexWriter idxWriter = new IndexWriter(directory, config);
     // we need retrieve deletionPolicy from IndexWriter since deletionPolicy is deep cloned
-    _deletionPolicy = (ZoieIndexDeletionPolicy)(idxWriter.getConfig().getIndexDeletionPolicy());
+    _deletionPolicy = (ZoieIndexDeletionPolicy) (idxWriter.getConfig().getIndexDeletionPolicy());
 
     _indexWriter = idxWriter;
     return idxWriter;
@@ -195,7 +195,7 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
    * Gets the current reader
    */
   @Override
-  public ZoieMultiReader<R> openIndexReader() throws IOException {
+  public ZoieMultiReader<R> openIndexReader() {
     // use dispenser to get the reader
     return _dispenser.getIndexReader();
   }

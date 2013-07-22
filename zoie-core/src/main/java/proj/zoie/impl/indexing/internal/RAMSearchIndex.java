@@ -101,24 +101,18 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
   @Override
   public int getNumdocs() {
     ZoieMultiReader<R> reader = null;
-    try {
-      synchronized (this) {
-        reader = openIndexReader();
-        if (reader == null) return 0;
-        reader.incZoieRef();
-      }
-
-      return reader.numDocs();
-    } catch (IOException e) {
-      log.error(e.getMessage(), e);
-    } finally {
-      if (reader != null) reader.decZoieRef();
+    synchronized (this) {
+      reader = openIndexReader();
+      if (reader == null) return 0;
+      reader.incZoieRef();
     }
-    return 0;
+    int numDocs = reader.numDocs();
+    reader.decZoieRef();
+    return numDocs;
   }
 
   @Override
-  public ZoieMultiReader<R> openIndexReader() throws IOException {
+  public ZoieMultiReader<R> openIndexReader() {
     return _currentReader;
   }
 
@@ -130,8 +124,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
         // for RAM indexes, just get a new index reader
         srcReader = DirectoryReader.open(_directory);
         finalReader = new ZoieMultiReader<R>(srcReader, _decorator);
-        DocIDMapper mapper = _idxMgr._docIDMapperFactory
-            .getDocIDMapper(finalReader);
+        DocIDMapper mapper = _idxMgr._docIDMapperFactory.getDocIDMapper(finalReader);
         finalReader.setDocIDMapper(mapper);
         return finalReader;
       } catch (IOException ioe) {
@@ -206,8 +199,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
       } else {
         reader = _currentReader.reopen();
         if (reader != _currentReader) {
-          DocIDMapper mapper = _idxMgr._docIDMapperFactory
-              .getDocIDMapper(reader);
+          DocIDMapper mapper = _idxMgr._docIDMapperFactory.getDocIDMapper(reader);
           reader.setDocIDMapper(mapper);
         }
       }

@@ -57,9 +57,9 @@ public class ZoiePerf {
 
   private static class PerfTestHandler {
     final LifeCycleCotrolledDataConsumer<String> consumer;
-    final QueryHandler queryHandler;
+    final QueryHandler<?> queryHandler;
 
-    PerfTestHandler(LifeCycleCotrolledDataConsumer<String> consumer, QueryHandler queryHandler) {
+    PerfTestHandler(LifeCycleCotrolledDataConsumer<String> consumer, QueryHandler<?> queryHandler) {
       this.consumer = consumer;
       this.queryHandler = queryHandler;
     }
@@ -101,8 +101,7 @@ public class ZoiePerf {
     ZoieSystem<IndexReader, String> zoieSystem = new ZoieSystem<IndexReader, String>(dirMgr,
         interpreter, indexReaderDecorator, zoieConfig);
 
-    SearchQueryHandler queryHandler = new SearchQueryHandler(queryFile,
-        zoieSystem);
+    SearchQueryHandler queryHandler = new SearchQueryHandler(queryFile, zoieSystem);
 
     return new PerfTestHandler(zoieSystem, queryHandler);
   }
@@ -139,21 +138,6 @@ public class ZoiePerf {
           @Override
           public byte[] toBytes(String data) {
             return data.getBytes(UTF8);
-          }
-
-          @Override
-          public String fromBytes(byte[] data) {
-            return new String(data, UTF8);
-          }
-
-          @Override
-          public boolean isDelete(String data) {
-            return false;
-          }
-
-          @Override
-          public boolean isSkip(String data) {
-            return false;
           }
         });
     return new PerfTestHandler(consumer, queryHandler);
@@ -267,7 +251,7 @@ public class ZoiePerf {
         }
       }
 
-      @SuppressWarnings("unchecked")
+      @SuppressWarnings({ "unchecked", "rawtypes" })
       @Override
       public void run() {
         while (!stop) {

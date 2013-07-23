@@ -42,21 +42,21 @@ import proj.zoie.impl.indexing.internal.SearchIndexManager.Status;
 public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneIndexDataLoader<R>
 {
 
-	private long _lastTimeOptimized;
+	private final long _lastTimeOptimized;
 	private static final Logger log = Logger.getLogger(DiskLuceneIndexDataLoader.class);
-	private Object _optimizeMonitor;
+	private final Object _optimizeMonitor;
 	private volatile OptimizeScheduler _optScheduler;
-	
+
 	public DiskLuceneIndexDataLoader(Analyzer analyzer, Similarity similarity,SearchIndexManager<R> idxMgr,Comparator<String> comparator,Queue<IndexingEventListener> lsnrList) {
 		super(analyzer, similarity, idxMgr,comparator,lsnrList);
 		_lastTimeOptimized=System.currentTimeMillis();
 		_optimizeMonitor = new Object();
 	}
-	
+
 	public void setOptimizeScheduler(OptimizeScheduler scheduler){
 		_optScheduler = scheduler;
 	}
-	
+
 	public OptimizeScheduler getOptimizeScheduler(){
 		return _optScheduler;
 	}
@@ -71,7 +71,7 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
     {
       // do nothing
     }
-    
+
     @Override
     protected void commitPropagatedDeletes() throws IOException
     {
@@ -98,7 +98,7 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
 		      _optScheduler.finished();
 		      _idxMgr.setPartialExpunge(false);
 		    }
-		    
+
 		    if(optType == OptimizeType.FULL)
 		    {
 	          try
@@ -118,21 +118,25 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
 		  }
 		  finally
 		  {
-            _idxMgr.setDiskIndexerStatus(Status.Sleep);		    
+            _idxMgr.setDiskIndexerStatus(Status.Sleep);
 		  }
 		}
 	}
-	
+
 	@Override
     public void loadFromIndex(RAMSearchIndex<R> ramIndex) throws ZoieException
     {
-	  
+
       synchronized(_optimizeMonitor)
       {
         try
         {
+          // ramIndex is empty
+          if (ramIndex.openIndexReader() == null) {
+            return;
+          }
+
           _idxMgr.setDiskIndexerStatus(Status.Working);
-          
           OptimizeType optType = _optScheduler.getScheduledOptimizeType();
           _idxMgr.setPartialExpunge(optType == OptimizeType.PARTIAL);
           try
@@ -144,7 +148,7 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
             _optScheduler.finished();
             _idxMgr.setPartialExpunge(false);
           }
-          
+
           if(optType == OptimizeType.FULL)
           {
             try
@@ -164,20 +168,20 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
         }
         finally
         {
-          _idxMgr.setDiskIndexerStatus(Status.Sleep);         
+          _idxMgr.setDiskIndexerStatus(Status.Sleep);
         }
       }
     }
-  
-	
-	
+
+
+
 	public void expungeDeletes() throws IOException
 	{
 		log.info("expunging deletes...");
 		synchronized(_optimizeMonitor)
 		{
 		  BaseSearchIndex<R> idx=getSearchIndex();
-		  IndexWriter writer=null;  
+		  IndexWriter writer=null;
 		  try
 		  {
 		    writer=idx.openIndexWriter(_analyzer, _similarity);
@@ -194,18 +198,18 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
 		}
 		log.info("deletes expunged");
 	}
-	
+
 	public void optimize(int numSegs) throws IOException
 	{
 	  long t0 = System.currentTimeMillis();
 		if (numSegs<=1) numSegs = 1;
 		log.info("optmizing, numSegs: "+numSegs+" ...");
-		
+
 		// we should optimize
 		synchronized(_optimizeMonitor)
 		{
 		  BaseSearchIndex<R> idx=getSearchIndex();
-		  IndexWriter writer=null;  
+		  IndexWriter writer=null;
 		  try
 		  {
 		    writer=idx.openIndexWriter(_analyzer, _similarity);
@@ -222,26 +226,26 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
 		}
 		log.info("index optimized in " + (System.currentTimeMillis() - t0) +"ms");
 	}
-	
+
 	public long getLastTimeOptimized()
 	{
 		return _lastTimeOptimized;
 	}
-	
+
 	public long exportSnapshot(WritableByteChannel channel) throws IOException
 	{
 	  DiskSearchIndex<R> idx = (DiskSearchIndex<R>)getSearchIndex();
 	  if(idx != null)
 	  {
 	    DiskIndexSnapshot snapshot = null;
-        
+
 	    try
 	    {
 	      synchronized(_optimizeMonitor) // prevent index updates while taking a snapshot
 	      {
 	        snapshot = idx.getSnapshot();
 	      }
-	      
+
 	      return (snapshot != null ?  snapshot.writeTo(channel) : 0);
 	    }
 	    finally
@@ -251,7 +255,7 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
 	  }
 	  return 0;
 	}
-	
+
 	public void importSnapshot(ReadableByteChannel channel) throws IOException
 	{
       DiskSearchIndex<R> idx = (DiskSearchIndex<R>)getSearchIndex();

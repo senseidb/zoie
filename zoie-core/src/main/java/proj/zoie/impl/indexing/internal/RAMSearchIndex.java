@@ -72,6 +72,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
     _mergePolicyParams.setMaxSmallSegments(4);
   }
 
+  @Override
   public void close()
   {
     super.close();
@@ -93,11 +94,13 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
     }
   }
 
+  @Override
   public String getVersion()
   {
     return _version;
   }
 
+  @Override
   public void setVersion(String version) throws IOException
   {
     _version = version;
@@ -106,35 +109,24 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
     }
   }
 
-  public int getNumdocs()
-  {
+  @Override
+  public int getNumdocs() {
     ZoieIndexReader<R> reader = null;
-    try
-    {
-      synchronized(this)
-      {
-        reader = openIndexReader();
-        if (reader == null)
-          return 0;
-        reader.incZoieRef();
+    synchronized (this) {
+      reader = openIndexReader();
+      if (reader == null) {
+        return 0;
       }
+      reader.incZoieRef();
+    }
 
-      return reader.numDocs();
-    }
-    catch(IOException e)
-    {
-      log.error(e.getMessage(), e);
-    }
-    finally
-    {
-      if (reader != null)
-        reader.decZoieRef();
-    }
-    return 0;
+    int numDocs = reader.numDocs();
+    reader.decZoieRef();
+    return numDocs;
   }
 
   @Override
-  public ZoieIndexReader<R> openIndexReader() throws IOException
+  public ZoieIndexReader<R> openIndexReader()
   {
     return _currentReader;
   }
@@ -180,41 +172,42 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
     }
   }
 
+  @Override
   public IndexWriter openIndexWriter(Analyzer analyzer, Similarity similarity) throws IOException
   {
     if (_indexWriter != null)
       return _indexWriter;
-    
+
     ZoieMergePolicy mergePolicy = new ZoieMergePolicy();
     mergePolicy.setMergePolicyParams(_mergePolicyParams);
     mergePolicy.setUseCompoundFile(false);
-    
-    
+
+
     IndexWriterConfig config = indexWriterConfigStorage.get();
     if (config == null) {
       config = new IndexWriterConfig(Version.LUCENE_34,analyzer);
       indexWriterConfigStorage.set(config);
     }
     config.setOpenMode(OpenMode.CREATE_OR_APPEND);
-   
+
     config.setMergeScheduler(_mergeScheduler);
     config.setMergePolicy(mergePolicy);
-    
+
     config.setReaderPooling(false);
     if (similarity!=null){
       config.setSimilarity(similarity);
     }
     config.setRAMBufferSizeMB(3);
-    
+
     IndexWriter idxWriter = new IndexWriter(_directory,config);
     _indexWriter = idxWriter;
     return idxWriter;
   }
-  
+
   private final Object readerOpenLock = new Object();
-  
+
   public ZoieIndexReader<R> openIndexReader(String minVersion,long timeout) throws IOException,TimeoutException{
-    
+
     if (timeout<0) timeout = Long.MAX_VALUE;
     if (_versionComparator.compare(minVersion, _version)<=0){
       return _currentReader;
@@ -232,9 +225,9 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>
       long now = System.currentTimeMillis();
       if (now-startTimer>=timeout) throw new TimeoutException("timed-out, took: "+(now-startTimer)+" ms");
     }
-    
+
     return _currentReader;
-    
+
   }
 
   @Override

@@ -265,50 +265,54 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
   }
 
   public synchronized void setDiskIndexerStatus(Status status) {
+    if (_diskIndexerStatus == status) {
+      throw new RuntimeException("Wrong status to set");
+    }
     // going from sleep to wake, disk index starts to index
     // which according to the spec, index B is created and it starts to collect data
     // IMPORTANT: do nothing if the status is not being changed.
-    if (_diskIndexerStatus != status) {
+    log.info("updating batch indexer status from " + _diskIndexerStatus + " to " + status);
 
-      log.info("updating batch indexer status from " + _diskIndexerStatus + " to " + status);
+    if (status == Status.Working) { // sleeping to working
+      String version = _diskIndex.getVersion();
+      Mem<R> oldMem = _mem;
 
-      if (status == Status.Working) { // sleeping to working
-        String version = _diskIndex.getVersion();
-        Mem<R> oldMem = _mem;
+      RAMSearchIndex<R> memIndexA = oldMem.get_memIndexA();
+      if (memIndexA != null) memIndexA.closeIndexWriter();
 
-        RAMSearchIndex<R> memIndexA = oldMem.get_memIndexA();
-        if (memIndexA != null) memIndexA.closeIndexWriter();
-
-        RAMSearchIndex<R> memIndexB = _ramIndexFactory.newInstance(version, _indexReaderDecorator,
-          this);
-        Mem<R> mem = new Mem<R>(memIndexA, memIndexB, memIndexB, memIndexA,
-            oldMem.get_diskIndexReader());
-        synchronized (_memLock) {
-          _mem = mem;
-        }
-        log.info("Current writable index is B, new B created");
-      } else {
-        // from working to sleep
-        ZoieMultiReader<R> diskIndexReader = null;
-
-        synchronized (_diskIndex) {
-          // a new reader is already loaded in loadFromIndex
-          diskIndexReader = _diskIndex.openIndexReader();
-          if (diskIndexReader != null) diskIndexReader.incZoieRef();
-        }
-
-        Mem<R> oldMem = _mem;
-        Mem<R> mem = new Mem<R>(oldMem.get_memIndexB(), null, oldMem.get_memIndexB(), null,
-            diskIndexReader);
-        if (oldMem.get_memIndexA() != null) {
-          oldMem.get_memIndexA().close();
-        }
-        lockAndSwapMem(diskIndexReader, oldMem.get_diskIndexReader(), mem);
-        log.info("Current writable index is A, B is flushed");
-        if (diskIndexReader != null) diskIndexReader.decZoieRef();
+      RAMSearchIndex<R> memIndexB = _ramIndexFactory.newInstance(version, _indexReaderDecorator,
+        this);
+      Mem<R> mem = new Mem<R>(memIndexA, memIndexB, memIndexB, memIndexA,
+          oldMem.get_diskIndexReader());
+      synchronized (_memLock) {
+        _mem = mem;
       }
-      _diskIndexerStatus = status;
+      log.info("Current writable index is B, new B created");
+    } else {
+      // from working to sleep
+      ZoieMultiReader<R> diskIndexReader = null;
+
+      synchronized (_diskIndex) {
+        // a new reader is already loaded in loadFromIndex
+        diskIndexReader = _diskIndex.openIndexReader();
+        if (diskIndexReader != null) {
+          diskIndexReader.incZoieRef();
+        }
+      }
+
+      Mem<R> oldMem = _mem;
+      Mem<R> mem = new Mem<R>(oldMem.get_memIndexB(), null, oldMem.get_memIndexB(), null,
+          diskIndexReader);
+      if (oldMem.get_memIndexA() != null) {
+        oldMem.get_memIndexA().close();
+      }
+      lockAndSwapMem(diskIndexReader, oldMem.get_diskIndexReader(), mem);
+      log.info("Current writable index is A, B is flushed");
+      if (diskIndexReader != null) {
+        diskIndexReader.decZoieRef();
+      }
     }
+    _diskIndexerStatus = status;
   }
 
   public DiskSearchIndex<R> getDiskIndex() {

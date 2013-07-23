@@ -103,7 +103,9 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
     ZoieMultiReader<R> reader = null;
     synchronized (this) {
       reader = openIndexReader();
-      if (reader == null) return 0;
+      if (reader == null) {
+        return 0;
+      }
       reader.incZoieRef();
     }
     int numDocs = reader.numDocs();

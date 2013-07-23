@@ -110,7 +110,6 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements
   public void consume(Collection<DataEvent<ZoieIndexable>> events) throws ZoieException {
 
     if (events == null) return;
-
     int eventCount = events.size();
     if (eventCount == 0) {
       return;

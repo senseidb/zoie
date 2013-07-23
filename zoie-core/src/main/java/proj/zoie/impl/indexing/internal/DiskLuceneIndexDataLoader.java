@@ -107,12 +107,11 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
   @Override
   public void loadFromIndex(RAMSearchIndex<R> ramIndex) throws ZoieException {
     synchronized (_optimizeMonitor) {
-      // ramIndex is empty
-      if (ramIndex.openIndexReader() == null) {
-        return;
-      }
       try {
-        _idxMgr.setDiskIndexerStatus(Status.Working);
+        // ramIndex is empty
+        if (ramIndex.openIndexReader() == null) {
+          return;
+        }
         OptimizeType optType = _optScheduler.getScheduledOptimizeType();
         _idxMgr.setPartialExpunge(optType == OptimizeType.PARTIAL);
         try {

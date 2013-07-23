@@ -1,8 +1,6 @@
 package proj.zoie.dataprovider.jms;
 
-import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
@@ -39,32 +37,32 @@ public class TestJMSStreamDataProvider {
 
 	@Mock
 	TopicConnectionFactory connectionFactory;
-	
+
 	@Mock
 	TopicFactory topicFactory;
-	
+
 	@Mock
 	DataEventBuilder<Object> dataEventBuilder;
-	
+
 	@Mock
 	TopicSubscriber subscriber;
-	
+
 	@Mock
 	TopicSession session;
-	
+
 	@Mock
 	TopicConnection connection;
-	
+
 	@Mock
 	Message message;
-	
+
 	JMSStreamDataProvider<Object> provider;
-	
+
 	@Before
 	public void setUpJMSStreamDataProvider() throws JMSException {
-		
+
 		final AtomicLong v = new AtomicLong(0);
-		
+
 		when(dataEventBuilder.buildDataEvent(any(Message.class)))
 		.thenAnswer(new Answer<DataEvent<Object>>() {
 			@Override
@@ -74,16 +72,16 @@ public class TestJMSStreamDataProvider {
 						String.valueOf(v.incrementAndGet()));
 			}
 		});
-		
+
 		provider =
-			new JMSStreamDataProvider<Object>("topic", "clientID", connectionFactory, 
+			new JMSStreamDataProvider<Object>("topic", "clientID", connectionFactory,
 					topicFactory, dataEventBuilder, ZoieConfig.DEFAULT_VERSION_COMPARATOR);
 	}
-	
+
 	/**
 	 * The case, when JMS returns messages without problems
 	 * @throws JMSException
-	 * @throws ZoieException 
+	 * @throws ZoieException
 	 */
 	@Test
 	public void testSuccessfulNext() throws JMSException, ZoieException {
@@ -95,15 +93,15 @@ public class TestJMSStreamDataProvider {
 			.thenReturn(session);
 		when(session.createDurableSubscriber(any(Topic.class), anyString()))
 			.thenReturn(subscriber);
-		
+
 		//stub successful receiving messages
 		when(subscriber.receive())
 			.thenReturn(message, message, message);
-		
+
 		final AtomicBoolean failed = new AtomicBoolean(false);
-		
+
 		provider.setDataConsumer(new DataConsumer<Object>() {
-			
+
 			private volatile String version = null;
 			private long v = 1;
 
@@ -131,23 +129,23 @@ public class TestJMSStreamDataProvider {
 			}
 		}
 		);
-		
+
 		provider.start();
-		
+
 		String versionToSync = "100";
-		
+
 		provider.syncWithVersion(5000, versionToSync);
-		
+
 		assertFalse(failed.get());
-		
+
 		provider.stop();
-		
+
 	}
-	
+
 	/**
 	 * The case, when JMS throws exception
-	 * @throws JMSException 
-	 * @throws ZoieException 
+	 * @throws JMSException
+	 * @throws ZoieException
 	 */
 	@Test
 	public void testExceptionRecovery() throws JMSException, ZoieException {
@@ -166,8 +164,8 @@ public class TestJMSStreamDataProvider {
 		.thenReturn(subscriber)
 		.thenThrow(new JMSException("some problem 6"))
 		.thenReturn(subscriber); //the last stubbed value will be repeatedly returned
-		
-		//stub some problems with receiving messages, 
+
+		//stub some problems with receiving messages,
 		//in total receive 3 messages
 		when(subscriber.receive())
 		.thenThrow(new JMSException("some problem 0"))
@@ -177,14 +175,14 @@ public class TestJMSStreamDataProvider {
 		.thenThrow(new JMSException("some problem 2"))
 		.thenThrow(new JMSException("some problem 3"))
 		.thenReturn(message);  //the last stubbed value will be repeatedly returned
-		
+
 		//for testing set back off time very small
 		provider.setJMSErrorBackOffTime(1);
-		
+
 		final AtomicBoolean failed = new AtomicBoolean(false);
-		
+
 		provider.setDataConsumer(new DataConsumer<Object>() {
-			
+
 			private volatile String version = null;
 			private long v = 1;
 
@@ -212,17 +210,17 @@ public class TestJMSStreamDataProvider {
 			}
 		}
 		);
-		
+
 		provider.start();
-		
+
 		String versionToSync = "100";
-		
+
 		provider.syncWithVersion(5000, versionToSync);
-		
+
 		assertFalse(failed.get());
-		
+
 		provider.stop();
-		
+
 	}
-	
+
 }

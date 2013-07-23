@@ -55,8 +55,7 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D> extends BatchedIn
       int maxBatchSize, long delay, Analyzer analyzer, Similarity similarity,
       SearchIndexManager<R> idxMgr, ZoieIndexableInterpreter<D> interpreter,
       Queue<IndexingEventListener> lsnrList, Comparator<String> comparator) {
-    super(dataLoader, batchSize, maxBatchSize, delay, idxMgr,
-        interpreter, lsnrList);
+    super(dataLoader, batchSize, maxBatchSize, delay, idxMgr, interpreter, lsnrList);
     _analyzer = analyzer;
     _similarity = similarity;
     _currentBatchSize = 0;
@@ -77,8 +76,7 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D> extends BatchedIn
       while (iter.hasNext()) {
         try {
           DataEvent<D> event = iter.next();
-          ZoieIndexable indexable = _interpreter
-              .convertAndInterpret(event.getData());
+          ZoieIndexable indexable = _interpreter.convertAndInterpret(event.getData());
 
           DataEvent<ZoieIndexable> newEvent = new DataEvent<ZoieIndexable>(indexable,
               event.getVersion(), event.isDelete());
@@ -153,43 +151,43 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D> extends BatchedIn
       notifyAll();
     }
 
-    if (eventCount > 0) {
-      long t1 = System.currentTimeMillis();
-      try {
-        if (readOnlyMemIndex != null) {
-          _luceneDataLoader.loadFromIndex(readOnlyMemIndex);
-        }
-      } catch (Exception e) {
-        ZoieHealth.setFatal();
-        log.error(e.getMessage(), e);
-      } finally {
-        synchronized (this) {
-          long t2 = System.currentTimeMillis();
-          _eventCount -= eventCount;
-          int segmentCount = -1;
-          String segmentInfo = "";
-          try {
-            segmentCount = _idxMgr.getDiskSegmentCount();
-            segmentInfo = _idxMgr.getDiskSegmentInfo();
+    if (eventCount == 0) {
+      log.debug("batch size is 0");
+      return;
+    }
 
-            IndexUpdatedEvent evt = new IndexUpdatedEvent(eventCount, t1, t2, _eventCount);
-            fireIndexingEvent(evt);
-            fireNewVersionEvent(readOnlyMemIndex.getVersion());
-          } catch (IOException e) {
-            log.error("error getting disk information after disk flush", e);
-          }
-          if (log.isInfoEnabled()) {
-            log.info("flushed batch of " + eventCount + " events to disk indexer, took: "
-                + (t2 - t1) + " current event count: " + _eventCount
-                + ", current disk segment count: " + segmentCount);
-            log.info("post-flush segment info: " + segmentInfo);
-          }
-          notifyAll();
-        }
+    long t1 = System.currentTimeMillis();
+    try {
+      if (readOnlyMemIndex == null) {
+        throw new ZoieException("readOnlyMemIndex is null");
       }
-    } else {
-      if (log.isDebugEnabled()) {
-        log.debug("batch size is 0");
+      _luceneDataLoader.loadFromIndex(readOnlyMemIndex);
+    } catch (Exception e) {
+      ZoieHealth.setFatal();
+      log.error(e.getMessage(), e);
+    } finally {
+      synchronized (this) {
+        long t2 = System.currentTimeMillis();
+        _eventCount -= eventCount;
+        int segmentCount = -1;
+        String segmentInfo = "";
+        try {
+          segmentCount = _idxMgr.getDiskSegmentCount();
+          segmentInfo = _idxMgr.getDiskSegmentInfo();
+
+          IndexUpdatedEvent evt = new IndexUpdatedEvent(eventCount, t1, t2, _eventCount);
+          fireIndexingEvent(evt);
+          fireNewVersionEvent(readOnlyMemIndex.getVersion());
+        } catch (IOException e) {
+          log.error("error getting disk information after disk flush", e);
+        }
+        if (log.isInfoEnabled()) {
+          log.info("flushed batch of " + eventCount + " events to disk indexer, took: " + (t2 - t1)
+              + " current event count: " + _eventCount + ", current disk segment count: "
+              + segmentCount);
+          log.info("post-flush segment info: " + segmentInfo);
+        }
+        notifyAll();
       }
     }
   }

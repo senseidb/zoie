@@ -131,11 +131,6 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
       {
         try
         {
-          // ramIndex is empty
-          if (ramIndex.openIndexReader() == null) {
-            return;
-          }
-
           _idxMgr.setDiskIndexerStatus(Status.Working);
           OptimizeType optType = _optScheduler.getScheduledOptimizeType();
           _idxMgr.setPartialExpunge(optType == OptimizeType.PARTIAL);

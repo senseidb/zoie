@@ -54,6 +54,13 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R>{
   public DiskSearchIndex(DirectoryManager dirMgr, IndexReaderDecorator<R> decorator,SearchIndexManager<R> idxMgr){
     super(idxMgr, true);
     _dirMgr = dirMgr;
+    // create index signature file
+    try {
+      _dirMgr.getDirectory(true);
+    } catch (IOException e) {
+      e.printStackTrace();
+      throw new RuntimeException(e);
+    }
     _mergePolicyParams = new MergePolicyParams();
     _dispenser = new IndexReaderDispenser<R>(_dirMgr, decorator,this);
     _mergeScheduler = new SerialMergeScheduler();

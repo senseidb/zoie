@@ -55,6 +55,13 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
       SearchIndexManager<R> idxMgr) {
     super(idxMgr, true);
     _dirMgr = dirMgr;
+    // create index signature file
+    try {
+      _dirMgr.getDirectory(true);
+    } catch (IOException e) {
+      e.printStackTrace();
+      throw new RuntimeException(e);
+    }
     _mergePolicyParams = new MergePolicyParams();
     _dispenser = new IndexReaderDispenser<R>(_dirMgr, decorator, this);
     _mergeScheduler = new SerialMergeScheduler();
@@ -162,10 +169,11 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
    */
   @Override
   public IndexWriter openIndexWriter(Analyzer analyzer, Similarity similarity) throws IOException {
-    if (_indexWriter != null) return _indexWriter;
+    if (_indexWriter != null) {
+      return _indexWriter;
+    }
 
     Directory directory = _dirMgr.getDirectory(true);
-
     log.info("opening index writer at: " + _dirMgr.getPath());
 
     ZoieMergePolicy mergePolicy = new ZoieMergePolicy();
@@ -179,14 +187,15 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
     config.setMergeScheduler(_mergeScheduler);
     config.setMergePolicy(mergePolicy);
     config.setReaderPooling(false);
+    config.setWriteLockTimeout(2000);
     if (similarity != null) {
       config.setSimilarity(similarity);
     }
     config.setRAMBufferSizeMB(5);
     IndexWriter idxWriter = new IndexWriter(directory, config);
+
     // we need retrieve deletionPolicy from IndexWriter since deletionPolicy is deep cloned
     _deletionPolicy = (ZoieIndexDeletionPolicy) (idxWriter.getConfig().getIndexDeletionPolicy());
-
     _indexWriter = idxWriter;
     return idxWriter;
   }

@@ -143,8 +143,10 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
 
   @Override
   public IndexWriter openIndexWriter(Analyzer analyzer, Similarity similarity) throws IOException {
-    if (_indexWriter != null) return _indexWriter;
 
+    if (_indexWriter != null) {
+      return _indexWriter;
+    }
     ZoieMergePolicy mergePolicy = new ZoieMergePolicy();
     mergePolicy.setMergePolicyParams(_mergePolicyParams);
     mergePolicy.setUseCompoundFile(false);

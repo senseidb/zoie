@@ -272,11 +272,15 @@ public class ZoieTest extends ZoieTestCaseBase {
 
       idxSystem.flushEvents(10000);
       String diskVersion = null;
+      int wait = 0;
       while (!"9".equals(diskVersion)) {
         diskVersion = idxSystem.getCurrentDiskVersion();
         Thread.sleep(500);
+        if (++wait >= 10) {
+          break;
+        }
       }
-
+      assertTrue(wait < 10);
     } finally {
       memoryProvider.stop();
       idxSystem.shutdown();
@@ -653,9 +657,6 @@ public class ZoieTest extends ZoieTestCaseBase {
         try {
           List<DataEvent<Integer>> list = new ArrayList<DataEvent<Integer>>(count);
           for (int i = 0; i < count; ++i) {
-            // System.out.println("ZoieTest.java:testAsyncDataConsumer():delay:"
-            // + delay + ", batchSize:" + batchSize +
-            // ",forloop: i: " + i);
             list.add(new DataEvent<Integer>(i, "" + i));
           }
           memoryProvider.addEvents(list);

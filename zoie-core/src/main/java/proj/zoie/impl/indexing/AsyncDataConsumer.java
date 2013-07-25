@@ -237,7 +237,9 @@ public class AsyncDataConsumer<D> implements LifeCycleCotrolledDataConsumer<D> {
 
     synchronized (this) {
       while (_batch.size() == 0) {
-        if (_consumerThread._stop) return;
+        if (_consumerThread._stop) {
+          return;
+        }
         try {
           this.notifyAll();
           this.wait(1000);

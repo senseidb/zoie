@@ -174,8 +174,11 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
       deleteDocs(delDocs);
     }
 
-    // open readOnly ram index reader, the reader should not be null
+    // open readOnly ram index reader
     ZoieMultiReader<R> reader = index.openIndexReader();
+    if (reader == null) {
+      return;
+    }
 
     // merge the readOnly ram index with the disk index
     IndexWriter writer = null;

@@ -147,6 +147,7 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
     if (_indexWriter != null) {
       return _indexWriter;
     }
+
     ZoieMergePolicy mergePolicy = new ZoieMergePolicy();
     mergePolicy.setMergePolicyParams(_mergePolicyParams);
     mergePolicy.setUseCompoundFile(false);
@@ -211,7 +212,9 @@ public class RAMSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
       if (_currentReader != reader) {
         ZoieMultiReader<R> oldReader = _currentReader;
         _currentReader = reader;
-        if (oldReader != null) oldReader.decZoieRef();
+        if (oldReader != null) {
+          oldReader.decZoieRef();
+        }
       }
       LongSet delDocs = _delDocs;
       clearDeletes();

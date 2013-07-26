@@ -105,29 +105,31 @@ public class ZoieTest extends ZoieTestCaseBase {
     memoryProvider.start();
 
     List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(2);
-
     list.add(new DataEvent<String>("hao,yan 0", "0"));
     list.add(new DataEvent<String>("hao,yan 1", "1"));
     memoryProvider.addEvents(list);
-
     memoryProvider.flush();
+
     idxSystem.syncWithVersion(10000, "1");
     List<ZoieMultiReader<IndexReader>> readers = null;
     IndexSearcher searcher = null;
     MultiReader reader = null;
+
     try {
       readers = idxSystem.getIndexReaders();
       reader = new MultiReader(readers.toArray(new IndexReader[readers.size()]), false);
       searcher = new IndexSearcher(reader);
 
       TopDocs hits = searcher.search(new TermQuery(new Term("contents", "hao,yan")), 10);
-
       assertEquals(1, hits.totalHits);
       assertEquals(String.valueOf((Integer.MAX_VALUE * 2L + 1L)),
         searcher.doc(hits.scoreDocs[0].doc).get("id"));
 
       hits = searcher.search(new TermQuery(new Term("contents", "hao")), 10);
       assertEquals(1, hits.totalHits);
+      assertEquals(String.valueOf((Integer.MAX_VALUE * 2L)), searcher.doc(hits.scoreDocs[0].doc)
+          .get("id"));
+      idxSystem.returnIndexReaders(readers);
     } finally {
       try {
         if (reader != null) {
@@ -135,7 +137,9 @@ public class ZoieTest extends ZoieTestCaseBase {
           reader = null;
         }
       } finally {
-        idxSystem.returnIndexReaders(readers);
+        memoryProvider.stop();
+        idxSystem.shutdown();
+        deleteDirectory(idxDir);
       }
     }
   }
@@ -286,15 +290,13 @@ public class ZoieTest extends ZoieTestCaseBase {
       idxSystem.shutdown();
       deleteDirectory(idxDir);
     }
-
     assertTrue(flushNum[0] > 0);
     assertEquals("9", flushVersion[0]);
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({ "unchecked", "rawtypes" })
   @Test
   public void testSegmentTermDocs() throws Exception {
-
     class DefaultInterpreter implements ZoieIndexableInterpreter<DataDoc> {
 
       @Override
@@ -983,9 +985,7 @@ public class ZoieTest extends ZoieTestCaseBase {
       exportFile.close();
 
       assertEquals("count is wrong", hits, countHits(idxSystem, q));
-    }
-
-    catch (ZoieException e) {
+    } catch (ZoieException e) {
       throw e;
     } finally {
       idxSystem.shutdown();
@@ -1060,8 +1060,5 @@ public class ZoieTest extends ZoieTestCaseBase {
         81, 90, 91 };
     assertTrue("wrong result from mix of next and skip",
       Arrays.equals(answer, intList.toIntArray()));
-  }
-
-  public static void main(String[] args) {
   }
 }

@@ -187,7 +187,6 @@ public class DiskSearchIndex<R extends IndexReader> extends BaseSearchIndex<R> {
     config.setMergeScheduler(_mergeScheduler);
     config.setMergePolicy(mergePolicy);
     config.setReaderPooling(false);
-    config.setWriteLockTimeout(2000);
     if (similarity != null) {
       config.setSimilarity(similarity);
     }

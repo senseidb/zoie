@@ -103,128 +103,62 @@ public class ZoieTest extends ZoieTestCaseBase {
 		}
 	}
 
-	@Test
-	public void testIndexWithAnalyzer() throws ZoieException, IOException {
-		File idxDir = getIdxDir();
-		ZoieSystem<IndexReader, String> idxSystem = createZoie(
-				idxDir, true, 20, new WhitespaceAnalyzer(), null,
-				ZoieConfig.DEFAULT_VERSION_COMPARATOR,false);
-		idxSystem.start();
+  @Test
+  public void testIndexWithAnalyzer() throws ZoieException, IOException {
+    File idxDir = getIdxDir();
+    ZoieSystem<IndexReader, String> idxSystem = createZoie(idxDir, true, 20,
+      new WhitespaceAnalyzer(), null, ZoieConfig.DEFAULT_VERSION_COMPARATOR, false);
+    idxSystem.start();
 
-		MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(ZoieConfig.DEFAULT_VERSION_COMPARATOR);
-		memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
-		memoryProvider.setDataConsumer(idxSystem);
-		memoryProvider.start();
+    MemoryStreamDataProvider<String> memoryProvider = new MemoryStreamDataProvider<String>(
+        ZoieConfig.DEFAULT_VERSION_COMPARATOR);
+    memoryProvider.setMaxEventsPerMinute(Long.MAX_VALUE);
+    memoryProvider.setDataConsumer(idxSystem);
+    memoryProvider.start();
 
-		List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(
-				2);
+    List<DataEvent<String>> list = new ArrayList<DataEvent<String>>(2);
 
-		list.add(new DataEvent<String>("hao,yan 0", "0"));
-		list.add(new DataEvent<String>("hao,yan 1", "1"));
-		memoryProvider.addEvents(list);
+    list.add(new DataEvent<String>("hao,yan 0", "0"));
+    list.add(new DataEvent<String>("hao,yan 1", "1"));
+    memoryProvider.addEvents(list);
 
-		memoryProvider.flush();
-		idxSystem.syncWithVersion(10000, "1");
-		List<ZoieIndexReader<IndexReader>> readers = null;
-		Searcher searcher = null;
-		MultiReader reader = null;
-		try {
-			readers = idxSystem.getIndexReaders();
-			reader = new MultiReader(readers.toArray(new IndexReader[readers
-					.size()]), false);
-			for (int i = 0; i < readers.size(); i++) {
-				IndexReader ir = readers.get(i);
-				// Map<String, String> commitData =
-				// reader.getCommitUserData(ir.directory()); // = new
-				// HashMap<String,String>();
-				// System.out.println("ZoieTest: directory: " + ir.directory());
-				// System.out.println("ZoieTest: commitData: " +
-				// commitData);
-			}
-			// Map<String, String> commitData =
-			// reader.getCommitUserData(reader.directory());// = new
-			// HashMap<String,String>();
-			// for(int i=0; i<readers.size(); i++)
-			// {
-			// IndexReader ir = readers.get(i);
-			// Map<String, String> commitData =
-			// IndexReader.getCommitUserData(ir.directory()); // = new
-			// HashMap<String,String>();
-			// System.out.println("i:" + i + "ZoieTest: directory: " +
-			// ir.directory());
-			// System.out.println("i:" + i +
-			// "ZoieTest: commitData: " + commitData);
-			// }
+    memoryProvider.flush();
+    idxSystem.syncWithVersion(10000, "1");
+    List<ZoieIndexReader<IndexReader>> readers = null;
+    Searcher searcher = null;
+    MultiReader reader = null;
 
-			// Map<String, String> commitData =
-			// IndexReader.getCommitUserData(reader.directory());// = new
-			// HashMap<String,String>();
-			// System.out.println("ZoieTest:commitData" + commitData);
+    try {
+      readers = idxSystem.getIndexReaders();
+      reader = new MultiReader(readers.toArray(new IndexReader[readers.size()]), false);
+      searcher = new IndexSearcher(reader);
 
-			// commitData = reader.getCommitUserData();
+      TopDocs hits = searcher.search(new TermQuery(new Term("contents", "hao,yan")), 10);
 
-			// int x = reader.maxDoc();
-			// for(int y = 0; y<x; y++)
-			// {
-			// Document d = reader.document(y);
-			// System.out.println(d.toString());
-			// }
+      assertEquals(1, hits.totalHits);
+      assertEquals(String.valueOf((Integer.MAX_VALUE * 2L + 1L)),
+        searcher.doc(hits.scoreDocs[0].doc).get("id"));
 
-			// TermEnum terms = reader.terms();
-			// while(terms.next())
-			// {
-			// System.out.println(terms.term().text());
-			// TermDocs td = reader.termDocs(terms.term());
-			// while(td.next())
-			// {
-			// System.out.println(td.doc());
-			// }
-			// }
-
-			// terms = reader.terms();
-			// while(terms.next())
-			// {
-			// System.out.println("term:" + terms.term().text());
-			// TermPositions tp = reader.termPositions(terms.term());
-			//
-			// while(tp.next())
-			// {
-			// System.out.println("docID: " + tp.doc() + "freq: " + tp.freq());
-			// System.out.println("positions");
-			// for(int i=0; i<tp.freq();i++)
-			// {
-			// System.out.println(tp.nextPosition());
-			// }
-			// }
-			// }
-			searcher = new IndexSearcher(reader);
-
-			TopDocs hits = searcher.search(new TermQuery(new Term("contents",
-					"hao,yan")), 10);
-
-			assertEquals(1, hits.totalHits);
-			// assertEquals(String.valueOf((long)((long)Integer.MAX_VALUE*2L)),searcher.doc(hits.scoreDocs[0].doc).get("id"));
-			assertEquals(
-					String.valueOf((Integer.MAX_VALUE * 2L + 1L)),
-					searcher.doc(hits.scoreDocs[0].doc).get("id"));
-
-			hits = searcher.search(new TermQuery(new Term("contents", "hao")),
-					10);
-			assertEquals(1, hits.totalHits);
-			// assertEquals(String.valueOf((long)((long)Integer.MAX_VALUE*2L)),searcher.doc(hits.scoreDocs[0].doc).get("id"));
-		} finally {
-			try {
-				if (searcher != null) {
-					searcher.close();
-					searcher = null;
-					reader.close();
-					reader = null;
-				}
-			} finally {
-				idxSystem.returnIndexReaders(readers);
-			}
-		}
-	}
+      hits = searcher.search(new TermQuery(new Term("contents", "hao")), 10);
+      assertEquals(1, hits.totalHits);
+      assertEquals(String.valueOf((Integer.MAX_VALUE * 2L)), searcher.doc(hits.scoreDocs[0].doc)
+          .get("id"));
+      idxSystem.returnIndexReaders(readers);
+    } finally {
+      try {
+        if (searcher != null) {
+          searcher.close();
+          searcher = null;
+          reader.close();
+          reader = null;
+        }
+      } finally {
+        memoryProvider.stop();
+        idxSystem.shutdown();
+        deleteDirectory(idxDir);
+      }
+    }
+  }
 
 	@Test
 	public void testRealtime2() throws ZoieException {
@@ -378,50 +312,50 @@ public class ZoieTest extends ZoieTestCaseBase {
     assertTrue(flushNum[0]>0);
     assertEquals("9", flushVersion[0]);
   }
-  
+
   @Test
   public void testSegmentTermDocs() throws Exception{
-	  
+
 	  class DefaultInterpreter implements ZoieIndexableInterpreter<DataDoc> {
 
 			@Override
 			public ZoieIndexable convertAndInterpret(DataDoc src) {
 				return src;
 			}
-			
+
 		}
-	  
+
 	  File idxDir = getIdxDir();
-	  
+
 	  ZoieConfig zConfig = new ZoieConfig();
-		
+
       ZoieSystem<?, DataDoc> zoie = ZoieSystem.buildDefaultInstance(
 				idxDir,
 				new DefaultInterpreter(),
 				zConfig);
 	  zoie.start();
-	    
+
 	  Document d1 = new Document();
 	  Fieldable f1 = new Field("num", "abcdef", Store.YES, Index.NOT_ANALYZED_NO_NORMS);
 	  d1.add(f1);
-		
+
 	  Document d2 = new Document();
 	  Fieldable f2 = new Field("num", "abcd", Store.YES, Index.NOT_ANALYZED_NO_NORMS);
 	  d2.add(f2);
-		
+
 	  Document d3 = new Document();
 	  Fieldable f3 = new Field("num", "abcde", Store.YES, Index.NOT_ANALYZED_NO_NORMS);
 	  d3.add(f3);
-		
-		
+
+
 	  DataEvent<DataDoc> de1 = new DataEvent<DataDoc>(new DataDoc(1, d1), "1");
 	  DataEvent<DataDoc> de2 = new DataEvent<DataDoc>(new DataDoc(2, d2), "1");
 	  DataEvent<DataDoc> de3 = new DataEvent<DataDoc>(new DataDoc(3, d3), "1");
-		
+
 	  try{
 	    zoie.consume(Arrays.asList(de1, de2, de3));
 	    zoie.flushEvents(10000);
-	  
+
 	    List<?> readerList = zoie.getIndexReaders();
 	    // combine the readers
 	    MultiReader reader = new MultiReader(readerList.toArray(new IndexReader[readerList.size()]),false);
@@ -432,16 +366,16 @@ public class ZoieTest extends ZoieTestCaseBase {
 	    TopDocs ret = searcher.search(q, 100);
 	    TestCase.assertEquals(3, ret.totalHits);
 	    searcher.close();
-	  
+
 	    zoie.returnIndexReaders((List) readerList);
-		
+
 	    de1 = new DataEvent<DataDoc>(new DataDoc(1), "2");
 	    de2 = new DataEvent<DataDoc>(new DataDoc(2), "2");
 	    de3 = new DataEvent<DataDoc>(new DataDoc(3), "2");
 	    zoie.consume(Arrays.asList(de1, de2, de3));
-		
+
 	    zoie.flushEventsToMemoryIndex(10000);
-		
+
 	    readerList = zoie.getIndexReaders();
 	    // combine the readers
 	     reader = new MultiReader(readerList.toArray(new IndexReader[readerList.size()]),false);
@@ -451,10 +385,10 @@ public class ZoieTest extends ZoieTestCaseBase {
 	    searcher.close();
 	    TestCase.assertEquals(0, ret.totalHits);
 	    zoie.returnIndexReaders((List)readerList);
-	  } 
+	  }
 	  catch (IOException ioe) {
 	      throw new ZoieException(ioe.getMessage());
-	  } 
+	  }
 	  finally {
 	      zoie.shutdown();
 	      deleteDirectory(idxDir);
@@ -1546,9 +1480,5 @@ public class ZoieTest extends ZoieTestCaseBase {
 				51, 60, 61, 70, 71, 80, 81, 90, 91 };
 		assertTrue("wrong result from mix of next and skip",
 				Arrays.equals(answer, intList.toIntArray()));
-	}
-	
-	public static void main(String[] args) {
-		
 	}
 }

@@ -30,7 +30,6 @@ import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.FilterAtomicReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SegmentReader;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -39,9 +38,6 @@ import proj.zoie.api.indexing.IndexReaderDecorator;
 
 public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader {
   public static final long DELETED_UID = Long.MIN_VALUE;
-  public static final String termVal = "_UID";
-  public static final Term UID_TERM = new Term(AbstractZoieIndexable.DOCUMENT_ID_PAYLOAD_FIELD,
-      termVal);
   private R _decoratedReader;
   private final IndexReaderDecorator<R> _decorator;
   private IntRBTreeSet _delDocIdSet = new IntRBTreeSet();
@@ -142,6 +138,10 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
 
   public void setDelDocIds() {
     _delDocIds = _currentDelDocIds;
+  }
+
+  public int[] getDelDocIds() {
+    return _delDocIds;
   }
 
   public R getDecoratedReader() {

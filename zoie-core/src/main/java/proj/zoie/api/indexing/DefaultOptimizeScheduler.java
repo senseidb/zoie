@@ -21,12 +21,8 @@ import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import org.apache.log4j.Logger;
-
 public class DefaultOptimizeScheduler extends OptimizeScheduler {
   private static long DAY_IN_MILLIS = 1000L * 60L * 60L * 24L;
-  private static Logger logger = Logger.getLogger(DefaultOptimizeScheduler.class);
-
   private long _optimizeDuration;
 
   private volatile boolean _optimizeScheduled;

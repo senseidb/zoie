@@ -911,7 +911,7 @@ public class ZoieTest extends ZoieTestCaseBase {
           return uidList[docID];
         }
       };
-      mapper = new DocIDMapperImpl(uidValues, uidList.length);
+      mapper = new DocIDMapperImpl(uidValues, uidList.length, null);
 
       for (int i = 0; i < qryList.length; i++) {
         ansList2[i] = mapper.getDocID(qryList[i]);
@@ -1022,7 +1022,7 @@ public class ZoieTest extends ZoieTestCaseBase {
       }
     };
 
-    DocIDMapperImpl mapper = new DocIDMapperImpl(uidValues, uidArray.length / 2);
+    DocIDMapperImpl mapper = new DocIDMapperImpl(uidValues, uidArray.length / 2, null);
     UIDDocIdSet uidSet = new UIDDocIdSet(even, mapper);
     DocIdSetIterator docidIter = uidSet.iterator();
     IntArrayList intList = new IntArrayList();
@@ -1043,7 +1043,7 @@ public class ZoieTest extends ZoieTestCaseBase {
         return docID;
       }
     };
-    mapper = new DocIDMapperImpl(newUidValues, count);
+    mapper = new DocIDMapperImpl(newUidValues, count, null);
     uidSet = new UIDDocIdSet(newidArray, mapper);
     docidIter = uidSet.iterator();
     intList = new IntArrayList();

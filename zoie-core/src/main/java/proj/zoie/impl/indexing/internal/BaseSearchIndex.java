@@ -155,7 +155,12 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
       return;
     }
 
-    UIDFilter uidFilter = new UIDFilter(delDocs.toLongArray());
+    ZoieMultiReader<R> reader = openIndexReader();
+    if (reader == null) {
+      return;
+    }
+
+    UIDFilter uidFilter = new UIDFilter(delDocs.toLongArray(), reader);
     IndexWriter writer = null;
     try {
       writer = openIndexWriter(null, null);

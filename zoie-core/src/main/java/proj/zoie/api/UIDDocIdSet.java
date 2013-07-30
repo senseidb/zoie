@@ -28,12 +28,10 @@ public class UIDDocIdSet extends DocIdSet {
   private final int[] _sorted;
 
   public UIDDocIdSet(long[] uidArray, DocIDMapper mapper) {
-    if (uidArray == null) throw new IllegalArgumentException("input uid array is null");
+    if (uidArray == null) {
+      throw new IllegalArgumentException("Input uid array is null");
+    }
     _sorted = mapUID(uidArray, mapper);
-  }
-
-  public UIDDocIdSet(int[] docids) {
-    _sorted = docids;
   }
 
   public static int[] mapUID(long[] uidArray, DocIDMapper mapper) {

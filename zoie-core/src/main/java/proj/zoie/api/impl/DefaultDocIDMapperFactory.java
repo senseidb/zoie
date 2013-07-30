@@ -2,8 +2,6 @@ package proj.zoie.api.impl;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReader;
-
 import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.ZoieMultiReader;
@@ -13,10 +11,10 @@ import proj.zoie.api.indexing.AbstractZoieIndexable;
 public class DefaultDocIDMapperFactory implements DocIDMapperFactory {
 
   @Override
-  public DocIDMapper getDocIDMapper(final AtomicReader reader) throws IOException {
+  public DocIDMapper getDocIDMapper(final ZoieSegmentReader<?> reader) throws IOException {
     return new DocIDMapperImpl(
         reader.getNumericDocValues(AbstractZoieIndexable.DOCUMENT_ID_PAYLOAD_FIELD),
-        reader.maxDoc());
+        reader.maxDoc(), reader.getLiveDocs());
   }
 
   @Override
@@ -36,7 +34,7 @@ public class DefaultDocIDMapperFactory implements DocIDMapperFactory {
     return new DocIDMapper() {
 
       @Override
-      public int quickGetDocID(long uid) {
+      public int getDocID(long uid) {
         int docid;
         for (int i = mappers.length - 1; i >= 0; --i) {
           docid = mappers[i].getDocID(uid);
@@ -48,8 +46,9 @@ public class DefaultDocIDMapperFactory implements DocIDMapperFactory {
       }
 
       @Override
-      public int getDocID(long uid) {
-        return quickGetDocID(uid);
+      public long[] getUIDArray() {
+        throw new UnsupportedOperationException(
+            "Only ZoieSegmentReader supports getUIDArray method");
       }
     };
   }

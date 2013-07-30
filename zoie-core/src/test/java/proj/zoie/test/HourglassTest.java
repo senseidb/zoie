@@ -355,6 +355,7 @@ public class HourglassTest extends ZoieTestCaseBase {
 
   }
 
+  @SuppressWarnings("rawtypes")
   private void doTrimmingTest(File idxDir, String schedule, int trimThreshold) throws Exception {
     HourglassDirectoryManagerFactory factory = new HourglassDirectoryManagerFactory(
         idxDir,

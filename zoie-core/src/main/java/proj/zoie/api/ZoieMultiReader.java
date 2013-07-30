@@ -22,6 +22,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -146,6 +147,15 @@ public class ZoieMultiReader<R extends IndexReader> extends FilterDirectoryReade
 
   public List<R> getDecoratedReaders() throws IOException {
     return _decoratedReaders;
+  }
+
+  public static <R extends IndexReader> List<R> extractDecoratedReaders(
+      List<ZoieMultiReader<R>> readerList) throws IOException {
+    LinkedList<R> retList = new LinkedList<R>();
+    for (ZoieMultiReader<R> reader : readerList) {
+      retList.addAll(reader.getDecoratedReaders());
+    }
+    return retList;
   }
 
   public boolean isDeleted(int docid) {

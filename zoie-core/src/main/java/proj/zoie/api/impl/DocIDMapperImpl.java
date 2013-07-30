@@ -19,6 +19,7 @@ package proj.zoie.api.impl;
 import java.util.Arrays;
 
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.util.Bits;
 
 import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.ZoieSegmentReader;
@@ -29,13 +30,15 @@ import proj.zoie.api.ZoieSegmentReader;
  */
 public class DocIDMapperImpl implements DocIDMapper {
   private final int[] _docArray; // the doc id of uid in _uidArray with the same index
-  private final long[] _uidArray; // partitioned uid array
+  private final long[] _partitionedUIDArray; // partitioned uid array
+  private final long[] _uidArray; // uid array
   private final int[] _start; // partition boundaries in _uidArray
   private final long[] _filter; // a helper filter to early detect false lookup
   private final int _mask; // the mask also the partition count - 1
   private static final int MIXER = 2147482951; // a prime number
 
-  public DocIDMapperImpl(NumericDocValues uidValues, int maxDoc) {
+  public DocIDMapperImpl(NumericDocValues uidValues, int maxDoc, Bits acceptedDocs) {
+    _uidArray = new long[maxDoc];
     int len = maxDoc;
 
     int mask = len / 4; // 2 uids on average per partition,
@@ -57,17 +60,21 @@ public class DocIDMapperImpl implements DocIDMapper {
     // more than 2 uids in each partition, so, most of the false lookup will miss at least one
     // bit. from one miss, we can tell the uid is definitely not inside the _uidArray.
     for (int i = 0; i < maxDoc; ++i) {
-      long uid = uidValues.get(i);
-      if (uid != ZoieSegmentReader.DELETED_UID) {
-        // the hash function is (int)((uid >>> 32) ^ uid) * MIXER,
-        // and we mod number of partions by "& _mask" (because & is much faster than mod).
-        int h = (int) ((uid >>> 32) ^ uid) * MIXER;
-
-        long bits = _filter[h & _mask];
-        bits |= ((1L << (h >>> 26)));
-        bits |= ((1L << ((h >> 20) & 0x3F)));
-        _filter[h & _mask] = bits;
+      if (acceptedDocs != null && !acceptedDocs.get(i)) {
+        _uidArray[i] = ZoieSegmentReader.DELETED_UID;
+        continue;
       }
+      long uid = uidValues.get(i);
+      _uidArray[i] = uid;
+
+      // the hash function is (int)((uid >>> 32) ^ uid) * MIXER,
+      // and we mod number of partions by "& _mask" (because & is much faster than mod).
+      int h = (int) ((uid >>> 32) ^ uid) * MIXER;
+
+      long bits = _filter[h & _mask];
+      bits |= ((1L << (h >>> 26)));
+      bits |= ((1L << ((h >> 20) & 0x3F)));
+      _filter[h & _mask] = bits;
     }
 
     _start = new int[_mask + 1 + 1]; // we allocate 1 additinal more space for the positions
@@ -75,7 +82,7 @@ public class DocIDMapperImpl implements DocIDMapper {
     // we fist assign the _start array with how many uid's fall into each partition:
     len = 0;
     for (int i = 0; i < maxDoc; ++i) {
-      long uid = uidValues.get(i);
+      long uid = _uidArray[i];
       if (uid != ZoieSegmentReader.DELETED_UID) {
         _start[((int) ((uid >>> 32) ^ uid) * MIXER) & _mask]++;
         len++;
@@ -91,7 +98,7 @@ public class DocIDMapperImpl implements DocIDMapper {
     _start[_mask] = len;
 
     // now start build the partitioned uid array and docArray:
-    long[] partitionedUidArray = new long[len];
+    long[] partitionedUIDArray = new long[len];
     int[] docArray = new int[len];
 
     // per each uid, we will reduce the value in _start, and the new value as the index in the
@@ -100,10 +107,10 @@ public class DocIDMapperImpl implements DocIDMapper {
     // it's like the _start array is shift one right, that's why we need an additional space
     // for the _start array:
     for (int docid = 0; docid < maxDoc; docid++) {
-      long uid = uidValues.get(docid);
+      long uid = _uidArray[docid];
       if (uid != ZoieSegmentReader.DELETED_UID) {
         int i = --(_start[((int) ((uid >>> 32) ^ uid) * MIXER) & _mask]);
-        partitionedUidArray[i] = uid;
+        partitionedUIDArray[i] = uid;
       }
     }
 
@@ -112,7 +119,7 @@ public class DocIDMapperImpl implements DocIDMapper {
     for (int i = 1; i < _start.length; i++) {
       int e = _start[i];
       if (s < e) {
-        Arrays.sort(partitionedUidArray, s, e);
+        Arrays.sort(partitionedUIDArray, s, e);
       }
       s = e;
     }
@@ -120,68 +127,30 @@ public class DocIDMapperImpl implements DocIDMapper {
     // assign the co-responding doc ids to the same index as the uid in the uid array
     // (note that, at first the doc id of the first uid is 0, for the second uid is 1, and so on):
     for (int docid = 0; docid < maxDoc; docid++) {
-      long uid = uidValues.get(docid);
+      long uid = _uidArray[docid];
       if (uid != ZoieSegmentReader.DELETED_UID) {
         final int p = ((int) ((uid >>> 32) ^ uid) * MIXER) & _mask;
-        int idx = findIndex(partitionedUidArray, uid, _start[p], _start[p + 1]);
+        int idx = findIndex(partitionedUIDArray, uid, _start[p], _start[p + 1]);
         if (idx >= 0) {
           docArray[idx] = docid;
         }
       }
     }
 
-    _uidArray = partitionedUidArray;
+    _partitionedUIDArray = partitionedUIDArray;
     _docArray = docArray;
   }
 
   @Override
   public int getDocID(final long uid) {
-    final int h = (int) ((uid >>> 32) ^ uid) * MIXER;
-    final int p = h & _mask;
-
-    // check the filter
-    final long bits = _filter[p];
-    if ((bits & (1L << (h >>> 26))) == 0 || (bits & (1L << ((h >> 20) & 0x3F))) == 0) return -1;
-
-    // do binary search in the partition
-    int begin = _start[p];
-    int end = _start[p + 1] - 1;
-    // we have some uids in this partition, so we assume (begin <= end)
-    while (true) {
-      int mid = (begin + end) >>> 1;
-      long midval = _uidArray[mid];
-
-      if (midval == uid) return _docArray[mid];
-      if (mid == end) return -1;
-
-      if (midval < uid) begin = mid + 1;
-      else end = mid;
-    }
-  }
-
-  private static final int findIndex(final long[] arr, final long uid, int begin, int end) {
-    if (begin >= end) return -1;
-    end--;
-
-    while (true) {
-      int mid = (begin + end) >> 1;
-      long midval = arr[mid];
-      if (midval == uid) return mid;
-      if (mid == end) return -1;
-
-      if (midval < uid) begin = mid + 1;
-      else end = mid;
-    }
-  }
-
-  @Override
-  public int quickGetDocID(long uid) {// exact same impl as the regular getDocID()
     final int h = (int) ((uid >> 32) ^ uid) * MIXER;
     final int p = h & _mask;
 
     // check the filter
     final long bits = _filter[p];
-    if ((bits & (1L << (h >> 26))) == 0 || (bits & (1L << ((h >> 20) & 0x3F))) == 0) return -1;
+    if ((bits & (1L << (h >> 26))) == 0 || (bits & (1L << ((h >> 20) & 0x3F))) == 0) {
+      return NOT_FOUND;
+    }
 
     // do binary search in the partition
     int begin = _start[p];
@@ -189,13 +158,47 @@ public class DocIDMapperImpl implements DocIDMapper {
     // we have some uids in this partition, so we assume (begin <= end)
     while (true) {
       int mid = (begin + end) >> 1;
-      long midval = _uidArray[mid];
+      long midval = _partitionedUIDArray[mid];
 
-      if (midval == uid) return _docArray[mid];
-      if (mid == end) return -1;
+      if (midval == uid) {
+        return _docArray[mid];
+      }
+      if (mid == end) {
+        return NOT_FOUND;
+      }
+      if (midval < uid) {
+        begin = mid + 1;
+      } else {
+        end = mid;
+      }
+    }
+  }
 
-      if (midval < uid) begin = mid + 1;
-      else end = mid;
+  @Override
+  public long[] getUIDArray() {
+    return _uidArray;
+  }
+
+  private static final int findIndex(final long[] arr, final long uid, int begin, int end) {
+    if (begin >= end) {
+      return NOT_FOUND;
+    }
+    end--;
+
+    while (true) {
+      int mid = (begin + end) >> 1;
+      long midval = arr[mid];
+      if (midval == uid) {
+        return mid;
+      }
+      if (mid == end) {
+        return NOT_FOUND;
+      }
+      if (midval < uid) {
+        begin = mid + 1;
+      } else {
+        end = mid;
+      }
     }
   }
 

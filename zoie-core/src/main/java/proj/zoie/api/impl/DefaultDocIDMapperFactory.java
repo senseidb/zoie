@@ -12,9 +12,11 @@ public class DefaultDocIDMapperFactory implements DocIDMapperFactory {
 
   @Override
   public DocIDMapper getDocIDMapper(final ZoieSegmentReader<?> reader) throws IOException {
+    // Don't use getLiveDocs of ZoieSegmentReader, since ZoieSegmentReader take into account
+    // pending delete doc
     return new DocIDMapperImpl(
         reader.getNumericDocValues(AbstractZoieIndexable.DOCUMENT_ID_PAYLOAD_FIELD),
-        reader.maxDoc(), reader.getLiveDocs());
+        reader.maxDoc(), reader.getInnerReader().getLiveDocs());
   }
 
   @Override

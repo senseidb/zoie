@@ -40,15 +40,16 @@ public class HourglassReaderManager<R extends IndexReader, D> {
   private final HourglassListener<R, D> listener;
   private final boolean _appendOnly;
 
+  @SuppressWarnings({ "rawtypes", "unchecked" })
   public HourglassReaderManager(final Hourglass<R, D> hourglass,
       HourglassDirectoryManagerFactory dirMgrFactory, IndexReaderDecorator<R> decorator,
       List<ZoieMultiReader<R>> initArchives, List<ZoieSystem<R, D>> initArchiveZoies,
-      List<HourglassListener<R,D>> hourglassListeners) {
+      List<HourglassListener> hourglassListeners) {
     hg = hourglass;
     _dirMgrFactory = dirMgrFactory;
     _appendOnly = _dirMgrFactory.getScheduler().isAppendOnly();
     _decorator = decorator;
-    this.listener = new CompositeHourglassListener<R, D>(hourglassListeners);
+    this.listener = new CompositeHourglassListener(hourglassListeners);
 
     List<ZoieSystem<R, D>> emptyList = Collections.emptyList();
 

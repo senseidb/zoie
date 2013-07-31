@@ -50,17 +50,19 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
   private long _freshness = 1000;
   final HourGlassScheduler _scheduler;
   public volatile long SLA = 4; // getIndexReaders should return in 4ms or a warning is logged
-  private List<HourglassListener<R, D>> _hourglassListeners;
+  @SuppressWarnings("rawtypes")
+  private List<HourglassListener> _hourglassListeners;
 
+  @SuppressWarnings({ "rawtypes" })
   public Hourglass(HourglassDirectoryManagerFactory dirMgrFactory,
       ZoieIndexableInterpreter<D> interpreter, IndexReaderDecorator<R> readerDecorator,
-      ZoieConfig zoieConfig, List<HourglassListener<R, D>> hourglassListeners) {
+      ZoieConfig zoieConfig, List<HourglassListener> hourglassListeners) {
     _zConfig = zoieConfig;
     _dirMgrFactory = dirMgrFactory;
     if (hourglassListeners == null) {
       hourglassListeners = Collections.emptyList();
     } else {
-      hourglassListeners = new CopyOnWriteArrayList<HourglassListener<R, D>>(hourglassListeners);
+      hourglassListeners = new CopyOnWriteArrayList<HourglassListener>(hourglassListeners);
     }
     _hourglassListeners = hourglassListeners;
     _scheduler = _dirMgrFactory.getScheduler();
@@ -85,16 +87,18 @@ public class Hourglass<R extends IndexReader, D> implements Zoie<R, D> {
     log.info("start Hourglass at version: " + _currentVersion);
   }
 
+  @SuppressWarnings("rawtypes")
   public Hourglass(HourglassDirectoryManagerFactory dirMgrFactory,
       ZoieIndexableInterpreter<D> interpreter, IndexReaderDecorator<R> readerDecorator,
       ZoieConfig zoieConfig) {
-    this(dirMgrFactory, interpreter, readerDecorator, zoieConfig, Collections.<HourglassListener<R, D>> emptyList());
+    this(dirMgrFactory, interpreter, readerDecorator, zoieConfig, Collections
+        .<HourglassListener> emptyList());
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({ "rawtypes" })
   public Hourglass(HourglassDirectoryManagerFactory dirMgrFactory,
       ZoieIndexableInterpreter<D> interpreter, IndexReaderDecorator<R> readerDecorator,
-      ZoieConfig zoieConfig, HourglassListener<R, D> hourglassListener) {
+      ZoieConfig zoieConfig, HourglassListener hourglassListener) {
     this(dirMgrFactory, interpreter, readerDecorator, zoieConfig, Arrays.asList(hourglassListener));
   }
 

@@ -164,6 +164,10 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
     _docIDMapper = docIDMapper;
   }
 
+  public long getUID(int docid) {
+    return _docIDMapper.getUIDArray()[docid];
+  }
+
   public boolean isDeleted(int docid) {
     int[] delSet = _delDocIds;
     if (delSet != null && Arrays.binarySearch(delSet, docid) >= 0) {

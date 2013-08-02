@@ -23,9 +23,9 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 
 import proj.zoie.api.indexing.AbstractZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexable;
@@ -38,14 +38,15 @@ public class FileIndexableInterpreter implements ZoieIndexableInterpreter<File> 
   static ThreadLocal<char[]> myCharBuffer = new ThreadLocal<char[]>();
 
   protected static class FileIndexable extends AbstractZoieIndexable {
-    private File _file;
-    private int _uid;
+    private final File _file;
+    private final int _uid;
 
     private FileIndexable(File file, int uid) {
       _file = file;
       _uid = uid;
     }
 
+    @Override
     public IndexingReq[] buildIndexingReqs() {
       IndexingReq req = new IndexingReq(buildDocument(), null);
       return new IndexingReq[] { req };
@@ -53,7 +54,7 @@ public class FileIndexableInterpreter implements ZoieIndexableInterpreter<File> 
 
     public Document buildDocument() {
       Document doc = new Document();
-      doc.add(new Field("foo", "bar", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      doc.add(new StringField("foo", "bar", Store.NO));
       StringBuilder sb = myStringBuilder.get();
       char[] cb = myCharBuffer.get();
       if (sb == null || cb == null) {
@@ -64,7 +65,7 @@ public class FileIndexableInterpreter implements ZoieIndexableInterpreter<File> 
         myCharBuffer.set(cb);
       }
       sb.append(_file.getAbsoluteFile()).append("\n");
-      doc.add(new Field("path", _file.getAbsolutePath(), Store.YES, Index.ANALYZED));
+      doc.add(new TextField("path", _file.getAbsolutePath(), Store.YES));
       FileReader freader = null;
       try {
         freader = new FileReader(_file);
@@ -94,24 +95,28 @@ public class FileIndexableInterpreter implements ZoieIndexableInterpreter<File> 
           }
         }
       }
-      doc.add(new Field("content", sb.toString(), Store.YES, Index.ANALYZED));
+      doc.add(new TextField("content", sb.toString(), Store.YES));
       sb.setLength(0);
       return doc;
     }
 
+    @Override
     public boolean isSkip() {
       return false;
     }
 
+    @Override
     public boolean isDeleted() {
       return false;
     }
 
+    @Override
     public long getUID() {
       return _uid;
     }
   }
 
+  @Override
   public ZoieIndexable convertAndInterpret(File src) {
     ZoieIndexable idxable = new FileIndexable(src, id);
     id++;

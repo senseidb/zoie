@@ -173,8 +173,11 @@ public class ZoieConfig {
   /**
    * @return the RAMIndexFactory in this ZoieConfig. If the value is null, return the DefaultRAMIndexFactory Factory.
    */
+  @SuppressWarnings("rawtypes")
   public RAMIndexFactory<?> getRamIndexFactory() {
-    if (ramIndexFactory == null) return new DefaultRAMIndexFactory();
+    if (ramIndexFactory == null) {
+      return new DefaultRAMIndexFactory();
+    }
     return ramIndexFactory;
   }
 

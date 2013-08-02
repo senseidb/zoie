@@ -136,7 +136,7 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
    * @param zoieConfig
    *          configuration object
    */
-  @SuppressWarnings("deprecation")
+  @SuppressWarnings({ "deprecation", "unchecked" })
   public ZoieSystem(DirectoryManager dirMgr, ZoieIndexableInterpreter<D> interpreter,
       IndexReaderDecorator<R> indexReaderDecorator, ZoieConfig zoieConfig) {
     this(dirMgr, interpreter, indexReaderDecorator, zoieConfig.getDocidMapperFactory(), zoieConfig
@@ -161,7 +161,7 @@ public class ZoieSystem<R extends IndexReader, D> extends AsyncDataConsumer<D> i
    * @param zoieConfig
    *          configuration object
    */
-  @SuppressWarnings("deprecation")
+  @SuppressWarnings({ "deprecation", "unchecked" })
   public ZoieSystem(File idxDir, ZoieIndexableInterpreter<D> interpreter,
       IndexReaderDecorator<R> indexReaderDecorator, ZoieConfig zoieConfig) {
     this(new DefaultDirectoryManager(idxDir), interpreter, indexReaderDecorator, zoieConfig

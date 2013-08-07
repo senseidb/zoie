@@ -32,5 +32,4 @@ public interface DocIDMapper {
    * @return {@link #NOT_FOUND} if uid is not found
    */
   int getDocID(long uid);
-  long[] getUIDArray();
 }

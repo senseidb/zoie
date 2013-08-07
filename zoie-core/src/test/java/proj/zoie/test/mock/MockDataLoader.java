@@ -3,14 +3,10 @@ package proj.zoie.test.mock;
 import java.util.Collection;
 import java.util.Comparator;
 
-import org.apache.log4j.Logger;
-
 import proj.zoie.api.DataConsumer;
 import proj.zoie.api.ZoieException;
 
 public class MockDataLoader<D> implements DataConsumer<D> {
-  private static final Logger log = Logger.getLogger(MockDataLoader.class);
-
   private long _delay;
   private int _count;
   private D _lastConsumed;
@@ -40,6 +36,7 @@ public class MockDataLoader<D> implements DataConsumer<D> {
     return _count;
   }
 
+  @Override
   public void consume(Collection<DataEvent<D>> data) throws ZoieException {
     _numCalls++;
     if (data != null) {
@@ -72,10 +69,12 @@ public class MockDataLoader<D> implements DataConsumer<D> {
     return _maxBatch;
   }
 
+  @Override
   public String getVersion() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public Comparator<String> getVersionComparator() {
     throw new UnsupportedOperationException();
   }

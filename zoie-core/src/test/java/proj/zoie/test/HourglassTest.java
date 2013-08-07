@@ -62,6 +62,7 @@ public class HourglassTest extends ZoieTestCaseBase {
   int minDirs = Integer.MAX_VALUE; // Minimum number of dirs after system is stable
   int maxDirs = 0;
 
+  @SuppressWarnings("rawtypes")
   @Test
   public void testHourglassDirectoryManagerFactory() throws IOException, InterruptedException,
       ZoieException {
@@ -104,6 +105,7 @@ public class HourglassTest extends ZoieTestCaseBase {
     return;
   }
 
+  @SuppressWarnings("rawtypes")
   @Test
   public void testTrimming() throws Exception {
     File idxDir = getIdxDir();

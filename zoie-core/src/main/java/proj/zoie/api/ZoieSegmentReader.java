@@ -29,6 +29,7 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.FilterAtomicReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -43,6 +44,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
   private IntRBTreeSet _delDocIdSet = new IntRBTreeSet();
   private int[] _currentDelDocIds = null;
   private int[] _delDocIds = null;
+  private long[] _uidArray = null;
   private DocIDMapper _docIDMapper = null;
 
   public static void fillDocumentID(Document doc, long id) {
@@ -56,8 +58,24 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
       throw new IllegalStateException("ZoieSegmentReader can only be constucted from "
           + SegmentReader.class);
     }
+    init(in);
     _decorator = decorator;
     _decoratedReader = (_decorator == null ? null : _decorator.decorate(this));
+  }
+
+  private void init(AtomicReader reader) throws IOException {
+    int maxDoc = reader.maxDoc();
+    _uidArray = new long[maxDoc];
+    NumericDocValues uidValues = reader
+        .getNumericDocValues(AbstractZoieIndexable.DOCUMENT_ID_PAYLOAD_FIELD);
+    Bits liveDocs = reader.getLiveDocs();
+    for (int i = 0; i < maxDoc; ++i) {
+      if (liveDocs != null && !liveDocs.get(i)) {
+        _uidArray[i] = ZoieSegmentReader.DELETED_UID;
+        continue;
+      }
+      _uidArray[i] = uidValues.get(i);
+    }
   }
 
   /**
@@ -72,6 +90,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
     _decorator = copyFrom._decorator;
     _delDocIdSet = copyFrom._delDocIdSet;
     _currentDelDocIds = copyFrom._currentDelDocIds;
+    _uidArray = copyFrom._uidArray;
 
     if (copyFrom._decorator == null) {
       _decoratedReader = null;
@@ -160,12 +179,16 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
     return _docIDMapper;
   }
 
+  public long[] getUIDArray() {
+    return _uidArray;
+  }
+
   public void setDocIDMapper(DocIDMapper docIDMapper) {
     _docIDMapper = docIDMapper;
   }
 
   public long getUID(int docid) {
-    return _docIDMapper.getUIDArray()[docid];
+    return _uidArray[docid];
   }
 
   public boolean isDeleted(int docid) {

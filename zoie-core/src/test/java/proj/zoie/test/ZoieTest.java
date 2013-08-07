@@ -26,7 +26,6 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.DocIdSet;
@@ -905,13 +904,7 @@ public class ZoieTest extends ZoieTestCaseBase {
         ansList1[i] = -1;
       }
 
-      final NumericDocValues uidValues = new NumericDocValues() {
-        @Override
-        public long get(int docID) {
-          return uidList[docID];
-        }
-      };
-      mapper = new DocIDMapperImpl(uidValues, uidList.length, null);
+      mapper = new DocIDMapperImpl(uidList);
 
       for (int i = 0; i < qryList.length; i++) {
         ansList2[i] = mapper.getDocID(qryList[i]);
@@ -1015,14 +1008,7 @@ public class ZoieTest extends ZoieTestCaseBase {
       ans[i] = i;
     }
 
-    final NumericDocValues uidValues = new NumericDocValues() {
-      @Override
-      public long get(int docID) {
-        return even[docID];
-      }
-    };
-
-    DocIDMapperImpl mapper = new DocIDMapperImpl(uidValues, uidArray.length / 2, null);
+    DocIDMapperImpl mapper = new DocIDMapperImpl(even);
     UIDDocIdSet uidSet = new UIDDocIdSet(even, mapper);
     DocIdSetIterator docidIter = uidSet.iterator();
     IntArrayList intList = new IntArrayList();
@@ -1037,13 +1023,7 @@ public class ZoieTest extends ZoieTestCaseBase {
       newidArray[i] = i;
     }
 
-    final NumericDocValues newUidValues = new NumericDocValues() {
-      @Override
-      public long get(int docID) {
-        return docID;
-      }
-    };
-    mapper = new DocIDMapperImpl(newUidValues, count, null);
+    mapper = new DocIDMapperImpl(newidArray);
     uidSet = new UIDDocIdSet(newidArray, mapper);
     docidIter = uidSet.iterator();
     intList = new IntArrayList();

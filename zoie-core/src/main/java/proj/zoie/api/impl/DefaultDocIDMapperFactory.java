@@ -6,7 +6,6 @@ import proj.zoie.api.DocIDMapper;
 import proj.zoie.api.DocIDMapperFactory;
 import proj.zoie.api.ZoieMultiReader;
 import proj.zoie.api.ZoieSegmentReader;
-import proj.zoie.api.indexing.AbstractZoieIndexable;
 
 public class DefaultDocIDMapperFactory implements DocIDMapperFactory {
 
@@ -14,9 +13,7 @@ public class DefaultDocIDMapperFactory implements DocIDMapperFactory {
   public DocIDMapper getDocIDMapper(final ZoieSegmentReader<?> reader) throws IOException {
     // Don't use getLiveDocs of ZoieSegmentReader, since ZoieSegmentReader take into account
     // pending delete doc
-    return new DocIDMapperImpl(
-        reader.getNumericDocValues(AbstractZoieIndexable.DOCUMENT_ID_PAYLOAD_FIELD),
-        reader.maxDoc(), reader.getInnerReader().getLiveDocs());
+    return new DocIDMapperImpl(reader.getUIDArray());
   }
 
   @Override
@@ -45,12 +42,6 @@ public class DefaultDocIDMapperFactory implements DocIDMapperFactory {
           }
         }
         return DocIDMapper.NOT_FOUND;
-      }
-
-      @Override
-      public long[] getUIDArray() {
-        throw new UnsupportedOperationException(
-            "Only ZoieSegmentReader supports getUIDArray method");
       }
     };
   }

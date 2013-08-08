@@ -245,7 +245,7 @@ public class HourglassTest extends ZoieTestCaseBase {
   private boolean findUID(List<ZoieMultiReader<IndexReader>> readers, long uid) {
     boolean found = false;
     for (ZoieMultiReader<IndexReader> reader : readers) {
-      int doc = reader.getDocIDMaper().getDocID(uid);
+      int doc = reader.getDocIDMapper().getDocID(uid);
       if (doc != DocIDMapper.NOT_FOUND && !reader.isDeleted(doc)) {
         found = true;
         if (reader.directory() instanceof FSDirectory) System.out.println("Found uid: " + uid

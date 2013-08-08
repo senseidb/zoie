@@ -84,7 +84,7 @@ public class ZoieMultiReader<R extends IndexReader> extends FilterDirectoryReade
     return in.getRefCount();
   }
 
-  public DocIDMapper getDocIDMaper() {
+  public DocIDMapper getDocIDMapper() {
     return _docIDMapper;
   }
 

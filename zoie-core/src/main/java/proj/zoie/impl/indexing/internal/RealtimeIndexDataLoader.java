@@ -90,9 +90,7 @@ public class RealtimeIndexDataLoader<R extends IndexReader, D> extends BatchedIn
       synchronized (this) // this blocks the batch disk loader thread while indexing to RAM
       {
         int size = indexableList.size();
-        synchronized (_idxMgr) {
-          _ramConsumer.consume(indexableList);// consumer clear the list!
-        }
+        _ramConsumer.consume(indexableList);// consumer clear the list!
         _currentBatchSize += size;
         _eventCount += size;
 

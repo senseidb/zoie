@@ -198,13 +198,13 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
 
         // the following order, e.g. B,A,Disk matters, see ZoieMultiReader.getSubZoieReaderAccessor:
         // when doing UID->docid mapping, the freshest index needs to be first
+
         if (memIndexB != null) // load memory index B
         {
           synchronized (memIndexB) {
             reader = memIndexB.openIndexReader();
             if (reader != null) {
               reader = reader.copy();
-              reader.setDelDocIds();
               readers.add(reader);
             }
           }
@@ -217,7 +217,6 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
             reader = memIndexA.openIndexReader();
             if (reader != null) {
               reader = reader.copy();
-              reader.setDelDocIds();
               readers.add(reader);
             }
           }
@@ -229,10 +228,8 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
           reader = mem.get_diskIndexReader();
           if (reader != null) {
             reader = reader.copy();
-            reader.setDelDocIds();
             readers.add(reader);
           }
-
           _diskVersion = getCurrentDiskVersion();
         }
       }
@@ -266,7 +263,7 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
 
   public synchronized void setDiskIndexerStatus(Status status) {
     if (_diskIndexerStatus == status) {
-      throw new RuntimeException("Wrong status to set");
+      return;
     }
     // going from sleep to wake, disk index starts to index
     // which according to the spec, index B is created and it starts to collect data
@@ -278,10 +275,13 @@ public class SearchIndexManager<R extends IndexReader> implements IndexReaderFac
       Mem<R> oldMem = _mem;
 
       RAMSearchIndex<R> memIndexA = oldMem.get_memIndexA();
-      if (memIndexA != null) memIndexA.closeIndexWriter();
+      if (memIndexA != null) {
+        memIndexA.closeIndexWriter();
+      }
 
       RAMSearchIndex<R> memIndexB = _ramIndexFactory.newInstance(version, _indexReaderDecorator,
         this);
+
       Mem<R> mem = new Mem<R>(memIndexA, memIndexB, memIndexB, memIndexA,
           oldMem.get_diskIndexReader());
       synchronized (_memLock) {

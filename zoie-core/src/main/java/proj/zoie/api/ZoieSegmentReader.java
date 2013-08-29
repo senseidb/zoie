@@ -43,7 +43,6 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
   private final IndexReaderDecorator<R> _decorator;
   private IntRBTreeSet _delDocIdSet = new IntRBTreeSet();
   private int[] _currentDelDocIds = null;
-  private int[] _delDocIds = null;
   private long[] _uidArray = null;
   private DocIDMapper _docIDMapper = null;
 
@@ -117,7 +116,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
     return new Bits() {
       @Override
       public boolean get(int index) {
-        int[] delSet = _delDocIds;
+        int[] delSet = _currentDelDocIds;
         if (delSet != null && Arrays.binarySearch(delSet, index) >= 0) {
           return false;
         }
@@ -155,14 +154,6 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
     _currentDelDocIds = _delDocIdSet.toIntArray();
   }
 
-  public void setDelDocIds() {
-    _delDocIds = _currentDelDocIds;
-  }
-
-  public int[] getDelDocIds() {
-    return _delDocIds;
-  }
-
   public R getDecoratedReader() {
     return _decoratedReader;
   }
@@ -192,7 +183,7 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
   }
 
   public boolean isDeleted(int docid) {
-    int[] delSet = _delDocIds;
+    int[] delSet = _currentDelDocIds;
     if (delSet != null && Arrays.binarySearch(delSet, docid) >= 0) {
       return true;
     }
@@ -209,8 +200,8 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
 
   @Override
   public int numDocs() {
-    if (_delDocIds != null) {
-      return super.numDocs() - _delDocIds.length;
+    if (_currentDelDocIds != null) {
+      return super.numDocs() - _currentDelDocIds.length;
     } else {
       return super.numDocs();
     }

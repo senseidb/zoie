@@ -107,28 +107,25 @@ public class DiskLuceneIndexDataLoader<R extends IndexReader> extends LuceneInde
   @Override
   public void loadFromIndex(RAMSearchIndex<R> ramIndex) throws ZoieException {
     synchronized (_optimizeMonitor) {
+      OptimizeType optType = _optScheduler.getScheduledOptimizeType();
+      _idxMgr.setPartialExpunge(optType == OptimizeType.PARTIAL);
       try {
-        OptimizeType optType = _optScheduler.getScheduledOptimizeType();
-        _idxMgr.setPartialExpunge(optType == OptimizeType.PARTIAL);
-        try {
-          super.loadFromIndex(ramIndex);
-        } finally {
-          _optScheduler.finished();
-          _idxMgr.setPartialExpunge(false);
-        }
-
-        if (optType == OptimizeType.FULL) {
-          try {
-            expungeDeletes();
-          } catch (IOException ioe) {
-            ZoieHealth.setFatal();
-            throw new ZoieException(ioe.getMessage(), ioe);
-          } finally {
-            _optScheduler.finished();
-          }
-        }
+        super.loadFromIndex(ramIndex);
       } finally {
         _idxMgr.setDiskIndexerStatus(Status.Sleep);
+        _optScheduler.finished();
+        _idxMgr.setPartialExpunge(false);
+      }
+
+      if (optType == OptimizeType.FULL) {
+        try {
+          expungeDeletes();
+        } catch (IOException ioe) {
+          ZoieHealth.setFatal();
+          throw new ZoieException(ioe.getMessage(), ioe);
+        } finally {
+          _optScheduler.finished();
+        }
       }
     }
   }

@@ -130,7 +130,9 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
       ZoieMultiReader<R> reader = null;
       synchronized (this) {
         reader = openIndexReader();
-        if (reader == null) return;
+        if (reader == null) {
+          return;
+        }
         reader.incZoieRef();
         reader.markDeletes(delDocs, _delDocs);
         reader.decZoieRef();
@@ -142,12 +144,13 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
     ZoieMultiReader<R> reader = null;
     synchronized (this) {
       reader = openIndexReader();
-      if (reader == null) return;
+      if (reader == null) {
+        return;
+      }
       reader.incZoieRef();
       reader.commitDeletes();
       reader.decZoieRef();
     }
-
   }
 
   private void deleteDocs(LongSet delDocs) throws IOException {
@@ -172,19 +175,21 @@ public abstract class BaseSearchIndex<R extends IndexReader> {
   }
 
   public void loadFromIndex(BaseSearchIndex<R> index) throws IOException {
+    LongSet delDocs = null;
     // delete docs in disk index first
-    if (_delDocs != null && _delDocs.size() > 0) {
-      LongSet delDocs = _delDocs;
-      clearDeletes();
-      deleteDocs(delDocs);
+    synchronized (this) {
+      if (_delDocs != null && _delDocs.size() > 0) {
+        delDocs = _delDocs;
+        clearDeletes();
+      }
     }
+    deleteDocs(delDocs);
 
     // open readOnly ram index reader
     ZoieMultiReader<R> reader = index.openIndexReader();
     if (reader == null) {
       return;
     }
-
     // merge the readOnly ram index with the disk index
     IndexWriter writer = null;
     try {

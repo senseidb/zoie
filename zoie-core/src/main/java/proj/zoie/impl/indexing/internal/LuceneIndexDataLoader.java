@@ -45,6 +45,7 @@ import proj.zoie.api.ZoieSegmentReader;
 import proj.zoie.api.indexing.AbstractZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexable;
 import proj.zoie.api.indexing.ZoieIndexable.IndexingReq;
+import proj.zoie.impl.indexing.internal.SearchIndexManager.Status;
 
 public abstract class LuceneIndexDataLoader<R extends IndexReader> implements
     DataConsumer<ZoieIndexable> {
@@ -109,7 +110,9 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements
   @Override
   public void consume(Collection<DataEvent<ZoieIndexable>> events) throws ZoieException {
 
-    if (events == null) return;
+    if (events == null) {
+      return;
+    }
     int eventCount = events.size();
     if (eventCount == 0) {
       return;
@@ -215,14 +218,16 @@ public abstract class LuceneIndexDataLoader<R extends IndexReader> implements
           .compare(idx.getVersion(), ramIndex.getVersion()) < 0 ? ramIndex.getVersion() : idx
           .getVersion());
       idx.setVersion(newVersion);
-      // update the disk idx reader
-      idx.refresh();
-      purgeDocuments();
-      // inherit deletes
-      idx.markDeletes(ramIndex.getDelDocs());
-      idx.commitDeletes();
-      idx.incrementEventCount(ramIndex.getEventsHandled());
-
+      synchronized (_idxMgr) {
+        // update the disk idx reader
+        idx.refresh();
+        purgeDocuments();
+        // inherit deletes
+        idx.markDeletes(ramIndex.getDelDocs());
+        idx.commitDeletes();
+        idx.incrementEventCount(ramIndex.getEventsHandled());
+        _idxMgr.setDiskIndexerStatus(Status.Sleep);
+      }
     } catch (IOException ioe) {
       ZoieHealth.setFatal();
       log.error("Problem copying segments: " + ioe.getMessage(), ioe);

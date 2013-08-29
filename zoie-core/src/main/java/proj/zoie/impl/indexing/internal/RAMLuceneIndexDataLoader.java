@@ -42,6 +42,7 @@ public class RAMLuceneIndexDataLoader<R extends IndexReader> extends LuceneIndex
     if (delDocs == null || delDocs.size() == 0) {
       return;
     }
+
     RAMSearchIndex<R> readOnlyMemoryIdx = _idxMgr.getCurrentReadOnlyMemoryIndex();
     if (readOnlyMemoryIdx != null) {
       readOnlyMemoryIdx.markDeletes(delDocs);

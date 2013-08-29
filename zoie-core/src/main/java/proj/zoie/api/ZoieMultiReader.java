@@ -138,13 +138,6 @@ public class ZoieMultiReader<R extends IndexReader> extends FilterDirectoryReade
     }
   }
 
-  public void setDelDocIds() {
-    ZoieSegmentReader<R>[] subReaders = getSubReaders();
-    for (ZoieSegmentReader<R> subReader : subReaders) {
-      subReader.setDelDocIds();
-    }
-  }
-
   public List<R> getDecoratedReaders() throws IOException {
     return _decoratedReaders;
   }

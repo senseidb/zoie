@@ -194,6 +194,14 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
     return !liveDocs.get(docid);
   }
 
+  public boolean isDeletedInMask(int docid) {
+    int[] delSet = _currentDelDocIds;
+    if (delSet != null && Arrays.binarySearch(delSet, docid) >= 0) {
+      return true;
+    }
+    return false;
+  }
+
   public String getSegmentName() {
     return ((SegmentReader) in).getSegmentName();
   }

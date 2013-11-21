@@ -35,12 +35,8 @@
 	<url>http://senseidb.github.com/zoie</url>
 
 	<scm>
-		<connection>
-      scm:git://github.com/senseidb/zoie.git
-    </connection>
-		<developerConnection>
-      scm:git@github.com:senseidb/zoie.git
-    </developerConnection>
+		<connection>scm:git:git@github.com:senseidb/zoie.git</connection>
+		<developerConnection>scm:git:git@github.com:senseidb/zoie.git</developerConnection>
 		<url>https://github.com/senseidb/zoie</url>
 	</scm>
 
@@ -50,8 +46,8 @@
 		<module>zoie-server</module>
 		<module>zoie-jms</module>
 		<module>zoie-perf</module>
-		<module>zoie-example</module>
 	</modules>
+
 
 	<build>
 		<plugins>
@@ -60,6 +56,19 @@
 				<configuration>
 					<skip>true</skip> <!-- No need to deploy the reactor -->
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-gpg-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>sign-artifacts</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>sign</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

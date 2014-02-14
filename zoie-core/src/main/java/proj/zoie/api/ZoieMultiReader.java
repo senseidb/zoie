@@ -84,6 +84,10 @@ public class ZoieMultiReader<R extends IndexReader> extends FilterDirectoryReade
     return in.getRefCount();
   }
 
+  public int getSubReaderBase(int idx) {
+    return readerBase(idx);
+  }
+
   public DocIDMapper getDocIDMapper() {
     return _docIDMapper;
   }
@@ -94,11 +98,15 @@ public class ZoieMultiReader<R extends IndexReader> extends FilterDirectoryReade
 
   public BytesRef getStoredValue(long uid) throws IOException {
     int docid = _docIDMapper.getDocID(uid);
-    if (docid < 0) return null;
+    if (docid < 0) {
+      return null;
+    }
     int idx = readerIndex(docid);
-    if (idx < 0) return null;
+    if (idx < 0) {
+      return null;
+    }
     ZoieSegmentReader<R> subReader = _subZoieReaders.get(idx);
-    return subReader.getStoredValue(docid);
+    return subReader.getStoredValue(docid - readerBase(idx));
   }
 
   private void init() throws IOException {

@@ -38,7 +38,7 @@ public class DefaultDocIDMapperFactory implements DocIDMapperFactory {
         for (int i = mappers.length - 1; i >= 0; --i) {
           docid = mappers[i].getDocID(uid);
           if (docid != DocIDMapper.NOT_FOUND) {
-            return docid;
+            return docid + reader.getSubReaderBase(i);
           }
         }
         return DocIDMapper.NOT_FOUND;

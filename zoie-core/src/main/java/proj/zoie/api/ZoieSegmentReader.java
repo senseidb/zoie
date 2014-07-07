@@ -215,4 +215,8 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
     }
   }
 
+  @Override
+  public Object getCoreCacheKey() {
+    return in.getCoreCacheKey();
+  }
 }

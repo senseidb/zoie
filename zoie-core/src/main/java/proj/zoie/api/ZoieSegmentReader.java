@@ -22,6 +22,8 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -158,8 +160,10 @@ public class ZoieSegmentReader<R extends IndexReader> extends FilterAtomicReader
     return _decoratedReader;
   }
 
+  public final Set<String> DOCUMENT_STORE_FIELD_SET = Collections.singleton(AbstractZoieIndexable.DOCUMENT_STORE_FIELD);
+
   public BytesRef getStoredValue(int docid) throws IOException {
-    Document doc = in.document(docid);
+    Document doc = in.document(docid, DOCUMENT_STORE_FIELD_SET);
     if (doc != null) {
       return doc.getBinaryValue(AbstractZoieIndexable.DOCUMENT_STORE_FIELD);
     }

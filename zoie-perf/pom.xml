@@ -112,7 +112,7 @@
 	<repositories>
 		<repository>
 			<id>repo.codahale.com</id>
-			<url>http://repo.codahale.com</url>
+			<url>https://repo.codahale.com</url>
 		</repository>
 	</repositories>
 
